@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn rsync -avz --exclude venv --exclude scratch --exclude .git --exclude __pycache__ ./ root@76.13.245.174:/root/am5-backend/
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof
+
+spawn ssh root@76.13.245.174 "cd /root/am5-backend && docker compose down && docker compose up -d --build"
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof

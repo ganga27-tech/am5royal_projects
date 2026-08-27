@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "docker exec am5_backend python add_onboarded_col.py"
+expect {
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof

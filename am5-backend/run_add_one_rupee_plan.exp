@@ -1,0 +1,11 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn scp -o StrictHostKeyChecking=no add_one_rupee_plan.py root@76.13.245.174:/root/am5-backend/
+expect "password:"
+send "Am5royal@2026\r"
+expect eof
+
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "docker cp /root/am5-backend/add_one_rupee_plan.py am5_backend:/app/ && docker exec am5_backend python /app/add_one_rupee_plan.py"
+expect "password:"
+send "Am5royal@2026\r"
+expect eof

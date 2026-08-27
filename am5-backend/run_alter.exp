@@ -1,0 +1,22 @@
+#!/usr/bin/expect -f
+set timeout 10
+
+# Upload the script
+spawn scp -o StrictHostKeyChecking=no alter_db_bank_details.py root@76.13.245.174:/root/am5-backend/
+expect {
+    "password:" {
+        send "Am5royal@2026\r"
+        exp_continue
+    }
+    eof
+}
+
+# Run the script in Docker
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "cd /root/am5-backend && docker compose exec -T backend python alter_db_bank_details.py"
+expect {
+    "password:" {
+        send "Am5royal@2026\r"
+        exp_continue
+    }
+    eof
+}

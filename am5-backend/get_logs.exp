@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+set timeout 10
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "ls -lt /root/am5-backend | head -n 10"
+expect {
+    "password:" {
+        send "Am5royal@2026\r"
+        exp_continue
+    }
+    eof
+}

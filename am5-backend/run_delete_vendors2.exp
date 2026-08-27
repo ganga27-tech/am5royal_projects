@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174
+expect "password:"
+send "Am5royal@2026\r"
+expect "# "
+
+send "docker exec -i am5_backend python - << 'PYEOF'\r"
+send "import asyncio\r"
+send "from app.db.session import AsyncSessionLocal\r"
+send "from sqlalchemy import text\r"
+send "async def run():\r"
+send "    async with AsyncSessionLocal() as db:\r"
+send "        try:\r"
+send "            await db.execute(text(\"DELETE FROM users WHERE mobile = '7013985800'\"))\r"
+send "            await db.commit()\r"
+send "            print('User deleted')\r"
+send "        except Exception as e:\r"
+send "            print('Failed to delete user:', e)\r"
+send "asyncio.run(run())\r"
+send "PYEOF\r"
+
+expect "# "
+send "exit\r"
+expect eof

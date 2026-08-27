@@ -1,0 +1,18 @@
+#!/usr/bin/expect -f
+set timeout 30
+spawn scp -o StrictHostKeyChecking=no clear_vendor_details.py root@76.13.245.174:/root/am5-backend/
+expect "password:"
+send "Am5royal@2026\r"
+expect eof
+
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "docker cp /root/am5-backend/clear_vendor_details.py am5_backend:/app/ && docker exec am5_backend python /app/clear_vendor_details.py 8919730797"
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof

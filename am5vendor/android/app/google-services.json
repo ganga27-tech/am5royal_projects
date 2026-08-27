@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "493129678201",
+    "project_id": "am5vendor",
+    "storage_bucket": "am5vendor.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:493129678201:android:2790187acc2157ee5843a8",
+        "android_client_info": {
+          "package_name": "com.am5royal.am5royal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo2j5sqrAumiVlpVQD_EUdOz7o5GR5MmI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

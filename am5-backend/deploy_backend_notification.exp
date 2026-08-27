@@ -1,0 +1,16 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn scp -o StrictHostKeyChecking=no app/workers/cron_jobs.py root@76.13.245.174:/root/am5-backend/app/workers/
+expect "password:"
+send "Am5royal@2026\r"
+expect eof
+
+spawn scp -o StrictHostKeyChecking=no app/api/v1/endpoints/vendor_catalog.py root@76.13.245.174:/root/am5-backend/app/api/v1/endpoints/
+expect "password:"
+send "Am5royal@2026\r"
+expect eof
+
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "docker cp /root/am5-backend/app/workers/cron_jobs.py am5_backend:/app/app/workers/ && docker cp /root/am5-backend/app/api/v1/endpoints/vendor_catalog.py am5_backend:/app/app/api/v1/endpoints/ && docker restart am5_backend"
+expect "password:"
+send "Am5royal@2026\r"
+expect eof

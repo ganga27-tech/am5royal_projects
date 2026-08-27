@@ -1,0 +1,28 @@
+#!/usr/bin/expect -f
+set timeout -1
+
+# 1. Sync all code to /root/am5-backend-dev on the VPS (excluding local production configs and virtual environments)
+spawn rsync -avz --exclude venv --exclude scratch --exclude .git --exclude __pycache__ --exclude .env --exclude docker-compose.yml /Users/vishalkonda/Downloads/fb/am5-backend/ root@76.13.245.174:/root/am5-backend-dev/
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof
+
+# 2. SSH into VPS, setup configs, and restart containers
+spawn ssh root@76.13.245.174 "cd /root/am5-backend-dev && cp docker-compose-dev.yml docker-compose.yml && cp .env.dev .env && docker compose down && docker compose up -d --build"
+expect {
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof

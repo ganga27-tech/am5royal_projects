@@ -1,0 +1,9 @@
+#!/usr/bin/expect -f
+set timeout -1
+spawn ssh -o StrictHostKeyChecking=no root@76.13.245.174 "docker logs am5_backend --since 1h"
+expect {
+    "password:" {
+        send "Am5royal@2026\r"
+    }
+}
+expect eof
