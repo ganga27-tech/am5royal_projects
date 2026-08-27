@@ -1,0 +1,23 @@
+{
+  "name": "AM5 ROYAL",
+  "short_name": "AM5 ROYAL",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0B4EA2",
+  "description": "AM5 ROYAL - Your trusted platform for home services.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
