@@ -1,84 +1,59 @@
-# Byte-compiled / optimized / DLL files
+# Python Cache and Virtual Environments
 __pycache__/
 *.py[cod]
-*$py.class
 *.pyc
-
-# C extensions
-*.so
-
-# Distribution / packaging
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
 .coverage
 .coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
+*.egg-info/
+dist/
 
-# Environments
+# Environments and Secrets
 .env
 .env.*
 !.env.example
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
-# Flutter / Dart
+# Flutter & Dart
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 .pub-cache/
 .pub/
-am5vendor/build/
-am5vendor/.dart_tool/
-am5vendor/.flutter-plugins*
-am5vendor/android/.kotlin/
-am5vendor/.firebase/
+build/
+**/build/
+**/.dart_tool/
 
-# OS / IDE
+# Android Flutter Specific
+**/android/.gradle/
+**/android/.kotlin/
+**/android/local.properties
+**/android/captures/
+**/android/default.properties
+
+# iOS Flutter Specific
+**/ios/Flutter/ephemeral/
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/Pods/
+**/ios/.symlinks/
+
+# macOS / Linux / Windows Flutter Ephemeral
+**/macos/Flutter/ephemeral/
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+
+# Firebase Cache
+**/.firebase/
+
+# OS & Editor
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
 .idea/
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.swp
+*.swo
