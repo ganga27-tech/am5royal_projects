@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/seo/seo_metadata.dart';
 import '../../../core/seo/seo_service.dart';
+import '../../auth/models/auth_models.dart';
 import '../../auth/services/auth_service.dart';
 import '../../../widgets/empty_state.dart';
 import '../../../widgets/error_state.dart';
@@ -13,6 +14,8 @@ import '../data/booking_api.dart';
 import '../data/catalog_api.dart';
 import '../data/location_api.dart';
 import '../models/booking_models.dart';
+import '../pages/booking_detail_page.dart';
+import '../widgets/booking_verification_dialog.dart';
 
 class BookingFlowPage extends StatefulWidget {
   const BookingFlowPage({super.key});
@@ -33,14 +36,15 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   List<ServiceCategory> _categories = [];
   List<ServiceSubcategory> _subcategories = [];
   List<ServicePackage> _packages = [];
+  List<CatalogServiceItem> _catalogServices = [];
   List<VendorInfo> _vendors = [];
-  List<VendorServiceOffering> _vendorServices = [];
   List<String> _slots = [];
   List<CustomerAddress> _addresses = [];
 
   ServiceCategory? _selectedCategory;
   ServiceSubcategory? _selectedSubcategory;
   ServicePackage? _selectedPackage;
+  CatalogServiceItem? _selectedCatalogService;
   VendorInfo? _selectedVendor;
   VendorServiceOffering? _selectedVendorService;
   int? _vendorProfileId;
@@ -52,6 +56,8 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
 
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressLine1Controller = TextEditingController();
   final TextEditingController _cityController = TextEditingController();
   final TextEditingController _stateController = TextEditingController();
@@ -72,6 +78,8 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   void dispose() {
     _searchController.dispose();
     _notesController.dispose();
+    _nameController.dispose();
+    _phoneController.dispose();
     _addressLine1Controller.dispose();
     _cityController.dispose();
     _stateController.dispose();
@@ -109,8 +117,11 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
       );
       if (_subcategories.isEmpty) {
         _packages = await _catalogApi.getPackages(categoryId: category.id);
+        _catalogServices = await _catalogApi.getServices(categoryId: category.id);
+        _step = 2;
+      } else {
+        _step = 1;
       }
-      _step = 1;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -136,13 +147,19 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
         _selectedAddress;
   }
 
-  Future<void> _loadVendorsForSelection({int? subcategoryId}) async {
+  Future<void> _loadVendorsForSelection({
+    int? subcategoryId,
+    int? serviceId,
+  }) async {
     final CustomerAddress? address = await _resolveBookingAddress();
     _selectedAddress = address;
 
     final double? latitude = address?.latitude;
     final double? longitude = address?.longitude;
-    final String? pincode = address?.pincode;
+    final String? pincode = address?.pincode ??
+        (_pincodeController.text.trim().isNotEmpty
+            ? _pincodeController.text.trim()
+            : null);
 
     _usingLocationForVendors =
         latitude != null && longitude != null || (pincode?.isNotEmpty ?? false);
@@ -150,6 +167,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     _vendors = await _catalogApi.getVendors(
       categoryId: _selectedCategory?.id,
       subcategoryId: subcategoryId ?? _selectedSubcategory?.id,
+      serviceId: serviceId ?? _selectedCatalogService?.id,
       latitude: latitude,
       longitude: longitude,
       pincode: pincode,
@@ -164,10 +182,28 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     });
     try {
       _packages = await _catalogApi.getPackages(subcategoryId: sub.id);
-      if (_packages.isEmpty) {
-        await _loadVendorsForSelection(subcategoryId: sub.id);
-        _step = 2;
-      }
+      _catalogServices = await _catalogApi.getServices(subcategoryId: sub.id);
+      _step = 2;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _selectCatalogService(CatalogServiceItem service) async {
+    setState(() {
+      _selectedCatalogService = service;
+      _selectedPackage = null;
+      _loading = true;
+      _error = null;
+    });
+    try {
+      await _loadVendorsForSelection(
+        subcategoryId: service.subcategoryId,
+        serviceId: service.id,
+      );
+      _step = 3;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -178,6 +214,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   Future<void> _selectPackage(ServicePackage pkg) async {
     setState(() {
       _selectedPackage = pkg;
+      _selectedCatalogService = null;
       _loading = true;
       _error = null;
     });
@@ -185,7 +222,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
       await _loadVendorsForSelection(
         subcategoryId: _selectedSubcategory?.id ?? pkg.subcategoryId,
       );
-      _step = 2;
+      _step = 3;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -196,40 +233,60 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   Future<void> _selectVendor(VendorInfo vendor) async {
     setState(() {
       _selectedVendor = vendor;
-      _selectedVendorService = null;
       _loading = true;
       _error = null;
     });
     try {
       _vendorProfileId = await _catalogApi.getVendorProfileId(vendor.id);
-      _vendorServices = await _catalogApi.getVendorServices(
+      final List<VendorServiceOffering> vendorServices =
+          await _catalogApi.getVendorServices(
         vendorId: vendor.id,
         categoryId: _selectedCategory?.id,
         subcategoryId: _selectedSubcategory?.id,
       );
-      if (_vendorServices.isEmpty) {
+      if (vendorServices.isEmpty) {
         _error = 'This vendor has no services listed for the selected category.';
         return;
       }
-      _step = 3;
-    } catch (e) {
-      _error = e.toString();
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
 
-  Future<void> _selectVendorService(VendorServiceOffering service) async {
-    setState(() {
-      _selectedVendorService = service;
-      _loading = true;
-      _error = null;
-    });
-    try {
-      _addresses = await _locationApi.getAddresses();
-      _selectedAddress =
-          _addresses.where((a) => a.isDefault).firstOrNull ?? _addresses.firstOrNull;
+      final int? targetSubcategoryId =
+          _selectedSubcategory?.id ?? _selectedPackage?.subcategoryId;
+      _selectedVendorService = vendorServices
+              .where((s) =>
+                  _selectedCatalogService != null &&
+                  s.serviceId == _selectedCatalogService!.id)
+              .firstOrNull ??
+          vendorServices
+              .where((s) => s.subCategoryId == targetSubcategoryId)
+              .firstOrNull ??
+          vendorServices.first;
+
       _selectedDate = DateTime.now().add(const Duration(days: 1));
+
+      if (AuthService.instance.isAuthenticated) {
+        try {
+          _addresses = await _locationApi.getAddresses();
+          _selectedAddress =
+              _addresses.where((a) => a.isDefault).firstOrNull ??
+                  _addresses.firstOrNull;
+        } catch (_) {
+          _addresses = [];
+        }
+        final CustomerProfile? profile = AuthService.instance.profile;
+        if (profile != null) {
+          if (_nameController.text.trim().isEmpty) {
+            _nameController.text = profile.fullName;
+          }
+          if (_phoneController.text.trim().isEmpty) {
+            _phoneController.text = profile.phone;
+          }
+        }
+      } else {
+        _addresses = [];
+        _selectedAddress = null;
+        _showNewAddressForm = true;
+      }
+
       _step = 4;
       await _loadSlots();
     } catch (e) {
@@ -268,95 +325,110 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _goToReview() async {
-    if (_selectedAddress == null) {
+  bool _validateDetailsForm() {
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add a service address.')),
+        const SnackBar(content: Text('Please enter your full name.')),
       );
-      return;
+      return false;
+    }
+    final String phone = _phoneController.text.trim();
+    if (!RegExp(r'^[6-9][0-9]{9}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid 10-digit mobile number.')),
+      );
+      return false;
     }
     if (_selectedDate == null || _selectedSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select date and time.')),
       );
-      return;
+      return false;
     }
-
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final Map<String, dynamic> calc = await _bookingApi.calculateOrder(
-        addressId: _selectedAddress!.id,
-        packages: [
-          {
-            'packageId': _selectedPackage?.numericId ?? 0,
-            'packageAmount': _selectedServicePrice,
-            'quantity': 1,
-          },
-        ],
+    if (_selectedAddress == null &&
+        (_addressLine1Controller.text.trim().isEmpty ||
+            _cityController.text.trim().isEmpty ||
+            _stateController.text.trim().isEmpty ||
+            _pincodeController.text.trim().isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all address fields.')),
       );
-      _totalAmount = (calc['totalAmount'] as num?)?.toDouble() ??
-          _selectedServicePrice;
-      _step = 5;
-    } catch (e) {
-      _totalAmount = _selectedServicePrice;
-      _step = 5;
-    } finally {
-      if (mounted) setState(() => _loading = false);
+      return false;
     }
+    return true;
   }
 
-  Future<void> _confirmBooking() async {
-    if (_selectedAddress == null ||
-        _selectedDate == null ||
-        _selectedSlot == null) {
-      return;
+  Future<void> _ensureAddressSaved() async {
+    if (_selectedAddress != null) return;
+
+    final CustomerAddress address = await _locationApi.createAddress(
+      label: _addressLabel,
+      addressLine1: _addressLine1Controller.text.trim(),
+      city: _cityController.text.trim(),
+      state: _stateController.text.trim(),
+      pincode: _pincodeController.text.trim(),
+    );
+    _addresses = [..._addresses, address];
+    _selectedAddress = address;
+    _showNewAddressForm = false;
+  }
+
+  Future<void> _onConfirmPressed() async {
+    if (!_validateDetailsForm()) return;
+
+    final String phone = _phoneController.text.trim();
+    final String name = _nameController.text.trim();
+
+    if (!AuthService.instance.isAuthenticated) {
+      final bool? loggedIn = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => BookingLoginOtpDialog(mobile: phone),
+      );
+      if (loggedIn != true || !mounted) return;
+
+      try {
+        await AuthService.instance.updateProfile(fullName: name);
+      } catch (_) {}
     }
 
-    setState(() => _submitting = true);
-    try {
-      final List<String> parts = _selectedSlot!.split('-');
-      final String startTime = parts.first.trim();
-      final List<String> timeParts = startTime.split(':');
-      final DateTime scheduled = DateTime(
-        _selectedDate!.year,
-        _selectedDate!.month,
-        _selectedDate!.day,
-        int.parse(timeParts[0]),
-        int.parse(timeParts[1]),
-      );
+    if (!mounted) return;
 
-      final List<Map<String, dynamic>> items = [];
-      if (_selectedPackage != null && _selectedPackage!.numericId > 0) {
-        items.add({
-          'package_id': _selectedPackage!.numericId,
-          'quantity': 1,
-          'unit_price': _selectedPackage!.price,
-        });
-      } else if (_selectedVendorService != null) {
-        items.add({
-          'subcategory_id': _selectedVendorService!.subCategoryId,
-          'quantity': 1,
-          'unit_price': _selectedVendorService!.effectivePrice,
-        });
-      } else if (_selectedSubcategory != null) {
-        items.add({
-          'subcategory_id': _selectedSubcategory!.id,
-          'quantity': 1,
-          'unit_price': _selectedServicePrice,
-        });
+    final bool? securityVerified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const BookingSecurityOtpDialog(),
+    );
+    if (securityVerified != true || !mounted) return;
+
+    setState(() {
+      _submitting = true;
+      _loading = true;
+    });
+
+    try {
+      await _ensureAddressSaved();
+
+      try {
+        final Map<String, dynamic> calc = await _bookingApi.calculateOrder(
+          addressId: _selectedAddress!.id,
+          packages: [
+            {
+              'packageId': _selectedPackage?.numericId ?? 0,
+              'packageAmount': _selectedServicePrice,
+              'quantity': 1,
+            },
+          ],
+        );
+        _totalAmount = (calc['totalAmount'] as num?)?.toDouble() ??
+            _selectedServicePrice;
+      } catch (_) {
+        _totalAmount = _selectedServicePrice;
       }
 
-      _confirmation = await _bookingApi.createBooking(
-        addressId: _selectedAddress!.id,
-        paymentMethod: 'COD',
-        items: items,
-        scheduledAt: scheduled,
-        vendorProfileId: _vendorProfileId,
-      );
-      _step = 6;
+      await _createBooking();
+      if (!mounted || _confirmation == null) return;
+      await _showConfirmationDialog();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -364,8 +436,158 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
         );
       }
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+          _loading = false;
+        });
+      }
     }
+  }
+
+  Future<void> _createBooking() async {
+    if (_selectedAddress == null ||
+        _selectedDate == null ||
+        _selectedSlot == null) {
+      return;
+    }
+
+    final List<String> parts = _selectedSlot!.split('-');
+    final String startTime = parts.first.trim();
+    final List<String> timeParts = startTime.split(':');
+    final DateTime scheduled = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      int.parse(timeParts[0]),
+      int.parse(timeParts[1]),
+    );
+
+    final List<Map<String, dynamic>> items = [];
+    if (_selectedPackage != null && _selectedPackage!.numericId > 0) {
+      items.add({
+        'package_id': _selectedPackage!.numericId,
+        'quantity': 1,
+        'unit_price': _selectedPackage!.price,
+      });
+    } else if (_selectedVendorService != null) {
+      items.add({
+        'subcategory_id': _selectedVendorService!.subCategoryId,
+        'quantity': 1,
+        'unit_price': _selectedVendorService!.effectivePrice,
+      });
+    } else if (_selectedSubcategory != null) {
+      items.add({
+        'subcategory_id': _selectedSubcategory!.id,
+        'quantity': 1,
+        'unit_price': _selectedServicePrice,
+      });
+    }
+
+    _confirmation = await _bookingApi.createBooking(
+      addressId: _selectedAddress!.id,
+      paymentMethod: 'COD',
+      items: items,
+      scheduledAt: scheduled,
+      vendorProfileId: _vendorProfileId,
+      catalogServiceId:
+          _selectedCatalogService?.id ?? _selectedVendorService?.serviceId,
+    );
+  }
+
+  Future<void> _showConfirmationDialog() async {
+    final BookingDetailData detail = BookingDetailData(
+      orderId: _confirmation?.orderId ?? '',
+      status: _confirmation?.status ?? 'PENDING',
+      serviceName: _selectedServiceName,
+      vendorName: _selectedVendor?.businessName ?? '',
+      date: _selectedDate != null
+          ? DateFormat('EEE, d MMM yyyy').format(_selectedDate!)
+          : '',
+      time: _selectedSlot ?? '',
+      address: _selectedAddress?.fullAddress ??
+          _buildGuestAddressPreview(),
+      amount: _totalAmount > 0 ? _totalAmount : _selectedServicePrice,
+      vendorPhotoUrl: _selectedVendor?.photoUrl,
+      vendorRating: _selectedVendor?.avgRating,
+      customerName: _nameController.text.trim(),
+      customerPhone: _phoneController.text.trim(),
+    );
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_circle_rounded,
+              color: AppColors.success,
+              size: 56,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Booking Confirmed',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 20,
+                color: AppColors.heading,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Booking ID: ${detail.orderId}',
+              style: const TextStyle(color: AppColors.mutedText, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              detail.serviceName,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontWeight: FontWeight.w700,
+                color: AppColors.heading,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pop();
+            },
+            child: const Text('Go Home'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute<void>(
+                  builder: (context) => BookingDetailPage(booking: detail),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.royalBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('View Booking'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _buildGuestAddressPreview() {
+    final parts = <String>[
+      _addressLine1Controller.text.trim(),
+      _cityController.text.trim(),
+      _stateController.text.trim(),
+      _pincodeController.text.trim(),
+    ].where((p) => p.isNotEmpty);
+    return parts.join(', ');
   }
 
   Future<void> _saveNewAddress() async {
@@ -413,7 +635,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
         title: Text(_stepTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: _step > 0 && _step < 6 ? _goBack : () => Navigator.pop(context),
+          onPressed: _step > 0 ? _goBack : () => Navigator.pop(context),
         ),
       ),
       body: Row(
@@ -425,7 +647,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                     ? ErrorState(message: _error!, onRetry: _loadCategories)
                     : _buildStepContent(),
           ),
-          if (desktop && _step < 6) _buildSummaryPanel(),
+          if (desktop && _step <= 4) _buildSummaryPanel(),
         ],
       ),
     );
@@ -434,28 +656,22 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   String get _stepTitle {
     switch (_step) {
       case 0:
-        return 'Select Service';
+        return 'Select Category';
       case 1:
-        if (_subcategories.isNotEmpty && _selectedSubcategory == null) {
-          return 'Choose Service';
-        }
-        return 'Choose Package';
+        return 'Select Subcategory';
       case 2:
-        return 'Select Vendor';
+        return 'Select Service';
       case 3:
-        return 'Choose Service';
+        return 'Select Vendor';
       case 4:
         return 'Booking Details';
-      case 5:
-        return 'Review Booking';
-      case 6:
-        return 'Booking Confirmed';
       default:
         return 'Book a Service';
     }
   }
 
   String get _selectedServiceName =>
+      _selectedCatalogService?.name ??
       _selectedVendorService?.title ??
       _selectedPackage?.title ??
       _selectedSubcategory?.name ??
@@ -464,23 +680,35 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
 
   double get _selectedServicePrice =>
       _selectedVendorService?.effectivePrice ??
+      _selectedVendor?.servicePrice ??
       _selectedPackage?.price ??
       0;
 
   void _goBack() {
     setState(() {
       _error = null;
-      if (_step == 1 && _selectedSubcategory != null) {
+      if (_step == 2 && _subcategories.isEmpty) {
+        _selectedCategory = null;
+        _packages = [];
+        _step = 0;
+        return;
+      }
+      if (_step == 2 && _selectedSubcategory != null) {
         _selectedSubcategory = null;
         _packages = [];
+        _catalogServices = [];
+        _selectedCatalogService = null;
+        _step = 1;
         return;
       }
       if (_step == 3) {
+        _selectedPackage = null;
+        _selectedCatalogService = null;
+        _vendors = [];
         _selectedVendor = null;
-        _vendorServices = [];
-        _selectedVendorService = null;
       }
       if (_step == 4) {
+        _selectedVendor = null;
         _selectedVendorService = null;
       }
       if (_step > 0) {
@@ -494,17 +722,13 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
       case 0:
         return _buildCategoryStep();
       case 1:
-        return _buildPackageStep();
+        return _buildSubcategoryStep();
       case 2:
-        return _buildVendorStep();
+        return _buildServiceStep();
       case 3:
-        return _buildVendorServicesStep();
+        return _buildVendorStep();
       case 4:
         return _buildDetailsStep();
-      case 5:
-        return _buildReviewStep();
-      case 6:
-        return _buildConfirmationStep();
       default:
         return const SizedBox.shrink();
     }
@@ -570,46 +794,70 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     );
   }
 
-  Widget _buildPackageStep() {
-    if (_subcategories.isNotEmpty && _selectedSubcategory == null) {
-      return GridView.builder(
-        padding: const EdgeInsets.all(20),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: MediaQuery.sizeOf(context).width >= 700 ? 3 : 2,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: 0.82,
-        ),
-        itemCount: _subcategories.length,
-        itemBuilder: (context, index) {
-          final ServiceSubcategory sub = _subcategories[index];
-          return _SelectableCard(
-            title: sub.name,
-            subtitle: sub.description,
-            imageUrl: sub.iconUrl,
-            layout: _CardLayout.grid,
-            onTap: () => _selectSubcategory(sub),
-          );
-        },
+  Widget _buildSubcategoryStep() {
+    if (_subcategories.isEmpty) {
+      return EmptyState(
+        title: 'No subcategories available',
+        subtitle: 'Try a different category.',
+        icon: Icons.category_outlined,
+        actionLabel: 'Go Back',
+        onAction: _goBack,
       );
     }
 
-    if (_packages.isEmpty) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(20),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: MediaQuery.sizeOf(context).width >= 700 ? 3 : 2,
+        crossAxisSpacing: 14,
+        mainAxisSpacing: 14,
+        childAspectRatio: 0.82,
+      ),
+      itemCount: _subcategories.length,
+      itemBuilder: (context, index) {
+        final ServiceSubcategory sub = _subcategories[index];
+        return _SelectableCard(
+          title: sub.name,
+          subtitle: sub.description,
+          imageUrl: sub.iconUrl,
+          layout: _CardLayout.grid,
+          onTap: () => _selectSubcategory(sub),
+        );
+      },
+    );
+  }
+
+  Widget _buildServiceStep() {
+    if (_catalogServices.isEmpty && _packages.isEmpty) {
       return EmptyState(
-        title: 'No packages available',
-        subtitle: 'Try a different service category.',
+        title: 'No services available',
+        subtitle: 'Try a different subcategory.',
         icon: Icons.inventory_2_outlined,
         actionLabel: 'Go Back',
         onAction: _goBack,
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _packages.length,
-      itemBuilder: (context, index) {
-        final ServicePackage pkg = _packages[index];
-        return Padding(
+    final List<Widget> items = [];
+
+    for (final CatalogServiceItem service in _catalogServices) {
+      items.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _SelectableCard(
+            title: service.name,
+            imageUrl: service.imageUrl,
+            selected: _selectedCatalogService?.id == service.id,
+            layout: _CardLayout.list,
+            onTap: () => _selectCatalogService(service),
+          ),
+        ),
+      );
+    }
+
+    for (final ServicePackage pkg in _packages) {
+      items.add(
+        Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _SelectableCard(
             title: pkg.title,
@@ -620,8 +868,13 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
             layout: _CardLayout.list,
             onTap: () => _selectPackage(pkg),
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: items,
     );
   }
 
@@ -634,7 +887,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
             : 'Add a service address or log in to find nearby providers.',
         icon: Icons.person_search_outlined,
         actionLabel: 'Choose Another Service',
-        onAction: () => setState(() => _step = 0),
+        onAction: () => setState(() => _step = 2),
       );
     }
 
@@ -690,6 +943,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
             title: vendor.businessName,
             subtitle: meta.join(' • '),
             imageUrl: vendor.photoUrl,
+            price: vendor.servicePriceLabel,
             selected: _selectedVendor?.id == vendor.id,
             layout: _CardLayout.list,
             onTap: () => _selectVendor(vendor),
@@ -699,55 +953,50 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     );
   }
 
-  Widget _buildVendorServicesStep() {
-    if (_vendorServices.isEmpty) {
-      return EmptyState(
-        title: 'No services available',
-        subtitle: 'This vendor has not listed services for this category yet.',
-        icon: Icons.handyman_outlined,
-        actionLabel: 'Choose Another Vendor',
-        onAction: _goBack,
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: _vendorServices.length,
-      itemBuilder: (context, index) {
-        final VendorServiceOffering service = _vendorServices[index];
-        final String priceLabel = service.negotiable
-            ? 'Starting from ₹${service.effectivePrice.toStringAsFixed(0)}'
-            : '₹${service.effectivePrice.toStringAsFixed(0)}';
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: _SelectableCard(
-            title: service.title,
-            subtitle: service.description,
-            imageUrl: service.imageUrl,
-            price: priceLabel,
-            badge: service.pricingLabel,
-            badgeColor: service.negotiable
-                ? const Color(0xFFFFF3E0)
-                : const Color(0xFFE8F5E9),
-            badgeTextColor: service.negotiable
-                ? const Color(0xFFE65100)
-                : const Color(0xFF2E7D32),
-            selected: _selectedVendorService?.id == service.id,
-            layout: _CardLayout.list,
-            onTap: () => _selectVendorService(service),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildDetailsStep() {
+    final bool isLoggedIn = AuthService.instance.isAuthenticated;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const Text(
+            'Your Details',
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              color: AppColors.heading,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _nameController,
+            decoration: InputDecoration(
+              labelText: 'Full Name',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _phoneController,
+            keyboardType: TextInputType.phone,
+            maxLength: 10,
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              counterText: '',
+              prefixText: '+91 ',
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
           const Text(
             'Select Date',
             style: TextStyle(
@@ -812,19 +1061,20 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
                   color: AppColors.heading,
                 ),
               ),
-              TextButton(
-                onPressed: () =>
-                    setState(() => _showNewAddressForm = !_showNewAddressForm),
-                child: Text(_showNewAddressForm ? 'Cancel' : 'Add New'),
-              ),
+              if (isLoggedIn)
+                TextButton(
+                  onPressed: () =>
+                      setState(() => _showNewAddressForm = !_showNewAddressForm),
+                  child: Text(_showNewAddressForm ? 'Cancel' : 'Add New'),
+                ),
             ],
           ),
-          if (_showNewAddressForm) ...[
-            _buildAddressForm(),
+          if (!isLoggedIn || _showNewAddressForm) ...[
+            _buildAddressForm(saveEnabled: isLoggedIn),
           ] else if (_addresses.isEmpty) ...[
             const Text('No saved addresses. Please add one.'),
             const SizedBox(height: 10),
-            _buildAddressForm(),
+            _buildAddressForm(saveEnabled: true),
           ] else ...[
             ..._addresses.map((address) {
               return RadioListTile<CustomerAddress>(
@@ -851,26 +1101,32 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           ),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: _goToReview,
+            onPressed: _submitting ? null : _onConfirmPressed,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.royalBlue,
-              foregroundColor: Colors.white,
-              minimumSize: const Size.fromHeight(50),
+              backgroundColor: AppColors.accentGold,
+              foregroundColor: AppColors.navy,
+              minimumSize: const Size.fromHeight(52),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text(
-              'Continue to Review',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
+            child: _submitting
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2.4),
+                  )
+                : const Text(
+                    'CONFIRM BOOKING',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAddressForm() {
+  Widget _buildAddressForm({required bool saveEnabled}) {
     return Column(
       children: [
         DropdownButtonFormField<String>(
@@ -932,132 +1188,17 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           ),
         ),
         const SizedBox(height: 10),
-        ElevatedButton(
-          onPressed: _saveNewAddress,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.royalBlue,
-            foregroundColor: Colors.white,
+        if (saveEnabled)
+          ElevatedButton(
+            onPressed: _saveNewAddress,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.royalBlue,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Address'),
           ),
-          child: const Text('Save Address'),
-        ),
         const SizedBox(height: 16),
       ],
-    );
-  }
-
-  Widget _buildReviewStep() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _SummaryCard(
-            service: _selectedServiceName,
-            vendor: _selectedVendor?.businessName ?? '',
-            date: _selectedDate != null
-                ? DateFormat('EEE, d MMM yyyy').format(_selectedDate!)
-                : '',
-            time: _selectedSlot ?? '',
-            address: _selectedAddress?.fullAddress ?? '',
-            amount: _totalAmount,
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: _submitting ? null : _confirmBooking,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accentGold,
-              foregroundColor: AppColors.navy,
-              minimumSize: const Size.fromHeight(52),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _submitting
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2.4),
-                  )
-                : const Text(
-                    'CONFIRM BOOKING',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildConfirmationStep() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: const BoxDecoration(
-                color: Color(0x1416805A),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: AppColors.success,
-                size: 48,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Booking Confirmed',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w900,
-                color: AppColors.heading,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Booking ID: ${_confirmation?.orderId ?? ''}',
-              style: const TextStyle(
-                color: AppColors.mutedText,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 24),
-            _SummaryCard(
-              service: _selectedServiceName,
-              vendor: _selectedVendor?.businessName ?? '',
-              date: _selectedDate != null
-                  ? DateFormat('EEE, d MMM yyyy').format(_selectedDate!)
-                  : '',
-              time: _selectedSlot ?? '',
-              address: _selectedAddress?.fullAddress ?? '',
-              amount: _totalAmount,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Go Home'),
-                ),
-                const SizedBox(width: 12),
-                ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.royalBlue,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Done'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 

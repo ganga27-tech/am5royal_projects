@@ -40,9 +40,35 @@ class ServiceSubcategory {
     return ServiceSubcategory(
       id: json['id'] as int,
       name: json['name'] as String? ?? '',
-      categoryId: json['category_id'] as int? ?? 0,
+      categoryId: json['category_id'] as int? ?? json['main_category_id'] as int? ?? 0,
       description: json['description'] as String?,
       iconUrl: json['icon_url'] as String?,
+    );
+  }
+}
+
+class CatalogServiceItem {
+  const CatalogServiceItem({
+    required this.id,
+    required this.name,
+    required this.categoryId,
+    required this.subcategoryId,
+    this.imageUrl,
+  });
+
+  final int id;
+  final String name;
+  final int categoryId;
+  final int subcategoryId;
+  final String? imageUrl;
+
+  factory CatalogServiceItem.fromJson(Map<String, dynamic> json) {
+    return CatalogServiceItem(
+      id: json['id'] as int,
+      name: json['name'] as String? ?? '',
+      categoryId: json['main_category_id'] as int? ?? 0,
+      subcategoryId: json['sub_category_id'] as int? ?? 0,
+      imageUrl: json['image_url'] as String?,
     );
   }
 }
@@ -112,6 +138,8 @@ class VendorInfo {
     this.approxVisitCharge,
     this.distanceKm,
     this.leadsConsumed,
+    this.servicePrice,
+    this.serviceNegotiable = false,
   });
 
   final int id;
@@ -126,6 +154,8 @@ class VendorInfo {
   final double? approxVisitCharge;
   final double? distanceKm;
   final int? leadsConsumed;
+  final double? servicePrice;
+  final bool serviceNegotiable;
 
   factory VendorInfo.fromJson(Map<String, dynamic> json) {
     return VendorInfo(
@@ -141,7 +171,15 @@ class VendorInfo {
       approxVisitCharge: (json['approx_visit_charge'] as num?)?.toDouble(),
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
       leadsConsumed: json['leads_consumed'] as int?,
+      servicePrice: (json['service_price'] as num?)?.toDouble(),
+      serviceNegotiable: json['service_negotiable'] as bool? ?? false,
     );
+  }
+
+  String? get servicePriceLabel {
+    if (servicePrice == null || servicePrice! <= 0) return null;
+    final String amount = '₹${servicePrice!.toStringAsFixed(0)}';
+    return serviceNegotiable ? 'From $amount' : amount;
   }
 }
 
@@ -251,15 +289,69 @@ class BookingConfirmation {
   const BookingConfirmation({
     required this.orderId,
     required this.message,
+    this.status = 'PENDING',
   });
 
   final String orderId;
   final String message;
+  final String status;
 
   factory BookingConfirmation.fromJson(Map<String, dynamic> json) {
     return BookingConfirmation(
       orderId: json['orderId'] as String? ?? '',
       message: json['message'] as String? ?? 'Booking confirmed',
+      status: json['status'] as String? ?? 'PENDING',
     );
+  }
+}
+
+class BookingDetailData {
+  const BookingDetailData({
+    required this.orderId,
+    required this.status,
+    required this.serviceName,
+    required this.vendorName,
+    required this.date,
+    required this.time,
+    required this.address,
+    required this.amount,
+    this.vendorPhotoUrl,
+    this.vendorRating,
+    this.vendorPhone,
+    this.customerName,
+    this.customerPhone,
+  });
+
+  final String orderId;
+  final String status;
+  final String serviceName;
+  final String vendorName;
+  final String date;
+  final String time;
+  final String address;
+  final double amount;
+  final String? vendorPhotoUrl;
+  final double? vendorRating;
+  final String? vendorPhone;
+  final String? customerName;
+  final String? customerPhone;
+
+  String get displayStatus {
+    final String normalized = status.toUpperCase();
+    if (normalized == 'ACCEPTED' ||
+        normalized == 'CONFIRMED' ||
+        normalized == 'IN_PROGRESS' ||
+        normalized == 'COMPLETED') {
+      return 'Confirmed';
+    }
+    return 'Pending';
+  }
+
+  bool get isConfirmed {
+    final String normalized = status.toUpperCase();
+    return normalized == 'ACCEPTED' ||
+        normalized == 'CONFIRMED' ||
+        normalized == 'IN_PROGRESS' ||
+        normalized == 'COMPLETED';
   }
 }

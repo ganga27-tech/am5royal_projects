@@ -73,6 +73,8 @@ import '../../features/orders/domain/repositories/orders_repository.dart';
 import '../../features/orders/domain/usecases/get_vendor_orders_usecase.dart';
 import '../../features/orders/domain/usecases/start_service_usecase.dart';
 import '../../features/orders/domain/usecases/complete_service_usecase.dart';
+import '../../features/orders/domain/usecases/accept_booking_usecase.dart';
+import '../../features/orders/domain/usecases/reject_booking_usecase.dart';
 import '../../features/orders/presentation/bloc/orders_bloc.dart';
 
 import '../../features/profile/data/repositories/profile_repository.dart';
@@ -150,12 +152,16 @@ Future<void> init() async {
       getVendorOrdersUseCase: sl(),
       startServiceUseCase: sl(),
       completeServiceUseCase: sl(),
+      acceptBookingUseCase: sl(),
+      rejectBookingUseCase: sl(),
     ),
   );
 
   sl.registerLazySingleton(() => GetVendorOrdersUseCase(sl()));
   sl.registerLazySingleton(() => StartServiceUseCase(sl()));
   sl.registerLazySingleton(() => CompleteServiceUseCase(sl()));
+  sl.registerLazySingleton(() => AcceptBookingUseCase(sl()));
+  sl.registerLazySingleton(() => RejectBookingUseCase(sl()));
 
   sl.registerLazySingleton<OrdersRepository>(
     () => OrdersRepositoryImpl(sl()),

@@ -233,6 +233,8 @@ class VendorBasicInfo(BaseModel):
     operating_city: Optional[str] = None
     distance_km: Optional[float] = None
     leads_consumed: Optional[int] = None
+    service_price: Optional[float] = None
+    service_negotiable: Optional[bool] = False
     
     model_config = ConfigDict(from_attributes=True)
 

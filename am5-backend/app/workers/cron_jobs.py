@@ -173,6 +173,16 @@ async def record_monthly_vendor_histories():
         await session.commit()
         logger.info(f"Recorded monthly history for {len(vendors)} vendors for month {month_str}.")
 
+async def process_booking_acceptance_timeouts():
+    """Reassign bookings when vendors do not accept within the timeout window."""
+    from app.services.booking_assignment_service import process_pending_booking_timeouts
+    try:
+        count = await process_pending_booking_timeouts()
+        if count:
+            logger.info("Booking timeout cron reassigned %s orders", count)
+    except Exception as e:
+        logger.error("Booking timeout cron failed: %s", e)
+
 scheduler = AsyncIOScheduler()
 
 def setup_cron_jobs():
@@ -181,6 +191,7 @@ def setup_cron_jobs():
     scheduler.add_job(send_afternoon_service_reminders, 'cron', hour=14, minute=0, timezone='Asia/Kolkata')
     scheduler.add_job(send_evening_service_reminders, 'cron', hour=17, minute=0, timezone='Asia/Kolkata')
     scheduler.add_job(record_monthly_vendor_histories, 'cron', day=1, hour=0, minute=0, timezone='Asia/Kolkata')
+    scheduler.add_job(process_booking_acceptance_timeouts, 'interval', minutes=5)
     
     scheduler.start()
-    logger.info("APScheduler started with vendor reminder and history cron jobs.")
+    logger.info("APScheduler started with vendor reminder, history, and booking timeout cron jobs.")

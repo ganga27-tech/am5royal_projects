@@ -4,9 +4,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, select, delete
 
 from app.db.session import get_db
-from app.schemas.auth import SendOTPRequest, VerifyOTPRequest, TokenResponse
+from app.schemas.auth import (
+    SendOTPRequest,
+    VerifyOTPRequest,
+    TokenResponse,
+    BookingSecurityVerifyRequest,
+    BookingSecurityResponse,
+)
 from app.core.security import create_access_token
-from app.dependencies.auth import get_current_token_payload
+from app.dependencies.auth import get_current_token_payload, get_current_customer
 from app.schemas.vendor_registration import VendorRegistrationRequest
 from app.models.user_location import User
 from app.models.vendor import Vendor, VendorSubCategory
@@ -310,6 +316,45 @@ async def verify_customer_otp(request: VerifyOTPRequest, background_tasks: Backg
     return TokenResponse(
         access_token=access_token,
         is_new_user=is_new_user
+    )
+
+
+# Static OTP until booking-security SMS template is configured.
+BOOKING_SECURITY_OTP_STATIC = "12345"
+
+
+@router.post("/customer/booking-security/send-otp")
+async def send_booking_security_otp(
+    current_customer: CustomerModel = Depends(get_current_customer),
+):
+    """
+    Send a security OTP before confirming a booking.
+    SMS delivery is stubbed until the dedicated template is ready.
+    """
+    # TODO: send SMS via otp_service when template is available
+    return {
+        "message": "Security OTP sent successfully",
+        "customer_id": current_customer.id,
+    }
+
+
+@router.post(
+    "/customer/booking-security/verify-otp",
+    response_model=BookingSecurityResponse,
+)
+async def verify_booking_security_otp(
+    request: BookingSecurityVerifyRequest,
+    current_customer: CustomerModel = Depends(get_current_customer),
+):
+    """
+    Verify the booking security OTP before order creation.
+    """
+    if request.otp != BOOKING_SECURITY_OTP_STATIC:
+        raise HTTPException(status_code=400, detail="Invalid security OTP")
+
+    return BookingSecurityResponse(
+        message="Security verification successful",
+        verified=True,
     )
 
 

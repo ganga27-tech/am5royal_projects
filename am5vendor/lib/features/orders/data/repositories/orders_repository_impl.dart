@@ -35,6 +35,30 @@ class OrdersRepositoryImpl implements OrdersRepository {
   }
 
   @override
+  Future<Either<Failure, void>> acceptBooking(String orderId) async {
+    try {
+      await remoteDataSource.acceptBooking(orderId);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> rejectBooking(String orderId, {String? reason}) async {
+    try {
+      await remoteDataSource.rejectBooking(orderId, reason: reason);
+      return const Right(null);
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<Either<Failure, List<OrderEntity>>> getVendorOrders({String? statusFilter}) async {
     try {
       final orders = await remoteDataSource.getVendorOrders(statusFilter: statusFilter);

@@ -128,20 +128,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _handleBookService() async {
-    if (!widget.authService.isAuthenticated) {
-      final bool? loggedIn = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (context) => LoginPage(
-            onRegisterPressed: _handleRegister,
-            onLoginSuccess: () => setState(() {}),
-          ),
-        ),
-      );
-      if (loggedIn != true && !widget.authService.isAuthenticated) {
-        return;
-      }
-    }
-
     if (!mounted) return;
     SeoService.applyMetadata(SeoMetadata.booking);
     await Navigator.of(context).push(

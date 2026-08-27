@@ -251,9 +251,30 @@ async def get_vendors(
     )
 
     paginated = matched[skip : skip + limit]
+
+    service_price_map: dict[int, tuple[float, bool]] = {}
+    if service_id and paginated:
+        vendor_ids = [item["vendor"].id for item in paginated]
+        price_res = await db.execute(
+            select(
+                VendorService.vendor_id,
+                VendorService.price,
+                VendorService.discounted_price,
+                VendorService.negotiable,
+            ).where(
+                VendorService.vendor_id.in_(vendor_ids),
+                VendorService.service_id == service_id,
+                VendorService.is_active == True,
+            )
+        )
+        for row in price_res.fetchall():
+            effective = float(row.discounted_price or row.price or 0)
+            service_price_map[row.vendor_id] = (effective, bool(row.negotiable))
+
     response_items = []
     for item in paginated:
         vendor = item["vendor"]
+        price_info = service_price_map.get(vendor.id)
         response_items.append(
             VendorBasicInfo(
                 id=vendor.id,
@@ -272,6 +293,8 @@ async def get_vendors(
                 if item["distance_km"] is not None
                 else None,
                 leads_consumed=item["bookings_count"],
+                service_price=price_info[0] if price_info else None,
+                service_negotiable=price_info[1] if price_info else False,
             )
         )
 
@@ -545,109 +568,109 @@ async def get_category_vendors(
         )
     return response_items
 
-# @router.get("/vendors/{vendor_id}/profile-id")
-# async def get_vendor_profile_id(
-#     vendor_id: int,
-#     db: AsyncSession = Depends(get_db),
-# ):
-#     """
-#     Resolve booking vendor ID from vendors.id.
-#     Uses the current vendors schema (vendor_profiles table may not exist).
-#     """
-#     from app.models.vendor import Vendor
+@router.get("/vendors/{vendor_id}/profile-id")
+async def get_vendor_profile_id(
+    vendor_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Resolve booking vendor ID from vendors.id.
+    """
+    from app.models.vendor import Vendor
 
-#     result = await db.execute(select(Vendor).where(Vendor.id == vendor_id))
-#     vendor = result.scalar_one_or_none()
-#     if not vendor:
-#         raise HTTPException(status_code=404, detail="Vendor not found")
+    result = await db.execute(select(Vendor).where(Vendor.id == vendor_id))
+    vendor = result.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
 
-#     return {"vendor_profile_id": vendor.id}
+    return {"vendor_profile_id": vendor.id}
 
-# @router.get("/vendors/{vendor_id}/services", response_model=List[VendorServiceOffering])
-# async def get_vendor_services(
-#     vendor_id: int,
-#     category_id: Optional[int] = Query(None, description="Filter by main category ID"),
-#     subcategory_id: Optional[int] = Query(None, description="Filter by subcategory ID"),
-#     db: AsyncSession = Depends(get_db),
-# ):
-#     """
-#     Get active services offered by a vendor (price + fixed/negotiable from registration).
-#     """
-#     from app.models.vendor import Vendor, VendorService, VendorServiceMedia
-#     from app.models.catalog import Service as CatalogService
 
-#     vendor_res = await db.execute(
-#         select(Vendor).where(Vendor.id == vendor_id, Vendor.status == "active")
-#     )
-#     vendor = vendor_res.scalar_one_or_none()
-#     if not vendor:
-#         raise HTTPException(status_code=404, detail="Vendor not found")
+@router.get("/vendors/{vendor_id}/services", response_model=List[VendorServiceOffering])
+async def get_vendor_services(
+    vendor_id: int,
+    category_id: Optional[int] = Query(None, description="Filter by main category ID"),
+    subcategory_id: Optional[int] = Query(None, description="Filter by subcategory ID"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get active services offered by a vendor (price + fixed/negotiable from registration).
+    """
+    from app.models.vendor import Vendor, VendorService, VendorServiceMedia
+    from app.models.catalog import Service as CatalogService
 
-#     query = select(VendorService).where(
-#         VendorService.vendor_id == vendor_id,
-#         VendorService.is_active == True,
-#     )
-#     if category_id:
-#         query = query.where(VendorService.main_category_id == category_id)
-#     if subcategory_id:
-#         query = query.where(VendorService.sub_category_id == subcategory_id)
+    vendor_res = await db.execute(
+        select(Vendor).where(Vendor.id == vendor_id, Vendor.status == "active")
+    )
+    vendor = vendor_res.scalar_one_or_none()
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
 
-#     services_res = await db.execute(query.order_by(VendorService.id))
-#     services = services_res.scalars().all()
-#     if not services:
-#         return []
+    query = select(VendorService).where(
+        VendorService.vendor_id == vendor_id,
+        VendorService.is_active == True,
+    )
+    if category_id:
+        query = query.where(VendorService.main_category_id == category_id)
+    if subcategory_id:
+        query = query.where(VendorService.sub_category_id == subcategory_id)
 
-#     subcat_ids = {s.sub_category_id for s in services if s.sub_category_id}
-#     subcat_map = {}
-#     if subcat_ids:
-#         subcat_rows = await db.execute(
-#             select(SubcategoryModel).where(SubcategoryModel.id.in_(subcat_ids))
-#         )
-#         subcat_map = {sc.id: sc for sc in subcat_rows.scalars().all()}
+    services_res = await db.execute(query.order_by(VendorService.id))
+    services = services_res.scalars().all()
+    if not services:
+        return []
 
-#     catalog_service_ids = {s.service_id for s in services if s.service_id}
-#     catalog_service_map = {}
-#     if catalog_service_ids:
-#         catalog_rows = await db.execute(
-#             select(CatalogService).where(CatalogService.id.in_(catalog_service_ids))
-#         )
-#         catalog_service_map = {cs.id: cs for cs in catalog_rows.scalars().all()}
+    subcat_ids = {s.sub_category_id for s in services if s.sub_category_id}
+    subcat_map = {}
+    if subcat_ids:
+        subcat_rows = await db.execute(
+            select(SubcategoryModel).where(SubcategoryModel.id.in_(subcat_ids))
+        )
+        subcat_map = {sc.id: sc for sc in subcat_rows.scalars().all()}
 
-#     service_ids = [s.id for s in services]
-#     media_map: dict[int, str] = {}
-#     if service_ids:
-#         media_rows = await db.execute(
-#             select(VendorServiceMedia).where(
-#                 VendorServiceMedia.vendor_service_id.in_(service_ids),
-#                 VendorServiceMedia.media_type == "image",
-#             )
-#         )
-#         for media in media_rows.scalars().all():
-#             media_map.setdefault(media.vendor_service_id, media.media_url)
+    catalog_service_ids = {s.service_id for s in services if s.service_id}
+    catalog_service_map = {}
+    if catalog_service_ids:
+        catalog_rows = await db.execute(
+            select(CatalogService).where(CatalogService.id.in_(catalog_service_ids))
+        )
+        catalog_service_map = {cs.id: cs for cs in catalog_rows.scalars().all()}
 
-#     response_items = []
-#     for service in services:
-#         subcat = subcat_map.get(service.sub_category_id)
-#         catalog_service = catalog_service_map.get(service.service_id)
-#         image_url = media_map.get(service.id) or (
-#             catalog_service.image_url if catalog_service else None
-#         )
-#         response_items.append(
-#             VendorServiceOffering(
-#                 id=service.id,
-#                 service_id=service.service_id,
-#                 title=service.title or (catalog_service.name if catalog_service else "Service"),
-#                 description=service.description,
-#                 price=float(service.price or 0),
-#                 discounted_price=float(service.discounted_price)
-#                 if service.discounted_price
-#                 else None,
-#                 negotiable=bool(service.negotiable),
-#                 main_category_id=service.main_category_id,
-#                 sub_category_id=service.sub_category_id,
-#                 sub_category_name=subcat.name if subcat else None,
-#                 image_url=image_url,
-#             )
-#         )
+    service_ids = [s.id for s in services]
+    media_map: dict[int, str] = {}
+    if service_ids:
+        media_rows = await db.execute(
+            select(VendorServiceMedia).where(
+                VendorServiceMedia.vendor_service_id.in_(service_ids),
+                VendorServiceMedia.media_type == "image",
+            )
+        )
+        for media in media_rows.scalars().all():
+            media_map.setdefault(media.vendor_service_id, media.media_url)
 
-#     return response_items
+    response_items = []
+    for service in services:
+        subcat = subcat_map.get(service.sub_category_id)
+        catalog_service = catalog_service_map.get(service.service_id)
+        image_url = media_map.get(service.id) or (
+            catalog_service.image_url if catalog_service else None
+        )
+        response_items.append(
+            VendorServiceOffering(
+                id=service.id,
+                service_id=service.service_id,
+                title=service.title or (catalog_service.name if catalog_service else "Service"),
+                description=service.description,
+                price=float(service.price or 0),
+                discounted_price=float(service.discounted_price)
+                if service.discounted_price
+                else None,
+                negotiable=bool(service.negotiable),
+                main_category_id=service.main_category_id,
+                sub_category_id=service.sub_category_id,
+                sub_category_name=subcat.name if subcat else None,
+                image_url=image_url,
+            )
+        )
+
+    return response_items

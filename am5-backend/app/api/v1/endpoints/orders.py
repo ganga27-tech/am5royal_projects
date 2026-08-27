@@ -5,7 +5,7 @@ from datetime import date, time, timezone, datetime, timedelta
 import random
 import json
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, BackgroundTasks
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
@@ -19,6 +19,12 @@ from app.models.catalog import Package as PackageModel, ServiceSubcategory as Su
 from app.schemas.orders import OrderCreate, CalculationRequest, CalculationResponse
 from app.dependencies.auth import get_current_customer, get_current_vendor
 from app.core.rate_limit import limiter
+from app.services.booking_assignment_service import (
+    build_initial_assignment_meta,
+    notify_vendor_new_booking,
+    handle_vendor_decline_or_timeout,
+    process_pending_booking_timeouts,
+)
 
 router = APIRouter()
 
@@ -62,8 +68,9 @@ async def get_my_orders(
 async def create_order(
     request: Request,
     order_in: OrderCreate,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_customer: Customer = Depends(get_current_customer)
+    current_customer: Customer = Depends(get_current_customer),
 ):
     """
     Create a new booking (Matches PDF Page 44).
@@ -215,7 +222,8 @@ async def create_order(
         vendor_phone=vendor_phone,
         vendor_email=vendor_email,
         service_name=package.name if package else (subcategory.name if subcategory else "General Service"),
-        duration_minutes=package.duration_minutes if package else 60
+        duration_minutes=package.duration_minutes if package else 60,
+        vendor_notes=build_initial_assignment_meta(order_in.catalog_service_id),
     )
 
     db.add(new_order)
@@ -229,7 +237,98 @@ async def create_order(
     await db.commit()
     await db.refresh(new_order)
 
-    return {"message": "Order created successfully", "orderId": new_order.booking_reference}
+    if vendor_obj and resolved_vendor_id:
+        await notify_vendor_new_booking(vendor_obj, new_order, background_tasks)
+
+    return {"message": "Order created successfully", "orderId": new_order.booking_reference, "status": "PENDING"}
+
+class RejectBookingRequest(BaseModel):
+    reason: Optional[str] = None
+
+
+@router.put("/{order_id}/accept")
+@limiter.limit("10/minute")
+async def accept_booking(
+    request: Request,
+    order_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    """Vendor accepts a pending booking."""
+    result = await db.execute(
+        select(OrderModel).where(OrderModel.booking_reference == order_id)
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.vendor_id != current_vendor.id:
+        raise HTTPException(status_code=403, detail="This booking is not assigned to you")
+    if order.status not in ("PENDING", "new"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot accept booking with status {order.status}",
+        )
+
+    order.status = "ACCEPTED"
+    order.accepted_at = datetime.datetime.utcnow()
+    order.confirmed_at = datetime.datetime.utcnow()
+    await db.commit()
+    return {
+        "message": "Booking accepted successfully",
+        "orderId": order.booking_reference,
+        "status": order.status,
+    }
+
+
+@router.put("/{order_id}/reject")
+@limiter.limit("10/minute")
+async def reject_booking(
+    request: Request,
+    order_id: str,
+    body: RejectBookingRequest,
+    background_tasks: BackgroundTasks,
+    db: AsyncSession = Depends(get_db),
+    current_vendor: Vendor = Depends(get_current_vendor),
+):
+    """
+    Vendor rejects a pending booking. System reassigns to the next nearest
+    eligible vendor with price <= booked amount, or marks unassigned.
+    """
+    result = await db.execute(
+        select(OrderModel).where(OrderModel.booking_reference == order_id)
+    )
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.vendor_id != current_vendor.id:
+        raise HTTPException(status_code=403, detail="This booking is not assigned to you")
+    if order.status not in ("PENDING", "new"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot reject booking with status {order.status}",
+        )
+
+    outcome = await handle_vendor_decline_or_timeout(
+        db,
+        order,
+        declined_vendor_id=current_vendor.id,
+        reason=body.reason,
+        background_tasks=background_tasks,
+    )
+    return outcome
+
+
+@router.post("/process-pending-timeouts")
+@limiter.limit("5/minute")
+async def run_pending_booking_timeouts(
+    request: Request,
+    background_tasks: BackgroundTasks,
+):
+    """
+    Cron/manual endpoint: reassign bookings vendors did not accept within 15 minutes.
+    """
+    processed = await process_pending_booking_timeouts(background_tasks)
+    return {"processed": processed, "message": f"Processed {processed} timed-out bookings"}
 
 @router.put("/{order_id}/cancel")
 @limiter.limit("3/minute")

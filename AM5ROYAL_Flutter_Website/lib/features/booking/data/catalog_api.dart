@@ -51,9 +51,30 @@ class CatalogApi {
         .toList();
   }
 
+  Future<List<CatalogServiceItem>> getServices({
+    int? categoryId,
+    int? subcategoryId,
+  }) async {
+    final Map<String, String> params = {};
+    if (categoryId != null) {
+      params['main_category_id'] = categoryId.toString();
+    }
+    if (subcategoryId != null) {
+      params['subcategory_id'] = subcategoryId.toString();
+    }
+    final List<dynamic> data = await _client.getList(
+      '/catalog/services',
+      queryParams: params.isEmpty ? null : params,
+    );
+    return data
+        .map((e) => CatalogServiceItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   Future<List<VendorInfo>> getVendors({
     int? categoryId,
     int? subcategoryId,
+    int? serviceId,
     String? pincode,
     double? latitude,
     double? longitude,
@@ -64,6 +85,9 @@ class CatalogApi {
     }
     if (subcategoryId != null) {
       params['subcategory_id'] = subcategoryId.toString();
+    }
+    if (serviceId != null) {
+      params['service_id'] = serviceId.toString();
     }
     if (pincode != null && pincode.isNotEmpty) {
       params['pincode'] = pincode;

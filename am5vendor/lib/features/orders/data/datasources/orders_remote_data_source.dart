@@ -6,6 +6,8 @@ import '../models/order_model.dart';
 abstract class OrdersRemoteDataSource {
   Future<void> startService(String orderId, String startOtp);
   Future<void> completeService(String orderId, String endOtp);
+  Future<void> acceptBooking(String orderId);
+  Future<void> rejectBooking(String orderId, {String? reason});
   Future<List<OrderModel>> getVendorOrders({String? statusFilter});
 }
 
@@ -40,6 +42,37 @@ class OrdersRemoteDataSourceImpl implements OrdersRemoteDataSource {
       );
       if (response.statusCode != 200) {
         throw ServerException('Failed to complete service');
+      }
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Network error');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> acceptBooking(String orderId) async {
+    try {
+      final response = await client.dio.put('/orders/$orderId/accept');
+      if (response.statusCode != 200) {
+        throw ServerException('Failed to accept booking');
+      }
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Network error');
+    } catch (e) {
+      throw ServerException(e.toString());
+    }
+  }
+
+  @override
+  Future<void> rejectBooking(String orderId, {String? reason}) async {
+    try {
+      final response = await client.dio.put(
+        '/orders/$orderId/reject',
+        data: {if (reason != null && reason.isNotEmpty) 'reason': reason},
+      );
+      if (response.statusCode != 200) {
+        throw ServerException('Failed to reject booking');
       }
     } on DioException catch (e) {
       throw ServerException(e.response?.data['detail'] ?? 'Network error');

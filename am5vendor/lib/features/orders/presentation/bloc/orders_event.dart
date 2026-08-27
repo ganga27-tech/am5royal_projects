@@ -32,3 +32,20 @@ class CompleteServiceEvent extends OrdersEvent {
   @override
   List<Object?> get props => [orderId, endOtp];
 }
+
+class AcceptBookingEvent extends OrdersEvent {
+  final String orderId;
+  const AcceptBookingEvent(this.orderId);
+
+  @override
+  List<Object?> get props => [orderId];
+}
+
+class RejectBookingEvent extends OrdersEvent {
+  final String orderId;
+  final String? reason;
+  const RejectBookingEvent(this.orderId, {this.reason});
+
+  @override
+  List<Object?> get props => [orderId, reason];
+}

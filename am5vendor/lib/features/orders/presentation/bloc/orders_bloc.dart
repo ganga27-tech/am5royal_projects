@@ -5,15 +5,22 @@ import '../../domain/usecases/get_vendor_orders_usecase.dart';
 import '../../domain/usecases/start_service_usecase.dart';
 import '../../domain/usecases/complete_service_usecase.dart';
 
+import '../../domain/usecases/accept_booking_usecase.dart';
+import '../../domain/usecases/reject_booking_usecase.dart';
+
 class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
   final GetVendorOrdersUseCase getVendorOrdersUseCase;
   final StartServiceUseCase startServiceUseCase;
   final CompleteServiceUseCase completeServiceUseCase;
+  final AcceptBookingUseCase acceptBookingUseCase;
+  final RejectBookingUseCase rejectBookingUseCase;
 
   OrdersBloc({
     required this.getVendorOrdersUseCase,
     required this.startServiceUseCase,
     required this.completeServiceUseCase,
+    required this.acceptBookingUseCase,
+    required this.rejectBookingUseCase,
   }) : super(OrdersInitial()) {
     on<FetchOrdersEvent>((event, emit) async {
       emit(OrdersLoading());
@@ -39,6 +46,24 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
       result.fold(
         (failure) => emit(OrderActionError(failure.message)),
         (_) => emit(const OrderActionSuccess('Service completed successfully')),
+      );
+    });
+
+    on<AcceptBookingEvent>((event, emit) async {
+      emit(OrderActionLoading());
+      final result = await acceptBookingUseCase(event.orderId);
+      result.fold(
+        (failure) => emit(OrderActionError(failure.message)),
+        (_) => emit(const OrderActionSuccess('Booking accepted successfully')),
+      );
+    });
+
+    on<RejectBookingEvent>((event, emit) async {
+      emit(OrderActionLoading());
+      final result = await rejectBookingUseCase(event.orderId, reason: event.reason);
+      result.fold(
+        (failure) => emit(OrderActionError(failure.message)),
+        (_) => emit(const OrderActionSuccess('Booking rejected')),
       );
     });
   }

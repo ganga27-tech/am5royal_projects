@@ -87,6 +87,14 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> sendBookingSecurityOtp() async {
+    await _authApi.sendBookingSecurityOtp();
+  }
+
+  Future<bool> verifyBookingSecurityOtp(String otp) async {
+    return _authApi.verifyBookingSecurityOtp(otp);
+  }
+
   Future<void> logout() async {
     await _tokenStorage.clear();
     _isAuthenticated = false;

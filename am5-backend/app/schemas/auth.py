@@ -31,3 +31,10 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     is_new_user: bool = False
+
+class BookingSecurityVerifyRequest(BaseModel):
+    otp: str = Field(..., min_length=4, max_length=6)
+
+class BookingSecurityResponse(BaseModel):
+    message: str
+    verified: bool = False

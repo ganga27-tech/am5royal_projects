@@ -157,9 +157,12 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // Determine the active action based on status
-    final isUpcoming = ['new', 'ACCEPTED', 'PENDING'].contains(widget.order.status);
-    final isOngoing = widget.order.status == 'IN_PROGRESS';
-    final isCompleted = widget.order.status == 'COMPLETED';
+    final statusUpper = widget.order.status.toUpperCase();
+    final isPendingAcceptance =
+        statusUpper == 'NEW' || statusUpper == 'PENDING';
+    final isReadyToStart = statusUpper == 'ACCEPTED';
+    final isOngoing = statusUpper == 'IN_PROGRESS';
+    final isCompleted = statusUpper == 'COMPLETED';
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.darkBackground : const Color(0xFFF7FBFF),
@@ -233,7 +236,55 @@ class _OrderDetailsScreenState extends State<OrderDetailsScreen> {
                       _buildCustomerInfoCard(isDark),
                       const SizedBox(height: 30),
                       
-                      if (isUpcoming) ...[
+                      if (isPendingAcceptance) ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: state is OrderActionLoading
+                                    ? null
+                                    : () {
+                                        context.read<OrdersBloc>().add(
+                                          AcceptBookingEvent(
+                                            widget.order.bookingReference,
+                                          ),
+                                        );
+                                      },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.success,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                child: const Text('Accept Booking'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: state is OrderActionLoading
+                                    ? null
+                                    : () {
+                                        context.read<OrdersBloc>().add(
+                                          RejectBookingEvent(
+                                            widget.order.bookingReference,
+                                            reason: 'Vendor unavailable',
+                                          ),
+                                        );
+                                      },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  side: const BorderSide(color: AppColors.error),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                ),
+                                child: const Text('Reject'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      if (isReadyToStart) ...[
                         _buildOtpSection(
                           title: 'Enter Start OTP to begin work',
                           hintText: 'Start OTP',

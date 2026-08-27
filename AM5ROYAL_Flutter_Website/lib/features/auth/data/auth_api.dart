@@ -67,4 +67,20 @@ class AuthApi {
     );
     return CustomerProfile.fromJson(response);
   }
+
+  Future<Map<String, dynamic>> sendBookingSecurityOtp() async {
+    return _client.post(
+      '/auth/customer/booking-security/send-otp',
+      authenticated: true,
+    );
+  }
+
+  Future<bool> verifyBookingSecurityOtp(String otp) async {
+    final Map<String, dynamic> response = await _client.post(
+      '/auth/customer/booking-security/verify-otp',
+      authenticated: true,
+      body: {'otp': otp},
+    );
+    return response['verified'] as bool? ?? false;
+  }
 }

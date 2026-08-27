@@ -61,6 +61,7 @@ class BookingApi {
     required List<Map<String, dynamic>> items,
     required DateTime scheduledAt,
     int? vendorProfileId,
+    int? catalogServiceId,
     String? couponCode,
   }) async {
     final Map<String, dynamic> data = await _client.post(
@@ -72,6 +73,7 @@ class BookingApi {
         'items': items,
         'scheduled_at': scheduledAt.toUtc().toIso8601String(),
         if (vendorProfileId != null) 'vendor_profile_id': vendorProfileId,
+        if (catalogServiceId != null) 'catalog_service_id': catalogServiceId,
         if (couponCode != null) 'coupon_code': couponCode,
       },
     );

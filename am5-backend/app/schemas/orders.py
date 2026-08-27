@@ -25,6 +25,7 @@ class OrderCreate(BaseModel):
     tip_amount: float = 0.0
     scheduled_at: datetime
     vendor_profile_id: Optional[int] = None
+    catalog_service_id: Optional[int] = None
 
 class OrderUpdate(BaseModel):
     status: Optional[str] = None
