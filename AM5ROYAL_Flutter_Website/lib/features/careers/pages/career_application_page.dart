@@ -1,8 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../data/careers_api.dart';
+import '../utils/career_form_validators.dart';
 
 class CareerApplicationPage extends StatefulWidget {
   const CareerApplicationPage({
@@ -19,10 +21,14 @@ class CareerApplicationPage extends StatefulWidget {
 class _CareerApplicationPageState extends State<CareerApplicationPage> {
   final CareersApi _api = CareersApi();
   final _formKey = GlobalKey<FormState>();
+  final _resumeFormKey = GlobalKey<FormState>();
 
   int _step = 0;
   bool _isSubmitting = false;
   String? _applicationReference;
+  String? _resumeError;
+  AutovalidateMode _detailsAutovalidateMode = AutovalidateMode.disabled;
+  AutovalidateMode _resumeAutovalidateMode = AutovalidateMode.disabled;
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -78,7 +84,8 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
   Future<void> _pickResume() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: const ['pdf', 'doc', 'docx'],
+      allowedExtensions: CareerFormValidators.allowedResumeExtensions
+          .toList(growable: false),
       withData: true,
     );
     if (result == null || result.files.isEmpty) return;
@@ -86,32 +93,72 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
     final file = result.files.first;
     final bytes = file.bytes;
     if (bytes == null) {
-      _showError('Could not read the selected file.');
-      return;
-    }
-    if (bytes.length > 5 * 1024 * 1024) {
-      _showError('Resume must be 5MB or smaller.');
+      setState(() {
+        _resumeError = 'Could not read the selected file. Please try again.';
+        _resume = null;
+      });
       return;
     }
 
-    setState(() => _isUploadingResume = true);
+    final validationError = CareerFormValidators.resumeFile(
+      fileName: file.name,
+      fileSize: bytes.length,
+    );
+    if (validationError != null) {
+      setState(() {
+        _resumeError = validationError;
+        _resume = null;
+      });
+      return;
+    }
+
+    setState(() {
+      _isUploadingResume = true;
+      _resumeError = null;
+    });
     try {
       final uploaded = await _api.uploadResume(
         bytes: bytes,
         fileName: file.name,
       );
       if (!mounted) return;
-      setState(() => _resume = uploaded);
+      setState(() {
+        _resume = uploaded;
+        _resumeError = null;
+      });
     } catch (e) {
-      _showError('Failed to upload resume: $e');
+      setState(() {
+        _resume = null;
+        _resumeError = 'Failed to upload resume. Please try again.';
+      });
     } finally {
       if (mounted) setState(() => _isUploadingResume = false);
     }
   }
 
+  bool _validateDetailsStep() {
+    setState(() => _detailsAutovalidateMode = AutovalidateMode.always);
+    return _formKey.currentState?.validate() ?? false;
+  }
+
+  bool _validateResumeStep() {
+    setState(() => _resumeAutovalidateMode = AutovalidateMode.always);
+
+    final String? resumeValidation =
+        CareerFormValidators.resumeRequired(_resume);
+    final bool coverLetterValid =
+        _resumeFormKey.currentState?.validate() ?? true;
+
+    if (resumeValidation != null) {
+      setState(() => _resumeError = resumeValidation);
+      return false;
+    }
+
+    return coverLetterValid;
+  }
+
   Future<void> _submit() async {
-    if (_resume == null) {
-      _showError('Please upload your resume.');
+    if (!_validateResumeStep()) {
       return;
     }
 
@@ -121,7 +168,7 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
         jobOpeningId: widget.opening.id,
         fullName: _nameController.text.trim(),
         email: _emailController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: CareerFormValidators.normalizedPhone(_phoneController.text),
         currentLocation: _location!,
         totalExperience: _experience!,
         noticePeriod: _noticePeriod!,
@@ -150,17 +197,14 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
 
   void _nextStep() {
     if (_step == 1) {
-      if (!_formKey.currentState!.validate() ||
-          _location == null ||
-          _experience == null ||
-          _noticePeriod == null) {
-        _showError('Please fill all required fields.');
+      if (!_validateDetailsStep()) {
         return;
       }
     }
-    if (_step == 2 && _resume == null) {
-      _showError('Please upload your resume.');
-      return;
+    if (_step == 2) {
+      if (!_validateResumeStep()) {
+        return;
+      }
     }
     setState(() => _step += 1);
   }
@@ -220,6 +264,7 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
       case 1:
         return _DetailsFormStep(
           formKey: _formKey,
+          autovalidateMode: _detailsAutovalidateMode,
           nameController: _nameController,
           emailController: _emailController,
           phoneController: _phoneController,
@@ -235,11 +280,17 @@ class _CareerApplicationPageState extends State<CareerApplicationPage> {
         );
       case 2:
         return _ResumeStep(
+          formKey: _resumeFormKey,
+          autovalidateMode: _resumeAutovalidateMode,
           resume: _resume,
+          resumeError: _resumeError,
           isUploading: _isUploadingResume,
           coverLetterController: _coverLetterController,
           onPickResume: _pickResume,
-          onRemoveResume: () => setState(() => _resume = null),
+          onRemoveResume: () => setState(() {
+            _resume = null;
+            _resumeError = 'Please upload your resume to continue';
+          }),
         );
       case 3:
         return _ReviewStep(
@@ -481,6 +532,7 @@ class _RoleDetailsStep extends StatelessWidget {
 class _DetailsFormStep extends StatelessWidget {
   const _DetailsFormStep({
     required this.formKey,
+    required this.autovalidateMode,
     required this.nameController,
     required this.emailController,
     required this.phoneController,
@@ -496,6 +548,7 @@ class _DetailsFormStep extends StatelessWidget {
   });
 
   final GlobalKey<FormState> formKey;
+  final AutovalidateMode autovalidateMode;
   final TextEditingController nameController;
   final TextEditingController emailController;
   final TextEditingController phoneController;
@@ -514,6 +567,7 @@ class _DetailsFormStep extends StatelessWidget {
     return _Card(
       child: Form(
         key: formKey,
+        autovalidateMode: autovalidateMode,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -525,54 +579,69 @@ class _DetailsFormStep extends StatelessWidget {
                 fontWeight: FontWeight.w800,
               ),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'All fields marked with * are required',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+            ),
             const SizedBox(height: 20),
             _TextField(
               controller: nameController,
-              label: 'Full Name',
-              validator: (v) =>
-                  (v == null || v.trim().length < 2) ? 'Enter your full name' : null,
+              label: 'Full Name *',
+              textCapitalization: TextCapitalization.words,
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(200),
+                FilteringTextInputFormatter.allow(RegExp(r"[a-zA-Z\s.'-]")),
+              ],
+              validator: CareerFormValidators.fullName,
             ),
             const SizedBox(height: 14),
             _TextField(
               controller: emailController,
-              label: 'Email Address',
+              label: 'Email Address *',
               keyboardType: TextInputType.emailAddress,
-              validator: (v) {
-                if (v == null || !v.contains('@')) return 'Enter a valid email';
-                return null;
-              },
+              inputFormatters: [
+                LengthLimitingTextInputFormatter(200),
+              ],
+              validator: CareerFormValidators.email,
             ),
             const SizedBox(height: 14),
             _TextField(
               controller: phoneController,
-              label: 'Phone Number',
+              label: 'Phone Number *',
               keyboardType: TextInputType.phone,
-              validator: (v) {
-                final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
-                if (digits.length < 10) return 'Enter a valid phone number';
-                return null;
-              },
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              validator: CareerFormValidators.phone,
             ),
             const SizedBox(height: 14),
             _DropdownField(
-              label: 'Current Location',
+              label: 'Current Location *',
               value: location,
               items: locations,
               onChanged: onLocationChanged,
+              validator: (v) =>
+                  CareerFormValidators.requiredSelection(v, 'current location'),
             ),
             const SizedBox(height: 14),
             _DropdownField(
-              label: 'Total Experience (Years)',
+              label: 'Total Experience (Years) *',
               value: experience,
               items: experienceOptions,
               onChanged: onExperienceChanged,
+              validator: (v) =>
+                  CareerFormValidators.requiredSelection(v, 'total experience'),
             ),
             const SizedBox(height: 14),
             _DropdownField(
-              label: 'Notice Period',
+              label: 'Notice Period *',
               value: noticePeriod,
               items: noticeOptions,
               onChanged: onNoticeChanged,
+              validator: (v) =>
+                  CareerFormValidators.requiredSelection(v, 'notice period'),
             ),
           ],
         ),
@@ -583,14 +652,20 @@ class _DetailsFormStep extends StatelessWidget {
 
 class _ResumeStep extends StatelessWidget {
   const _ResumeStep({
+    required this.formKey,
+    required this.autovalidateMode,
     required this.resume,
+    required this.resumeError,
     required this.isUploading,
     required this.coverLetterController,
     required this.onPickResume,
     required this.onRemoveResume,
   });
 
+  final GlobalKey<FormState> formKey;
+  final AutovalidateMode autovalidateMode;
   final ResumeUploadResult? resume;
+  final String? resumeError;
   final bool isUploading;
   final TextEditingController coverLetterController;
   final VoidCallback onPickResume;
@@ -599,57 +674,75 @@ class _ResumeStep extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Upload Resume',
-            style: TextStyle(
-              color: AppColors.navy,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
+      child: Form(
+        key: formKey,
+        autovalidateMode: autovalidateMode,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Upload Resume *',
+              style: TextStyle(
+                color: AppColors.navy,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: isUploading ? null : onPickResume,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFF94A3B8),
-                  style: BorderStyle.solid,
-                  width: 1.5,
+            const SizedBox(height: 16),
+            InkWell(
+              onTap: isUploading ? null : onPickResume,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: resumeError != null
+                        ? Colors.red.shade400
+                        : const Color(0xFF94A3B8),
+                    width: 1.5,
+                  ),
+                  color: const Color(0xFFF8FAFC),
                 ),
-                color: const Color(0xFFF8FAFC),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.cloud_upload_outlined,
-                    size: 40,
-                    color: isUploading ? Colors.grey : AppColors.royalBlue,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    isUploading ? 'Uploading...' : 'Drag & drop or click to upload',
-                    style: const TextStyle(
-                      color: AppColors.navy,
-                      fontWeight: FontWeight.w600,
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.cloud_upload_outlined,
+                      size: 40,
+                      color: isUploading ? Colors.grey : AppColors.royalBlue,
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text(
-                    'PDF, DOC, DOCX (Max 5MB)',
-                    style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      isUploading
+                          ? 'Uploading...'
+                          : 'Drag & drop or click to upload',
+                      style: const TextStyle(
+                        color: AppColors.navy,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'PDF, DOC, DOCX (Max 5MB)',
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+            if (resumeError != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                resumeError!,
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           if (resume != null) ...[
             const SizedBox(height: 14),
             Container(
@@ -698,9 +791,11 @@ class _ResumeStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
+          TextFormField(
             controller: coverLetterController,
             maxLines: 5,
+            maxLength: CareerFormValidators.maxCoverLetterLength,
+            validator: CareerFormValidators.coverLetter,
             decoration: InputDecoration(
               hintText: 'Tell us why you are a great fit...',
               filled: true,
@@ -709,10 +804,13 @@ class _ResumeStep extends StatelessWidget {
                 borderRadius: BorderRadius.circular(10),
                 borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
               ),
+              counterText:
+                  'Optional • min 20 characters if you add a cover letter',
             ),
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -917,12 +1015,16 @@ class _TextField extends StatelessWidget {
     required this.controller,
     required this.label,
     this.keyboardType,
+    this.textCapitalization = TextCapitalization.none,
+    this.inputFormatters,
     this.validator,
   });
 
   final TextEditingController controller;
   final String label;
   final TextInputType? keyboardType;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
   final String? Function(String?)? validator;
 
   @override
@@ -930,11 +1032,14 @@ class _TextField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      textCapitalization: textCapitalization,
+      inputFormatters: inputFormatters,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
         fillColor: const Color(0xFFF8FAFC),
+        errorMaxLines: 2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -950,21 +1055,25 @@ class _DropdownField extends StatelessWidget {
     required this.value,
     required this.items,
     required this.onChanged,
+    this.validator,
   });
 
   final String label;
   final String? value;
   final List<String> items;
   final ValueChanged<String?> onChanged;
+  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
     return DropdownButtonFormField<String>(
       value: value,
+      validator: validator,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
         fillColor: const Color(0xFFF8FAFC),
+        errorMaxLines: 2,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
