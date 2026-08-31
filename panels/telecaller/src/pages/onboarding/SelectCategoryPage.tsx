@@ -126,76 +126,178 @@ export const SelectCategoryPage: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: '960px', margin: '0 auto', paddingBottom: '3rem' }}>
-      {/* Header Tracker */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+    <div style={{ maxWidth: '960px', margin: '0 auto', padding: '0 0.5rem 4rem 0.5rem' }}>
+      {/* Top Header Bar: Exit Button & Visual Multi-Step Tracker */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          marginBottom: '2rem',
+          padding: '0.75rem 1.25rem',
+          background: 'rgba(255, 255, 255, 0.85)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-sm)',
+        }}
+      >
         <button
           className="btn btn-sm btn-outline"
           onClick={() => navigate('/onboard')}
-          style={{ gap: '0.4rem' }}
+          style={{
+            gap: '0.45rem',
+            background: 'white',
+            fontWeight: 600,
+            fontSize: '0.825rem',
+            padding: '0.45rem 0.95rem',
+          }}
         >
           <ArrowLeft size={16} />
           <span>Back to Profile</span>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.85rem', color: '#059669', fontWeight: 600 }}>✓ Step 1: Profile</span>
-          <span style={{ color: 'var(--text-subtle)' }}>→</span>
-          <span
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '50%',
-              background: 'var(--primary)',
-              color: 'white',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.8rem',
-              fontWeight: 700,
-            }}
-          >
-            2
-          </span>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
-            Step 2: Categories
-          </span>
-          <span style={{ color: 'var(--text-subtle)' }}>→</span>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-subtle)' }}>Step 3: Services & Pricing</span>
+        {/* Enhanced 3-Step Interactive Breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Step 1 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: '#10b981',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+              }}
+            >
+              ✓
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#059669' }}>
+              Profile & Identity
+            </span>
+          </div>
+
+          <span style={{ color: 'var(--border-strong)', fontSize: '0.85rem' }}>—</span>
+
+          {/* Step 2 (Active) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div
+              style={{
+                width: '28px',
+                height: '28px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--primary) 0%, #312e81 100%)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                boxShadow: '0 2px 8px var(--primary-glow)',
+              }}
+            >
+              2
+            </div>
+            <span style={{ fontSize: '0.825rem', fontWeight: 700, color: 'var(--primary)' }}>
+              Categories & Subcategories
+            </span>
+          </div>
+
+          <span style={{ color: 'var(--border-strong)', fontSize: '0.85rem' }}>—</span>
+
+          {/* Step 3 */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', opacity: 0.65 }}>
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: '#e2e8f0',
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+              }}
+            >
+              3
+            </div>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+              Services & Pricing
+            </span>
+          </div>
         </div>
       </div>
 
-      <div className="card" style={{ padding: '2.5rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '1.75rem',
-            borderBottom: '1px solid var(--border-subtle)',
-            paddingBottom: '1rem',
-          }}
-        >
+      {/* Hero Welcome Banner */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 60%, #4338ca 100%)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '2rem 2.5rem',
+          color: 'white',
+          marginBottom: '1.75rem',
+          position: 'relative',
+          overflow: 'hidden',
+          boxShadow: 'var(--shadow-lg)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.5rem', color: 'var(--text-main)' }}>Select Partner Categories</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
-              Assign service domains for <strong>{businessName}</strong> ({mobile})
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span
+                style={{
+                  padding: '0.2rem 0.65rem',
+                  borderRadius: '9999px',
+                  background: 'rgba(255, 255, 255, 0.15)',
+                  fontSize: '0.725rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Step 2 of 3
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'rgba(255, 255, 255, 0.8)' }}>
+                Partner: <strong>{businessName}</strong> ({mobile})
+              </span>
+            </div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white' }}>
+              Select Partner Categories
+            </h1>
+            <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '0.875rem', marginTop: '0.25rem' }}>
+              Assign main industries and specific subcategories this vendor provides.
             </p>
           </div>
 
           <div
             style={{
-              background: 'var(--primary-light)',
-              color: 'var(--primary-dark)',
-              padding: '0.4rem 0.85rem',
+              background: 'rgba(255, 255, 255, 0.12)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
               borderRadius: 'var(--radius-md)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
+              padding: '0.75rem 1.25rem',
+              textAlign: 'center',
             }}
           >
-            {totalSelectedSubCats} Subcategories Selected
+            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: '#fcd34d' }}>
+              {totalSelectedSubCats}
+            </div>
+            <div style={{ fontSize: '0.75rem', color: 'white', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Subcategories Selected
+            </div>
           </div>
         </div>
+      </div>
+
+      <div className="card" style={{ padding: '2rem' }}>
 
         {error && (
           <div

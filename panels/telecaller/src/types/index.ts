@@ -63,6 +63,11 @@ export interface TelecallerOnboardedVendor {
   createdAt: string;
   mobileNumber: string;
   leadSource?: string | null;
+  email?: string;
+  username?: string;
+  serviceName?: string;
+  assignedTeamMember?: string;
+  leadStatus?: string;
 }
 
 export interface PaginatedOnboardedVendorsResponse {
@@ -70,6 +75,60 @@ export interface PaginatedOnboardedVendorsResponse {
   skip: number;
   limit: number;
   vendors: TelecallerOnboardedVendor[];
+}
+
+export interface VendorDetailsUpdateRequest {
+  business_name?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  alternative_number?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  address?: string;
+  aadhaar_number?: string;
+  pan_number?: string;
+  gst_number?: string;
+  service_radius_km?: number;
+}
+
+export interface LeadPerformanceMetrics {
+  total_leads: number;
+  website_leads: number;
+  application_leads: number;
+  freelancer_leads: number;
+  assigned_leads: number;
+  contacted_leads: number;
+  in_progress_leads: number;
+  converted_leads: number;
+  activated_vendors: number;
+  pending_leads: number;
+  closed_leads: number;
+  conversion_rate: number;
+}
+
+export interface TeamNotification {
+  id: string;
+  type: 'new_lead' | 'lead_assigned' | 'reminder' | 'kyc_pending' | 'payment_pending' | 'admin';
+  title: string;
+  message: string;
+  lead_id?: number | null;
+  created_at: string;
+  is_read: boolean;
+}
+
+export interface AdminContactMessageRequest {
+  subject: string;
+  message: string;
+  category?: string;
+}
+
+export interface LeadActivityHistoryItem {
+  stage: string;
+  status: 'completed' | 'current' | 'pending';
+  timestamp?: string;
+  description?: string;
 }
 
 export interface WithdrawalRequest {

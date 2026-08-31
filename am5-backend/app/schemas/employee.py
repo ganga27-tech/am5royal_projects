@@ -96,6 +96,11 @@ class TelecallerOnboardedVendor(BaseModel):
     created_at: datetime
     mobile_number: Optional[str] = None
     lead_source: Optional[str] = None
+    email: Optional[str] = None
+    username: Optional[str] = None
+    service_name: Optional[str] = None
+    assigned_team_member: Optional[str] = None
+    lead_status: Optional[str] = None
 
 class PaginatedOnboardedVendorsResponse(BaseModel):
     total: int
@@ -108,4 +113,52 @@ class TelecallerLeaderboardEntry(BaseModel):
 class WhatsAppInviteRequest(BaseModel):
     phone_number: str
     vendor_name: str
+
+class VendorDetailsUpdate(BaseModel):
+    business_name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[str] = None
+    alternative_number: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    address: Optional[str] = None
+    aadhaar_number: Optional[str] = None
+    pan_number: Optional[str] = None
+    gst_number: Optional[str] = None
+    service_radius_km: Optional[int] = None
+
+class LeadStatusUpdate(BaseModel):
+    status: str
+    notes: Optional[str] = None
+
+class LeadPerformanceResponse(BaseModel):
+    total_leads: int
+    website_leads: int
+    application_leads: int
+    freelancer_leads: int
+    assigned_leads: int
+    contacted_leads: int
+    in_progress_leads: int
+    converted_leads: int
+    activated_vendors: int
+    pending_leads: int
+    closed_leads: int
+    conversion_rate: float
+
+class TeamNotificationResponse(BaseModel):
+    id: str
+    type: str  # 'new_lead', 'lead_assigned', 'reminder', 'kyc_pending', 'payment_pending', 'admin'
+    title: str
+    message: str
+    lead_id: Optional[int] = None
+    created_at: str
+    is_read: bool = False
+
+class AdminContactMessageRequest(BaseModel):
+    subject: str
+    message: str
+    category: Optional[str] = "support"
+
 

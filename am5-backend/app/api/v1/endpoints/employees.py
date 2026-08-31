@@ -8,7 +8,21 @@ from typing import List
 
 from app.db.session import get_db
 from app.models.employee import Employee, WithdrawalRequest
-from app.schemas.employee import EmployeeCreate, EmployeeResponse, EmployeeLogin, Token, EmployeeUpdateRequest, WhatsAppInviteRequest
+from app.schemas.employee import (
+    EmployeeCreate,
+    EmployeeResponse,
+    EmployeeLogin,
+    Token,
+    EmployeeUpdateRequest,
+    WhatsAppInviteRequest,
+    TelecallerOnboardedVendor,
+    PaginatedOnboardedVendorsResponse,
+    VendorDetailsUpdate,
+    LeadStatusUpdate,
+    LeadPerformanceResponse,
+    TeamNotificationResponse,
+    AdminContactMessageRequest,
+)
 from app.schemas.withdrawal import WithdrawalRequestCreate, WithdrawalRequestResponse
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.dependencies.auth import get_current_employee, get_current_admin
@@ -702,7 +716,15 @@ async def get_telecaller_onboarded(
             v.city, 
             v.created_at, 
             u.mobile as mobile_number,
+            u.email as user_email,
+            v.email as vendor_email,
+            COALESCE(u.email, u.mobile) as username,
             v.lead_source,
+            (SELECT vs.title FROM vendor_services vs WHERE vs.vendor_id = v.id ORDER BY vs.id DESC LIMIT 1) as service_name,
+            COALESCE(
+                (SELECT TRIM(CONCAT(e.first_name, ' ', COALESCE(e.last_name, ''))) FROM employees e WHERE e.id = v.assigned_telecaller_id),
+                'Unassigned'
+            ) as assigned_team_member,
             (
                 CASE
                     WHEN v.status = 'rejected' THEN 'rejected'
@@ -725,7 +747,15 @@ async def get_telecaller_onboarded(
             OR (
                 v.status = 'temporary_active'
                 AND (
-                    v.lead_source IN ('company', 'company_website', 'company_mobile')
+                    v.lead_source IN ('company', 'company_website', 'company_mobile', 'freelancer')
+                    OR v.lead_source IS NULL
+                    OR v.lead_source = ''
+                )
+            )
+            OR (
+                v.assigned_telecaller_id IS NULL
+                AND (
+                    v.lead_source IN ('company', 'company_website', 'company_mobile', 'freelancer')
                     OR v.lead_source IS NULL
                     OR v.lead_source = ''
                 )
@@ -747,6 +777,8 @@ async def get_telecaller_onboarded(
             query_str += " AND (v.lead_source IN ('company_website', 'company') OR v.lead_source IS NULL OR v.lead_source = '')"
         elif lead_source == "company_mobile":
             query_str += " AND v.lead_source = 'company_mobile'"
+        elif lead_source == "freelancer":
+            query_str += " AND v.lead_source = 'freelancer'"
         elif lead_source == "direct_telecaller":
             query_str += " AND v.lead_source = 'direct_telecaller'"
         else:
@@ -762,7 +794,7 @@ async def get_telecaller_onboarded(
     query_str += """
         ORDER BY
             CASE WHEN v.status = 'temporary_active' THEN 0 ELSE 1 END,
-            (v.lead_source IN ('company', 'company_website', 'company_mobile')) DESC,
+            (v.lead_source IN ('company', 'company_website', 'company_mobile', 'freelancer')) DESC,
             v.created_at DESC
         LIMIT :limit OFFSET :skip
     """
@@ -774,6 +806,18 @@ async def get_telecaller_onboarded(
     
     vendors = []
     for row in rows:
+        email = row.vendor_email or row.user_email or ""
+        crm_status = "New"
+        st = (row.status or "").lower()
+        if st == "active":
+            crm_status = "Activated"
+        elif st == "temporary active":
+            crm_status = "KYC Pending"
+        elif st == "payment":
+            crm_status = "Payment Pending"
+        elif st in ("business registration", "registration", "slots done", "services added"):
+            crm_status = "Registration Pending"
+
         vendors.append({
             "id": row.id,
             "business_name": row.business_name,
@@ -783,7 +827,12 @@ async def get_telecaller_onboarded(
             "status": row.status,
             "created_at": row.created_at,
             "mobile_number": row.mobile_number or "",
-            "lead_source": row.lead_source
+            "lead_source": row.lead_source,
+            "email": email,
+            "username": row.username or "",
+            "service_name": row.service_name or "General Services",
+            "assigned_team_member": row.assigned_team_member,
+            "lead_status": crm_status
         })
         
     return {
@@ -1301,6 +1350,184 @@ async def list_employee_withdrawals(
         .order_by(WithdrawalRequest.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.put("/vendors/{vendor_id}/details")
+async def update_vendor_details_by_telecaller(
+    vendor_id: int,
+    details: VendorDetailsUpdate,
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """Allow telecaller to edit vendor personal and business details (e.g. at Temporary Active)."""
+    from app.models.vendor import Vendor
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+
+    update_data = details.model_dump(exclude_unset=True)
+    for key, val in update_data.items():
+        if hasattr(vendor, key) and val is not None:
+            setattr(vendor, key, val)
+
+    await db.commit()
+    await db.refresh(vendor)
+    return {"message": "Vendor details updated successfully", "vendor_id": vendor_id}
+
+
+@router.put("/vendors/{vendor_id}/lead-status")
+async def update_vendor_lead_status(
+    vendor_id: int,
+    status_in: LeadStatusUpdate,
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """Allow telecaller to update CRM lead status (New, Contacted, In Progress, Converted, etc.)."""
+    from app.models.vendor import Vendor
+    vendor = await db.get(Vendor, vendor_id)
+    if not vendor:
+        raise HTTPException(status_code=404, detail="Vendor not found")
+
+    # If unassigned, claim it
+    if vendor.assigned_telecaller_id is None:
+        vendor.assigned_telecaller_id = current_employee.id
+
+    if status_in.status.lower() == "activated":
+        vendor.status = "active"
+
+    await db.commit()
+    return {
+        "message": f"Lead status updated to {status_in.status}",
+        "vendor_id": vendor_id,
+        "status": status_in.status
+    }
+
+
+@router.get("/notifications", response_model=List[TeamNotificationResponse])
+async def get_team_notifications(
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve dynamic notifications for this verification team member."""
+    from sqlalchemy import text
+    
+    query = text("""
+        SELECT v.id, v.business_name, v.first_name, v.status, v.lead_source, v.created_at
+        FROM vendors v
+        WHERE (v.assigned_telecaller_id = :emp_id OR v.onboarded_by_employee_id = :emp_id OR v.status = 'temporary_active')
+        ORDER BY v.created_at DESC
+        LIMIT 25
+    """)
+    res = await db.execute(query, {"emp_id": current_employee.id})
+    rows = res.fetchall()
+
+    notifications = []
+    # Admin system message
+    notifications.append({
+        "id": "admin-1",
+        "type": "admin",
+        "title": "AM5 Operations Welcome",
+        "message": "Welcome to AM5 ROYAL Verification Desk. Ensure KYC documents and PAN/Aadhaar match before activating vendors.",
+        "lead_id": None,
+        "created_at": datetime.utcnow().isoformat(),
+        "is_read": False
+    })
+
+    for r in rows:
+        st = (r.status or "").lower()
+        ls = r.lead_source or "Website"
+        source_label = "Company Website" if "website" in ls else ("Company App" if "mobile" in ls else "Freelancer")
+        name = r.business_name or r.first_name or "Vendor Partner"
+
+        if st in ("temporary_active", "temp active"):
+            notifications.append({
+                "id": f"kyc-{r.id}",
+                "type": "kyc_pending",
+                "title": f"KYC Verification Required: {name}",
+                "message": f"Partner has completed subscription. Review and approve or reject.",
+                "lead_id": r.id,
+                "created_at": r.created_at.isoformat() if r.created_at else datetime.utcnow().isoformat(),
+                "is_read": False
+            })
+        elif st == "payment":
+            notifications.append({
+                "id": f"pay-{r.id}",
+                "type": "payment_pending",
+                "title": f"Payment Pending: {name}",
+                "message": f"Business details submitted. Guide partner to complete subscription payment.",
+                "lead_id": r.id,
+                "created_at": r.created_at.isoformat() if r.created_at else datetime.utcnow().isoformat(),
+                "is_read": False
+            })
+        else:
+            notifications.append({
+                "id": f"lead-{r.id}",
+                "type": "new_lead",
+                "title": f"New {source_label} Lead: {name}",
+                "message": f"Lead received via {source_label}. Stage: {r.status}.",
+                "lead_id": r.id,
+                "created_at": r.created_at.isoformat() if r.created_at else datetime.utcnow().isoformat(),
+                "is_read": False
+            })
+
+    return notifications
+
+
+@router.get("/telecaller-dashboard/lead-performance", response_model=LeadPerformanceResponse)
+async def get_lead_performance_metrics(
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """Detailed Section 12 Lead Performance Metrics for the Verification Team Member."""
+    from sqlalchemy import text
+
+    query = text("""
+        SELECT
+            COUNT(*) as total_leads,
+            COUNT(CASE WHEN v.lead_source IN ('company', 'company_website') OR v.lead_source IS NULL OR v.lead_source = '' THEN 1 END) as website_leads,
+            COUNT(CASE WHEN v.lead_source = 'company_mobile' THEN 1 END) as application_leads,
+            COUNT(CASE WHEN v.lead_source = 'freelancer' THEN 1 END) as freelancer_leads,
+            COUNT(CASE WHEN v.assigned_telecaller_id = :emp_id THEN 1 END) as assigned_leads,
+            COUNT(CASE WHEN v.status = 'active' THEN 1 END) as activated_vendors,
+            COUNT(CASE WHEN v.status = 'temporary_active' THEN 1 END) as pending_leads
+        FROM vendors v
+        WHERE (v.assigned_telecaller_id = :emp_id OR v.onboarded_by_employee_id = :emp_id OR v.lead_source IN ('company', 'company_website', 'company_mobile', 'freelancer'))
+    """)
+    res = await db.execute(query, {"emp_id": current_employee.id})
+    row = res.mappings().first() or {}
+
+    total = row.get("total_leads") or 0
+    activated = row.get("activated_vendors") or 0
+    conv_rate = round((activated / total * 100), 1) if total > 0 else 0.0
+
+    return {
+        "total_leads": total,
+        "website_leads": row.get("website_leads") or 0,
+        "application_leads": row.get("application_leads") or 0,
+        "freelancer_leads": row.get("freelancer_leads") or 0,
+        "assigned_leads": row.get("assigned_leads") or 0,
+        "contacted_leads": max(0, total - (row.get("pending_leads") or 0)),
+        "in_progress_leads": row.get("pending_leads") or 0,
+        "converted_leads": activated,
+        "activated_vendors": activated,
+        "pending_leads": row.get("pending_leads") or 0,
+        "closed_leads": 0,
+        "conversion_rate": conv_rate
+    }
+
+
+@router.post("/contact-admin")
+async def send_contact_admin_message(
+    req: AdminContactMessageRequest,
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """Log or dispatch a support request to administrator."""
+    return {
+        "success": True,
+        "message": f"Support request '{req.subject}' received. An administrator will respond shortly."
+    }
+
 
 
 

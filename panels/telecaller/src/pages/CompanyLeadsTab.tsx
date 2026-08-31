@@ -1,7 +1,6 @@
 // ============================================================================
-// AM5 ROYAL • Company Leads Tab Component
-// Powers Tab 2 (Website Leads) and Tab 3 (Application Leads) with 7-Step Workflow
-// Mirrors Flutter: _buildCompanyLeadsTab()
+// AM5 ROYAL • Leads Management Tab Component (Sections 5, 6 & 7 Specifications)
+// Powers Company Website Leads, Company Application Leads & Freelancer Leads
 // ============================================================================
 
 import React, { useEffect, useState } from 'react';
@@ -17,17 +16,28 @@ import {
   AlertCircle,
   Loader2,
   X,
+  Globe,
+  Smartphone,
+  Briefcase,
 } from 'lucide-react';
 
+export type LeadSourceType = 'website' | 'application' | 'freelancer';
+
 interface CompanyLeadsTabProps {
-  isWebsite: boolean;
+  isWebsite?: boolean;
+  sourceType?: LeadSourceType;
   onCountUpdate?: (count: number) => void;
 }
 
 export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
   isWebsite,
+  sourceType,
   onCountUpdate,
 }) => {
+  // Resolve effective source type
+  const effectiveSource: LeadSourceType =
+    sourceType || (isWebsite === false ? 'application' : 'website');
+
   const [vendors, setVendors] = useState<TelecallerOnboardedVendor[]>([]);
   const [total, setTotal] = useState(0);
   const [skip, setSkip] = useState(0);
@@ -40,20 +50,56 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [datePreset, setDatePreset] = useState<'all' | 'today' | 'week' | 'month' | 'custom'>('all');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
-  const leadSource = isWebsite ? 'company_website' : 'company_mobile';
-  const title = isWebsite ? 'Company Website Leads' : 'Company Application Leads';
-  const subtitle = isWebsite
-    ? 'All leads and partner onboarding requests originating from the official Company Website.'
-    : 'All leads and partner onboarding requests originating from the Company Mobile Application.';
+  // Map source to API leadSource parameter
+  const getApiLeadSource = () => {
+    switch (effectiveSource) {
+      case 'website':
+        return 'company_website';
+      case 'application':
+        return 'company_mobile';
+      case 'freelancer':
+        return 'freelancer';
+    }
+  };
+
+  const leadSource = getApiLeadSource();
+
+  // Page Header Details per Specification
+  const getHeaderInfo = () => {
+    switch (effectiveSource) {
+      case 'website':
+        return {
+          title: 'Company Website Leads',
+          description: 'This section displays all leads generated through the AM5 ROYAL Company Website.',
+          icon: Globe,
+        };
+      case 'application':
+        return {
+          title: 'Company Application Leads',
+          description: 'This section displays all leads generated from the AM5 ROYAL Company Application.',
+          icon: Smartphone,
+        };
+      case 'freelancer':
+        return {
+          title: 'Freelancer Leads',
+          description: 'This section displays all leads generated through the AM5 ROYAL Freelancer partners.',
+          icon: Briefcase,
+        };
+    }
+  };
+
+  const headerInfo = getHeaderInfo();
+  const HeaderIcon = headerInfo.icon;
 
   useEffect(() => {
     fetchLeads(true);
-  }, [isWebsite]);
+  }, [effectiveSource]);
 
-  const fetchLeads = async (reset = false) => {
+  const fetchLeads = async (reset = false, customStart?: string, customEnd?: string) => {
     if (reset) {
       setIsLoading(true);
       setSkip(0);
@@ -63,14 +109,16 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
     setError(null);
 
     const currentSkip = reset ? 0 : skip;
+    const effStart = customStart !== undefined ? customStart : startDate;
+    const effEnd = customEnd !== undefined ? customEnd : endDate;
 
     try {
       const resp = await telecallerApi.getOnboardedVendors({
         leadSource,
         skip: currentSkip,
         limit,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        startDate: effStart || undefined,
+        endDate: effEnd || undefined,
       });
 
       if (reset) {
@@ -94,24 +142,66 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
     }
   };
 
-  // Client-side filtering & sorting matching Flutter logic
+  // Quick Date Preset Handler
+  const handleDatePreset = (preset: 'all' | 'today' | 'week' | 'month' | 'custom') => {
+    setDatePreset(preset);
+    const today = new Date();
+    const formatDateStr = (d: Date) => d.toISOString().split('T')[0];
+
+    if (preset === 'all') {
+      setStartDate('');
+      setEndDate('');
+      fetchLeads(true, '', '');
+    } else if (preset === 'today') {
+      const todayStr = formatDateStr(today);
+      setStartDate(todayStr);
+      setEndDate(todayStr);
+      fetchLeads(true, todayStr, todayStr);
+    } else if (preset === 'week') {
+      const day = today.getDay();
+      const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(today.setDate(diff));
+      const monStr = formatDateStr(monday);
+      const nowStr = formatDateStr(new Date());
+      setStartDate(monStr);
+      setEndDate(nowStr);
+      fetchLeads(true, monStr, nowStr);
+    } else if (preset === 'month') {
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const firstStr = formatDateStr(firstDay);
+      const nowStr = formatDateStr(new Date());
+      setStartDate(firstStr);
+      setEndDate(nowStr);
+      fetchLeads(true, firstStr, nowStr);
+    }
+  };
+
+  // Filtering & Sorting
   const filteredVendors = vendors
     .filter((v) => {
       // Exclude rejected
       if (v.status.toLowerCase() === 'rejected') return false;
 
-      // Search Query filter
+      // Search Query filter: Vendor Name, Business Name, Phone Number, Email
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const haystack = `${v.businessName} ${v.firstName} ${v.lastName} ${v.mobileNumber} ${v.city}`.toLowerCase();
+        const haystack = `${v.businessName} ${v.firstName} ${v.lastName} ${v.mobileNumber} ${v.email || ''} ${v.city}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
 
       // Status Filter
       if (statusFilter !== 'All') {
-        if (v.status.toLowerCase() !== statusFilter.toLowerCase()) {
-          return false;
-        }
+        const target = statusFilter.toLowerCase();
+        const cardStatus = v.status.toLowerCase();
+        const crmStatus = (v.leadStatus || '').toLowerCase();
+
+        const matchesStatus =
+          cardStatus === target ||
+          cardStatus.includes(target) ||
+          crmStatus === target ||
+          crmStatus.includes(target);
+
+        if (!matchesStatus) return false;
       }
 
       return true;
@@ -130,38 +220,73 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-  // Extract unique statuses for dropdown
-  const statusOptions = [
-    'All',
-    'temporary active',
-    'active',
-    'payment',
-    'business registration',
-    'registration',
-    'slots done',
-    'services added',
-  ];
+  // Status Filter Options per Sections 5.1, 6.1, 7.1
+  const getStatusOptions = () => {
+    if (effectiveSource === 'website') {
+      return [
+        'All',
+        'New',
+        'Contacted',
+        'In Progress',
+        'Registration Pending',
+        'KYC Pending',
+        'Payment Pending',
+        'Converted',
+        'Not Interested',
+        'Closed',
+        'Temporary Active',
+        'Active',
+      ];
+    }
+    return [
+      'All',
+      'Active',
+      'Pending',
+      'Completed',
+      'Inactive',
+      'Temporary Active',
+    ];
+  };
+
+  const statusOptions = getStatusOptions();
 
   const clearFilters = () => {
     setSearchQuery('');
     setStatusFilter('All');
+    setDatePreset('all');
     setStartDate('');
     setEndDate('');
-    fetchLeads(true);
+    fetchLeads(true, '', '');
   };
 
   const hasActiveFilters = Boolean(
-    searchQuery.trim() || statusFilter !== 'All' || startDate || endDate
+    searchQuery.trim() || statusFilter !== 'All' || datePreset !== 'all' || startDate || endDate
   );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-      {/* Title */}
-      <div>
-        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)' }}>{title}</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-          {subtitle}
-        </p>
+      {/* Title Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div
+          style={{
+            width: '44px',
+            height: '44px',
+            borderRadius: '12px',
+            background: 'var(--primary-light)',
+            color: 'var(--primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <HeaderIcon size={22} />
+        </div>
+        <div>
+          <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)' }}>{headerInfo.title}</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.15rem' }}>
+            {headerInfo.description}
+          </p>
+        </div>
       </div>
 
       {/* Filter Toolbar */}
@@ -170,126 +295,201 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
         style={{
           padding: '1.25rem',
           display: 'flex',
-          alignItems: 'center',
-          flexWrap: 'wrap',
+          flexDirection: 'column',
           gap: '1rem',
         }}
       >
-        {/* Search Input */}
-        <div className="form-control-wrapper" style={{ flex: '1 1 280px', minWidth: '240px' }}>
-          <Search size={16} className="input-icon-left" />
-          <input
-            type="text"
-            className="form-input has-left-icon"
-            placeholder="Search by business, partner name, or mobile..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {/* Row 1: Search Bar & Status Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.85rem' }}>
+          {/* Search Input */}
+          <div className="form-control-wrapper" style={{ flex: '1 1 300px', minWidth: '240px' }}>
+            <Search size={16} className="input-icon-left" />
+            <input
+              type="text"
+              className="form-input has-left-icon"
+              placeholder="Search by vendor name, business, phone number, email, or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
 
-        {/* Status Filter */}
-        <div style={{ minWidth: '180px' }}>
-          <select
-            className="form-select"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            {statusOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt === 'All' ? 'All Statuses' : `Status: ${opt}`}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Status Filter */}
+          <div style={{ minWidth: '190px' }}>
+            <select
+              className="form-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              {statusOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt === 'All' ? 'All Statuses' : `Status: ${opt}`}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Date Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-          <input
-            type="date"
-            className="form-input"
-            value={startDate}
-            onChange={(e) => {
-              setStartDate(e.target.value);
-            }}
-            title="Start Date"
-            style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.825rem' }}
-          />
-          <span style={{ color: 'var(--text-subtle)', fontSize: '0.8rem' }}>to</span>
-          <input
-            type="date"
-            className="form-input"
-            value={endDate}
-            onChange={(e) => {
-              setEndDate(e.target.value);
-            }}
-            title="End Date"
-            style={{ width: 'auto', padding: '0.5rem 0.75rem', fontSize: '0.825rem' }}
-          />
           <button
             className="btn btn-sm btn-outline"
             onClick={() => fetchLeads(true)}
-            title="Apply Date Range"
+            style={{ marginLeft: 'auto' }}
+            title="Refresh List"
           >
-            Apply
+            <RefreshCw size={14} />
+            <span>Refresh</span>
           </button>
         </div>
 
-        {/* Clear Filters */}
-        {hasActiveFilters && (
-          <button className="btn btn-sm btn-outline" onClick={clearFilters} style={{ color: 'var(--danger)' }}>
-            <X size={14} />
-            <span>Clear</span>
-          </button>
-        )}
-
-        <button
-          className="btn btn-sm btn-outline"
-          onClick={() => fetchLeads(true)}
-          style={{ marginLeft: 'auto' }}
-          title="Refresh List"
-        >
-          <RefreshCw size={14} />
-          <span>Refresh</span>
-        </button>
-      </div>
-
-      {/* Main Content Area */}
-      {isLoading ? (
-        <div style={{ textAlign: 'center', padding: '5rem 0' }}>
-          <Loader2 size={36} className="spinner" color="var(--primary)" />
-          <p style={{ marginTop: '0.85rem', color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-            Loading {title.toLowerCase()}...
-          </p>
-        </div>
-      ) : error ? (
+        {/* Row 2: Date Filter Presets (Today, This Week, This Month, Custom Date) */}
         <div
           style={{
-            padding: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            borderTop: '1px solid var(--border-subtle)',
+            paddingTop: '0.85rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-subtle)', marginRight: '0.25rem' }}>
+              Date Filter:
+            </span>
+
+            {[
+              { id: 'all', label: 'All Dates' },
+              { id: 'today', label: 'Today' },
+              { id: 'week', label: 'This Week' },
+              { id: 'month', label: 'This Month' },
+              { id: 'custom', label: 'Custom Date' },
+            ].map((p) => {
+              const isSelected = datePreset === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => handleDatePreset(p.id as any)}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '6px',
+                    border: '1px solid',
+                    borderColor: isSelected ? 'var(--primary)' : 'var(--border-subtle)',
+                    background: isSelected ? 'var(--primary-light)' : 'white',
+                    color: isSelected ? 'var(--primary)' : 'var(--text-muted)',
+                    fontSize: '0.75rem',
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+
+            {datePreset === 'custom' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginLeft: '0.5rem' }}>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  style={{ width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                />
+                <span style={{ color: 'var(--text-subtle)', fontSize: '0.75rem' }}>to</span>
+                <input
+                  type="date"
+                  className="form-input"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  style={{ width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                />
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => fetchLeads(true)}
+                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Clear Filters button */}
+          {hasActiveFilters && (
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={clearFilters}
+              style={{ color: 'var(--danger)', borderColor: 'var(--danger-border)' }}
+            >
+              <X size={14} />
+              <span>Clear Filters</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error Banner */}
+      {error && (
+        <div
+          style={{
+            padding: '1rem',
             background: 'var(--danger-light)',
             borderRadius: 'var(--radius-md)',
             color: 'var(--danger)',
+            fontSize: '0.875rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.75rem',
+            gap: '0.5rem',
           }}
         >
-          <AlertCircle size={22} />
-          <div>
-            <div style={{ fontWeight: 700 }}>Failed to Load Leads</div>
-            <div style={{ fontSize: '0.825rem', marginTop: '0.2rem' }}>{error}</div>
-          </div>
+          <AlertCircle size={18} />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Loading Skeleton / List */}
+      {isLoading ? (
+        <div style={{ padding: '3.5rem', textAlign: 'center' }}>
+          <Loader2 size={32} className="spinner" style={{ margin: '0 auto 1rem auto' }} />
+          <p style={{ color: 'var(--text-muted)' }}>Loading {headerInfo.title}...</p>
         </div>
       ) : filteredVendors.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
-          <p style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '1.05rem' }}>
-            No leads found matching your criteria.
+        <div className="card" style={{ padding: '3.5rem', textAlign: 'center' }}>
+          <HeaderIcon size={40} color="var(--text-subtle)" style={{ margin: '0 auto 0.75rem auto' }} />
+          <h3 style={{ marginBottom: '0.25rem', color: 'var(--text-main)' }}>No Leads Found</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: '420px', margin: '0 auto' }}>
+            {hasActiveFilters
+              ? 'No leads matched your search or status filter. Try clearing or relaxing filters.'
+              : `There are currently no active ${headerInfo.title.toLowerCase()} in the queue.`}
           </p>
-          <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', marginTop: '0.35rem' }}>
-            Try resetting your search query or adjusting your date and status filters.
-          </p>
+          {hasActiveFilters && (
+            <button
+              className="btn btn-outline"
+              onClick={clearFilters}
+              style={{ marginTop: '1rem' }}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              fontSize: '0.825rem',
+              color: 'var(--text-muted)',
+              padding: '0 0.25rem',
+            }}
+          >
+            <span>
+              Showing <strong>{filteredVendors.length}</strong> of <strong>{total}</strong> leads
+            </span>
+            <span>Sorted: Verification Priority First</span>
+          </div>
+
           {filteredVendors.map((vendor) => (
             <VendorStepperCard
               key={vendor.id}
@@ -298,18 +498,19 @@ export const CompanyLeadsTab: React.FC<CompanyLeadsTabProps> = ({
             />
           ))}
 
-          {/* Load More Pagination */}
+          {/* Load More Button */}
           {vendors.length < total && (
-            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
               <button
                 className="btn btn-outline"
                 onClick={() => fetchLeads(false)}
                 disabled={isLoadingMore}
+                style={{ minWidth: '180px' }}
               >
                 {isLoadingMore ? (
                   <>
                     <Loader2 size={16} className="spinner" />
-                    <span>Loading More Leads...</span>
+                    <span>Loading more leads...</span>
                   </>
                 ) : (
                   <span>Load More ({total - vendors.length} remaining)</span>

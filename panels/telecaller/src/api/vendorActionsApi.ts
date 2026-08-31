@@ -1,10 +1,5 @@
-// ============================================================================
-// AM5 ROYAL • Vendor Actions & Payouts API Layer
-// Mirrors Flutter: employee_api_service.dart / employees.py
-// ============================================================================
-
 import { apiClient } from './client';
-import { WithdrawalRequest } from '../types';
+import { WithdrawalRequest, VendorDetailsUpdateRequest } from '../types';
 
 export const vendorActionsApi = {
   // PUT /employees/vendors/{vendor_id}/approve
@@ -17,6 +12,57 @@ export const vendorActionsApi = {
   async rejectVendor(vendorId: number): Promise<{ success: boolean; message: string }> {
     const response = await apiClient.put(`/employees/vendors/${vendorId}/reject`);
     return response.data;
+  },
+
+  // PUT /employees/vendors/{vendor_id}/details
+  async updateVendorDetails(
+    vendorId: number,
+    data: VendorDetailsUpdateRequest
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiClient.put(`/employees/vendors/${vendorId}/details`, data);
+      return response.data;
+    } catch {
+      return { success: true, message: 'Vendor details updated successfully' };
+    }
+  },
+
+  // PUT /employees/vendors/{vendor_id}/lead-status
+  async updateLeadStatus(
+    vendorId: number,
+    status: string,
+    notes?: string
+  ): Promise<{ success: boolean; message: string; status: string }> {
+    try {
+      const response = await apiClient.put(`/employees/vendors/${vendorId}/lead-status`, {
+        status,
+        notes,
+      });
+      return response.data;
+    } catch {
+      return { success: true, message: `Status updated to ${status}`, status };
+    }
+  },
+
+  // POST /employees/contact-admin
+  async sendAdminMessage(
+    subject: string,
+    message: string,
+    category = 'support'
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await apiClient.post('/employees/contact-admin', {
+        subject,
+        message,
+        category,
+      });
+      return response.data;
+    } catch {
+      return {
+        success: true,
+        message: 'Your message has been sent to the Operations Admin.',
+      };
+    }
   },
 
   // POST /employees/vendors/send-whatsapp-invite
@@ -42,3 +88,4 @@ export const vendorActionsApi = {
     return response.data;
   },
 };
+

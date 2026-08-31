@@ -13,6 +13,9 @@ interface DashboardLayoutProps {
   onTabChange: (tab: number) => void;
   websiteLeadsCount?: number;
   appLeadsCount?: number;
+  freelancerLeadsCount?: number;
+  unreadNotificationsCount?: number;
+  onOpenContactAdmin?: () => void;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -21,6 +24,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onTabChange,
   websiteLeadsCount,
   appLeadsCount,
+  freelancerLeadsCount,
+  unreadNotificationsCount,
+  onOpenContactAdmin,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -31,6 +37,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onTabChange={onTabChange}
           websiteLeadsCount={websiteLeadsCount}
           appLeadsCount={appLeadsCount}
+          freelancerLeadsCount={freelancerLeadsCount}
+          unreadNotificationsCount={unreadNotificationsCount}
+          onOpenContactAdmin={onOpenContactAdmin}
         />
         <main
           style={{

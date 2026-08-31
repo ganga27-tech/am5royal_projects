@@ -68,11 +68,12 @@ export function getStepIndex(status: string | null | undefined): number {
     case 'services added':
     case 'services_added':
       return 0;
+    case 'registration':
+    case 'personal registration':
+      return 1;
     case 'slots':
     case 'slots done':
     case 'slots_done':
-      return 1;
-    case 'registration':
       return 2;
     case 'business registration':
     case 'business reg':
