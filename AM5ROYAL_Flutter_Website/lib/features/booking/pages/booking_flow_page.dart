@@ -18,7 +18,13 @@ import '../pages/booking_detail_page.dart';
 import '../widgets/booking_verification_dialog.dart';
 
 class BookingFlowPage extends StatefulWidget {
-  const BookingFlowPage({super.key});
+  const BookingFlowPage({
+    super.key,
+    this.initialCategoryId,
+  });
+
+  /// When set, skips category selection and opens that category directly.
+  final int? initialCategoryId;
 
   @override
   State<BookingFlowPage> createState() => _BookingFlowPageState();
@@ -94,6 +100,20 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     });
     try {
       _categories = await _catalogApi.getCategories();
+      final int? initialCategoryId = widget.initialCategoryId;
+      if (initialCategoryId != null) {
+        ServiceCategory? category;
+        for (final ServiceCategory item in _categories) {
+          if (item.id == initialCategoryId) {
+            category = item;
+            break;
+          }
+        }
+        if (category != null) {
+          await _selectCategory(category);
+          return;
+        }
+      }
     } catch (e) {
       _error = e.toString();
     } finally {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/config/booking_config.dart';
 import '../core/seo/seo_metadata.dart';
 import '../core/seo/seo_routes.dart';
 import '../core/seo/seo_service.dart';
@@ -240,27 +241,6 @@ class _HomePageState extends State<HomePage> {
   // ===========================================================================
 
   Future<void> _handleBookService() async {
-    if (!widget.authService.isAuthenticated) {
-      final bool? loggedIn = await Navigator.of(context).push<bool>(
-        MaterialPageRoute<bool>(
-          builder: (BuildContext context) => LoginPage(
-            onRegisterPressed: _handleRegister,
-            onLoginSuccess: () {
-              if (!mounted) {
-                return;
-              }
-
-              setState(() {});
-            },
-          ),
-        ),
-      );
-
-      if (loggedIn != true && !widget.authService.isAuthenticated) {
-        return;
-      }
-    }
-
     if (!mounted) {
       return;
     }
@@ -271,7 +251,9 @@ class _HomePageState extends State<HomePage> {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => const BookingFlowPage(),
+        builder: (BuildContext context) => const BookingFlowPage(
+          initialCategoryId: BookingConfig.homeServicesCategoryId,
+        ),
       ),
     );
 
