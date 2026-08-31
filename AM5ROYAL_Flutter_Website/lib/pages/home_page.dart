@@ -6,6 +6,7 @@ import '../core/seo/seo_routes.dart';
 import '../core/seo/seo_service.dart';
 import '../core/utils/vendor_navigation.dart';
 import '../features/auth/services/auth_service.dart';
+import '../features/booking/models/booking_models.dart';
 import '../features/booking/pages/booking_flow_page.dart';
 import '../sections/careers/careers_section.dart';
 import '../sections/faqs/faqs_section.dart';
@@ -266,6 +267,29 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> _handleSubcategorySelected(ServiceSubcategory subcategory) async {
+    if (!mounted) {
+      return;
+    }
+
+    SeoService.applyMetadata(SeoMetadata.booking);
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (BuildContext context) => BookingFlowPage(
+          initialCategoryId: BookingConfig.homeServicesCategoryId,
+          initialSubcategoryId: subcategory.id,
+        ),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    SeoService.applySection(_currentSection);
+  }
+
   // ===========================================================================
   // LOGIN
   // ===========================================================================
@@ -355,6 +379,7 @@ class _HomePageState extends State<HomePage> {
       case NavbarSectionId.home:
         return _HomeContent(
           onServiceSelected: _handleServiceCardSelected,
+          onSubcategorySelected: _handleSubcategorySelected,
           onBookService: _handleBookService,
           servicesSectionKey: _servicesSectionKey,
         );
@@ -484,11 +509,14 @@ class _HomePageState extends State<HomePage> {
 class _HomeContent extends StatefulWidget {
   const _HomeContent({
     required this.onServiceSelected,
+    required this.onSubcategorySelected,
     required this.onBookService,
     required this.servicesSectionKey,
   });
 
   final VoidCallback onServiceSelected;
+
+  final ValueChanged<ServiceSubcategory> onSubcategorySelected;
 
   final VoidCallback onBookService;
 
@@ -544,7 +572,7 @@ class _HomeContentState extends State<_HomeContent> {
         KeyedSubtree(
           key: widget.servicesSectionKey,
           child: OurServicesSection(
-            onServiceSelected: _handleServiceSelected,
+            onSubcategorySelected: widget.onSubcategorySelected,
             onBookService: widget.onBookService,
           ),
         ),

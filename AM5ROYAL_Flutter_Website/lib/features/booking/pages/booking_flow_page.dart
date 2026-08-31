@@ -21,10 +21,14 @@ class BookingFlowPage extends StatefulWidget {
   const BookingFlowPage({
     super.key,
     this.initialCategoryId,
+    this.initialSubcategoryId,
   });
 
   /// When set, skips category selection and opens that category directly.
   final int? initialCategoryId;
+
+  /// When set (with [initialCategoryId]), skips to service selection for this subcategory.
+  final int? initialSubcategoryId;
 
   @override
   State<BookingFlowPage> createState() => _BookingFlowPageState();
@@ -110,7 +114,10 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           }
         }
         if (category != null) {
-          await _selectCategory(category);
+          await _selectCategory(
+            category,
+            autoSelectSubcategoryId: widget.initialSubcategoryId,
+          );
           return;
         }
       }
@@ -123,7 +130,10 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
     }
   }
 
-  Future<void> _selectCategory(ServiceCategory category) async {
+  Future<void> _selectCategory(
+    ServiceCategory category, {
+    int? autoSelectSubcategoryId,
+  }) async {
     setState(() {
       _selectedCategory = category;
       _selectedSubcategory = null;
@@ -140,6 +150,19 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
         _catalogServices = await _catalogApi.getServices(categoryId: category.id);
         _step = 2;
       } else {
+        if (autoSelectSubcategoryId != null) {
+          ServiceSubcategory? subcategory;
+          for (final ServiceSubcategory item in _subcategories) {
+            if (item.id == autoSelectSubcategoryId) {
+              subcategory = item;
+              break;
+            }
+          }
+          if (subcategory != null) {
+            await _selectSubcategory(subcategory);
+            return;
+          }
+        }
         _step = 1;
       }
     } catch (e) {

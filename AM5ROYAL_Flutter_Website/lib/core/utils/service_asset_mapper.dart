@@ -37,8 +37,8 @@ abstract final class ServiceAssetMapper {
         key.contains('carpentry')) {
       return AppAssets.modularInterior;
     }
-    if (key.contains('electrical')) return AppAssets.acRepair;
-    if (key.contains('appliance')) return AppAssets.acRepair;
+    if (key.contains('electrical')) return AppAssets.smartNormalElectrical;
+    if (key.contains('appliance')) return AppAssets.smartNormalAppliancesRepair;
     if (key.contains('nursing')) return AppAssets.healthcareMedical;
     if (key.contains('home service')) return AppAssets.cleaning;
     if (key.contains('event') || key.contains('wedding')) {

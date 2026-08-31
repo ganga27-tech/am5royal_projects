@@ -1,104 +1,61 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_assets.dart';
+import '../../core/config/booking_config.dart';
 import '../../core/utils/vendor_navigation.dart';
+import '../../features/booking/data/catalog_api.dart';
+import '../../features/booking/models/booking_models.dart';
+import '../../widgets/service_image.dart';
 
-class OurServicesSection extends StatelessWidget {
+class OurServicesSection extends StatefulWidget {
   const OurServicesSection({
     super.key,
-    this.onServiceSelected,
+    this.onSubcategorySelected,
     this.onBookService,
   });
 
-  final VoidCallback? onServiceSelected;
+  final ValueChanged<ServiceSubcategory>? onSubcategorySelected;
   final VoidCallback? onBookService;
 
-  // ===========================================================================
-  // OUR SERVICES - 20
-  // ===========================================================================
+  @override
+  State<OurServicesSection> createState() => _OurServicesSectionState();
+}
 
-  static const List<_ServiceItem> services = [
-    _ServiceItem(
-      'Pet Care',
-      AppAssets.petCare,
-    ),
-    _ServiceItem(
-      'AC Repair',
-      AppAssets.acRepair,
-    ),
-    _ServiceItem(
-      'Plumbing',
-      AppAssets.plumbing,
-    ),
-    _ServiceItem(
-      'Cooking',
-      AppAssets.cooking,
-    ),
-    _ServiceItem(
-      'Cleaning',
-      AppAssets.cleaning,
-    ),
-    _ServiceItem(
-      'Driver',
-      AppAssets.driver,
-    ),
-    _ServiceItem(
-      'Immediate Service',
-      AppAssets.immediate,
-    ),
-    _ServiceItem(
-      'Pest Control',
-      AppAssets.pestControl,
-    ),
-    _ServiceItem(
-      'Lab Test',
-      AppAssets.labTest,
-    ),
-    _ServiceItem(
-      'Painting',
-      AppAssets.painting,
-    ),
-    _ServiceItem(
-      'Physiotherapy',
-      AppAssets.physiotherapy,
-    ),
-    _ServiceItem(
-      'Waterproofing',
-      AppAssets.waterproofing,
-    ),
-    _ServiceItem(
-      'Beauty & Wellness',
-      AppAssets.beautyWellness,
-    ),
-    _ServiceItem(
-      'Home & Online Classes',
-      AppAssets.homeOnlineClasses,
-    ),
-    _ServiceItem(
-      'Caretaker',
-      AppAssets.caretaker,
-    ),
-    _ServiceItem(
-      '2 & 4 Wheeler Services',
-      AppAssets.twoFourWheeler,
-    ),
-    _ServiceItem(
-      'Modular Works & Interior',
-      AppAssets.modularInterior,
-    ),
-    _ServiceItem(
-      'Smart & Normal Appliances Repair',
-      AppAssets.smartNormalAppliancesRepair,
-    ),
-    _ServiceItem(
-      'Smart & Normal Electrical',
-      AppAssets.smartNormalElectrical,
-    ),
-    _ServiceItem(
-      'Nursing',
-      AppAssets.nursing,
-    ),
-  ];
+class _OurServicesSectionState extends State<OurServicesSection> {
+  final CatalogApi _catalogApi = CatalogApi();
+
+  List<ServiceSubcategory> _subcategories = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSubcategories();
+  }
+
+  Future<void> _loadSubcategories() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final items = await _catalogApi.getSubcategories(
+        categoryId: BookingConfig.homeServicesCategoryId,
+      );
+      items.sort((a, b) => a.name.compareTo(b.name));
+      if (!mounted) return;
+      setState(() {
+        _subcategories = items;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,7 +107,7 @@ class OurServicesSection extends StatelessWidget {
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: onBookService,
+                onPressed: widget.onBookService,
                 icon: const Icon(
                   Icons.calendar_month_outlined,
                   size: 18,
@@ -174,51 +131,80 @@ class OurServicesSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 28),
-          LayoutBuilder(
-            builder: (
-              BuildContext context,
-              BoxConstraints constraints,
-            ) {
-              final double width = constraints.maxWidth;
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: CircularProgressIndicator(
+                color: Color(0xFF0B4EA2),
+              ),
+            )
+          else if (_error != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  Text(
+                    'Could not load services.',
+                    style: TextStyle(color: Colors.red.shade700),
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: _loadSubcategories,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          else if (_subcategories.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'No services available right now.',
+                style: TextStyle(color: Color(0xFF687B91)),
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (
+                BuildContext context,
+                BoxConstraints constraints,
+              ) {
+                final double width = constraints.maxWidth;
 
-              if (width >= 1100) {
-                return _DesktopServices(
-                  services: services,
-                  onServiceSelected: onServiceSelected,
+                if (width >= 1100) {
+                  return _DesktopServices(
+                    subcategories: _subcategories,
+                    onSubcategorySelected: widget.onSubcategorySelected,
+                  );
+                }
+
+                if (width >= 650) {
+                  return _TabletServices(
+                    subcategories: _subcategories,
+                    onSubcategorySelected: widget.onSubcategorySelected,
+                  );
+                }
+
+                return _MobileServices(
+                  subcategories: _subcategories,
+                  onSubcategorySelected: widget.onSubcategorySelected,
                 );
-              }
-
-              if (width >= 650) {
-                return _TabletServices(
-                  services: services,
-                  onServiceSelected: onServiceSelected,
-                );
-              }
-
-              return _MobileServices(
-                services: services,
-                onServiceSelected: onServiceSelected,
-              );
-            },
-          ),
+              },
+            ),
         ],
       ),
     );
   }
 }
 
-// =============================================================================
-// DESKTOP
-// =============================================================================
-
 class _DesktopServices extends StatelessWidget {
   const _DesktopServices({
-    required this.services,
-    required this.onServiceSelected,
+    required this.subcategories,
+    required this.onSubcategorySelected,
   });
 
-  final List<_ServiceItem> services;
-  final VoidCallback? onServiceSelected;
+  final List<ServiceSubcategory> subcategories;
+  final ValueChanged<ServiceSubcategory>? onSubcategorySelected;
 
   @override
   Widget build(BuildContext context) {
@@ -229,20 +215,17 @@ class _DesktopServices extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: services.length,
+        itemCount: subcategories.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 9,
           crossAxisSpacing: 18,
           mainAxisSpacing: 18,
           mainAxisExtent: 142,
         ),
-        itemBuilder: (
-          BuildContext context,
-          int index,
-        ) {
+        itemBuilder: (BuildContext context, int index) {
           return _ServiceCard(
-            item: services[index],
-            onTap: onServiceSelected,
+            subcategory: subcategories[index],
+            onTap: onSubcategorySelected,
           );
         },
       ),
@@ -250,18 +233,14 @@ class _DesktopServices extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// TABLET
-// =============================================================================
-
 class _TabletServices extends StatelessWidget {
   const _TabletServices({
-    required this.services,
-    required this.onServiceSelected,
+    required this.subcategories,
+    required this.onSubcategorySelected,
   });
 
-  final List<_ServiceItem> services;
-  final VoidCallback? onServiceSelected;
+  final List<ServiceSubcategory> subcategories;
+  final ValueChanged<ServiceSubcategory>? onSubcategorySelected;
 
   @override
   Widget build(BuildContext context) {
@@ -272,20 +251,17 @@ class _TabletServices extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: services.length,
+        itemCount: subcategories.length,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
           crossAxisSpacing: 16,
           mainAxisSpacing: 16,
           mainAxisExtent: 140,
         ),
-        itemBuilder: (
-          BuildContext context,
-          int index,
-        ) {
+        itemBuilder: (BuildContext context, int index) {
           return _ServiceCard(
-            item: services[index],
-            onTap: onServiceSelected,
+            subcategory: subcategories[index],
+            onTap: onSubcategorySelected,
           );
         },
       ),
@@ -293,56 +269,45 @@ class _TabletServices extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// MOBILE
-// =============================================================================
-
 class _MobileServices extends StatelessWidget {
   const _MobileServices({
-    required this.services,
-    required this.onServiceSelected,
+    required this.subcategories,
+    required this.onSubcategorySelected,
   });
 
-  final List<_ServiceItem> services;
-  final VoidCallback? onServiceSelected;
+  final List<ServiceSubcategory> subcategories;
+  final ValueChanged<ServiceSubcategory>? onSubcategorySelected;
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: services.length,
+      itemCount: subcategories.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         mainAxisExtent: 132,
       ),
-      itemBuilder: (
-        BuildContext context,
-        int index,
-      ) {
+      itemBuilder: (BuildContext context, int index) {
         return _ServiceCard(
-          item: services[index],
-          onTap: onServiceSelected,
+          subcategory: subcategories[index],
+          onTap: onSubcategorySelected,
         );
       },
     );
   }
 }
 
-// =============================================================================
-// SERVICE CARD
-// =============================================================================
-
 class _ServiceCard extends StatefulWidget {
   const _ServiceCard({
-    required this.item,
+    required this.subcategory,
     required this.onTap,
   });
 
-  final _ServiceItem item;
-  final VoidCallback? onTap;
+  final ServiceSubcategory subcategory;
+  final ValueChanged<ServiceSubcategory>? onTap;
 
   @override
   State<_ServiceCard> createState() => _ServiceCardState();
@@ -358,28 +323,10 @@ class _ServiceCardState extends State<_ServiceCard> {
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) {
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _hovered = true;
-        });
-      },
-      onExit: (_) {
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _hovered = false;
-        });
-      },
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
-        duration: const Duration(
-          milliseconds: 180,
-        ),
+        duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
         transform: Matrix4.translationValues(
           0,
@@ -406,26 +353,12 @@ class _ServiceCardState extends State<_ServiceCard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              if (mounted) {
-                setState(() {
-                  _pressed = true;
-                });
-              }
-
-              widget.onTap?.call();
-
+              setState(() => _pressed = true);
+              widget.onTap?.call(widget.subcategory);
               Future<void>.delayed(
-                const Duration(
-                  milliseconds: 180,
-                ),
+                const Duration(milliseconds: 180),
                 () {
-                  if (!mounted) {
-                    return;
-                  }
-
-                  setState(() {
-                    _pressed = false;
-                  });
+                  if (mounted) setState(() => _pressed = false);
                 },
               );
             },
@@ -441,22 +374,10 @@ class _ServiceCardState extends State<_ServiceCard> {
                   SizedBox(
                     width: 64,
                     height: 64,
-                    child: Image.asset(
-                      widget.item.image,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (
-                        BuildContext context,
-                        Object error,
-                        StackTrace? stackTrace,
-                      ) {
-                        return const Icon(
-                          Icons.home_repair_service_rounded,
-                          color: Color(0xFF0B4EA2),
-                          size: 36,
-                        );
-                      },
+                    child: ServiceImage(
+                      imageUrl: widget.subcategory.iconUrl,
+                      name: widget.subcategory.name,
+                      iconSize: 36,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -464,7 +385,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                     height: 34,
                     child: Center(
                       child: Text(
-                        widget.item.name,
+                        widget.subcategory.name,
                         textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -486,10 +407,6 @@ class _ServiceCardState extends State<_ServiceCard> {
     );
   }
 }
-
-// =============================================================================
-// SECTION HEADING
-// =============================================================================
 
 class _SectionHeading extends StatelessWidget {
   const _SectionHeading();
@@ -532,18 +449,4 @@ class _SectionHeading extends StatelessWidget {
       ],
     );
   }
-}
-
-// =============================================================================
-// MODEL
-// =============================================================================
-
-class _ServiceItem {
-  const _ServiceItem(
-    this.name,
-    this.image,
-  );
-
-  final String name;
-  final String image;
 }
