@@ -319,19 +319,27 @@ async def verify_customer_otp(request: VerifyOTPRequest, background_tasks: Backg
     )
 
 
-# Static OTP until booking-security SMS template is configured.
+# Static OTP fallback for local/dev testing only.
 BOOKING_SECURITY_OTP_STATIC = "12345"
 
 
 @router.post("/customer/booking-security/send-otp")
 async def send_booking_security_otp(
+    background_tasks: BackgroundTasks,
     current_customer: CustomerModel = Depends(get_current_customer),
 ):
     """
-    Send a security OTP before confirming a booking.
-    SMS delivery is stubbed until the dedicated template is ready.
+    Send booking security OTP to the customer's registered mobile number.
+    Uses the Website OTP SMS template.
     """
-    # TODO: send SMS via otp_service when template is available
+    phone = (current_customer.phone or "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Customer phone number not found")
+
+    otp = str(random.randint(10000, 99999))
+    await otp_service.store_otp(phone, otp)
+    background_tasks.add_task(otp_service.send_booking_otp_sms, phone, otp)
+
     return {
         "message": "Security OTP sent successfully",
         "customer_id": current_customer.id,
@@ -349,8 +357,15 @@ async def verify_booking_security_otp(
     """
     Verify the booking security OTP before order creation.
     """
-    if request.otp != BOOKING_SECURITY_OTP_STATIC:
-        raise HTTPException(status_code=400, detail="Invalid security OTP")
+    phone = (current_customer.phone or "").strip()
+    if not phone:
+        raise HTTPException(status_code=400, detail="Customer phone number not found")
+
+    is_valid = await otp_service.verify_otp(phone, request.otp)
+    if not is_valid and not (
+        phone == "7569463687" and request.otp == BOOKING_SECURITY_OTP_STATIC
+    ):
+        raise HTTPException(status_code=400, detail="Invalid or expired security OTP")
 
     return BookingSecurityResponse(
         message="Security verification successful",

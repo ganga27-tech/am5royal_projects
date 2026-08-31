@@ -21,6 +21,7 @@ import '../../../../features/supercategory/data/datasources/main_category_api_se
 import '../../../../features/supercategory/data/models/main_category_model.dart';
 import '../../../../features/supercategory/data/models/subcategory_model.dart';
 import '../../../../features/admin/data/models/company_lead_model.dart';
+import '../../../../features/admin/presentation/widgets/hr_management_tab.dart';
 import 'dart:async';
 
 class AdminDashboardPage extends StatefulWidget {
@@ -379,6 +380,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         'title': 'Company Application Leads',
         'icon': Icons.phone_android_outlined
       },
+      {'title': 'HR', 'icon': Icons.badge_outlined},
     ];
 
     return Container(
@@ -495,6 +497,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         return _buildWebsiteLeadsTab(context, isDark);
       case 6:
         return _buildMobileLeadsTab(context, isDark);
+      case 7:
+        return HrManagementTab(isDark: isDark);
       default:
         return _buildOverviewAnalyticsTab(context, isDark, state);
     }

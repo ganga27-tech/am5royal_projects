@@ -18,6 +18,7 @@ from app.models.subscriptions import VendorSubscription, SubscriptionPlan
 from app.models.orders import Order as OrderModel
 from app.models.user_location import Customer
 from app.services.notification_service import send_user_push_notification
+from app.services.otp_service import otp_service
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,24 @@ async def notify_vendor_new_booking(
     order: Order,
     background_tasks=None,
 ) -> None:
+    customer_name = order.customer_name or "Customer"
+    booking_id = order.booking_reference or ""
+
+    if vendor.mobile:
+        if background_tasks is not None:
+            background_tasks.add_task(
+                otp_service.send_vendor_new_booking_sms,
+                vendor.mobile,
+                customer_name,
+                booking_id,
+            )
+        else:
+            await otp_service.send_vendor_new_booking_sms(
+                vendor.mobile,
+                customer_name,
+                booking_id,
+            )
+
     if not vendor.user_id:
         logger.warning("Vendor %s has no user_id; skip booking push", vendor.id)
         return
@@ -79,7 +98,7 @@ async def notify_vendor_new_booking(
     )
     data = {
         "type": "new_booking",
-        "order_id": order.booking_reference or "",
+        "order_id": booking_id,
     }
 
     if background_tasks is not None:

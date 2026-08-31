@@ -136,6 +136,42 @@ class OTPService:
             logger.error(f"Error sending Custom SMS to {phone}: {str(e)}")
             return False
 
+    async def send_booking_otp_sms(self, phone: str, otp: str) -> bool:
+        """
+        Send booking confirmation OTP using the Website OTP DLT template.
+        """
+        message = (
+            f"Welcome to AM5ROYAL! Your OTP for service booking is {otp}. "
+            "Please enter this code to confirm your booking. Do not share this code "
+            "with anyone. Thank you for choosing AM5ROYAL!"
+        )
+        return await self.send_custom_sms(
+            phone=phone,
+            message=message,
+            tpid=settings.SMS_BOOKING_OTP_TPID,
+        )
+
+    async def send_vendor_new_booking_sms(
+        self,
+        phone: str,
+        customer_name: str,
+        booking_id: str,
+    ) -> bool:
+        """
+        Notify vendor of a new booking using the Customer Details DLT template.
+        """
+        message = (
+            "Welcome to AM5ROYAL! Dear Vendor,You have received a new booking "
+            f"through AM5ROYAL.Customer Name: {customer_name}, Booking ID: {booking_id}. "
+            "Please log in to your AM5ROYAL account, review the booking details, "
+            "and confirm the booking at the earliest. Thank you for choosing AM5ROYAL."
+        )
+        return await self.send_custom_sms(
+            phone=phone,
+            message=message,
+            tpid=settings.SMS_VENDOR_BOOKING_TPID,
+        )
+
     def _send_email_sync(self, email: str, otp: str) -> bool:
         if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
             logger.warning("SMTP_USER or SMTP_PASSWORD not set. Skipping email sending.")

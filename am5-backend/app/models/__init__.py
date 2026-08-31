@@ -14,3 +14,4 @@ from .freelancer import Freelancer
 from .points_history import PointsHistory
 from .vendor_extras import VendorSalesMedia, VendorOffer, VendorNewLaunch, VendorMonthlyHistory
 from .verification_incentive import VerificationIncentive
+from .career import JobOpening, JobApplication

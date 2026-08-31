@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import '../config/api_config.dart';
 import '../storage/token_storage.dart';
@@ -77,6 +78,50 @@ class ApiClient {
           body: body != null ? jsonEncode(body) : null,
         )
         .timeout(ApiConfig.receiveTimeout);
+    return _handleResponse(response);
+  }
+
+  Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fileField,
+    required String fileName,
+    required List<int> bytes,
+    bool authenticated = false,
+  }) async {
+    final Uri uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    final request = http.MultipartRequest('POST', uri);
+
+    final headers = await _headers(authenticated: authenticated);
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+
+    final ext = fileName.contains('.') ? fileName.split('.').last.toLowerCase() : 'pdf';
+    MediaType mediaType;
+    switch (ext) {
+      case 'doc':
+        mediaType = MediaType('application', 'msword');
+        break;
+      case 'docx':
+        mediaType = MediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.wordprocessingml.document',
+        );
+        break;
+      default:
+        mediaType = MediaType('application', 'pdf');
+    }
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        fileField,
+        bytes,
+        filename: fileName,
+        contentType: mediaType,
+      ),
+    );
+
+    final streamed = await request.send().timeout(ApiConfig.receiveTimeout);
+    final response = await http.Response.fromStream(streamed);
     return _handleResponse(response);
   }
 

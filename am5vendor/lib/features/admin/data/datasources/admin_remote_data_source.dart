@@ -6,6 +6,30 @@ import '../models/admin_stats_model.dart';
 import '../models/admin_employee_model.dart';
 import '../models/admin_vendor_model.dart';
 import '../models/company_lead_model.dart';
+import '../models/hr_models.dart';
+
+String _dioErrorMessage(DioException e, String fallback) {
+  final data = e.response?.data;
+  if (data is Map<String, dynamic>) {
+    final detail = data['detail'];
+    if (detail is String && detail.isNotEmpty) return detail;
+    if (detail is List && detail.isNotEmpty) {
+      final messages = detail
+          .map((item) {
+            if (item is Map && item['msg'] != null) {
+              final loc = item['loc'];
+              final field = loc is List && loc.isNotEmpty ? loc.last : 'field';
+              return '$field: ${item['msg']}';
+            }
+            return item.toString();
+          })
+          .where((m) => m.isNotEmpty)
+          .toList();
+      if (messages.isNotEmpty) return messages.join(', ');
+    }
+  }
+  return fallback;
+}
 
 abstract class AdminRemoteDataSource {
   Future<AdminStatsModel> getDashboardStats();
@@ -47,6 +71,18 @@ abstract class AdminRemoteDataSource {
     int limit = 20,
   });
   Future<LeadAssignResultModel> assignCompanyLeads();
+  Future<List<JobOpeningModel>> getHrOpenings();
+  Future<JobOpeningModel> createHrOpening(Map<String, dynamic> data);
+  Future<JobOpeningModel> updateHrOpening(int id, Map<String, dynamic> data);
+  Future<void> deactivateHrOpening(int id);
+  Future<HrApplicationsResponseModel> getHrApplications({
+    int? jobOpeningId,
+    String? status,
+    String? search,
+    int skip = 0,
+    int limit = 20,
+  });
+  Future<void> updateHrApplicationStatus(int applicationId, String status);
 }
 
 class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
@@ -649,6 +685,102 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       throw ServerException('Failed to assign leads');
     } on DioException catch (e) {
       throw ServerException(e.response?.data['detail'] ?? 'Failed to assign company leads');
+    }
+  }
+
+  @override
+  Future<List<JobOpeningModel>> getHrOpenings() async {
+    try {
+      final response = await dio.get('/admin/hr/openings');
+      if (response.statusCode == 200) {
+        return (response.data as List<dynamic>)
+            .map((e) => JobOpeningModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+      }
+      throw ServerException('Failed to get HR openings');
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Failed to get HR openings');
+    }
+  }
+
+  @override
+  Future<JobOpeningModel> createHrOpening(Map<String, dynamic> data) async {
+    try {
+      final response = await dio.post('/admin/hr/openings', data: data);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return JobOpeningModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw ServerException('Failed to create opening');
+    } on DioException catch (e) {
+      throw ServerException(_dioErrorMessage(e, 'Failed to create opening'));
+    }
+  }
+
+  @override
+  Future<JobOpeningModel> updateHrOpening(int id, Map<String, dynamic> data) async {
+    try {
+      final response = await dio.put('/admin/hr/openings/$id', data: data);
+      if (response.statusCode == 200) {
+        return JobOpeningModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw ServerException('Failed to update opening');
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Failed to update opening');
+    }
+  }
+
+  @override
+  Future<void> deactivateHrOpening(int id) async {
+    try {
+      final response = await dio.delete('/admin/hr/openings/$id');
+      if (response.statusCode != 200) {
+        throw ServerException('Failed to deactivate opening');
+      }
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Failed to deactivate opening');
+    }
+  }
+
+  @override
+  Future<HrApplicationsResponseModel> getHrApplications({
+    int? jobOpeningId,
+    String? status,
+    String? search,
+    int skip = 0,
+    int limit = 20,
+  }) async {
+    try {
+      final response = await dio.get(
+        '/admin/hr/applications',
+        queryParameters: {
+          'skip': skip,
+          'limit': limit,
+          if (jobOpeningId != null) 'job_opening_id': jobOpeningId,
+          if (status != null && status.isNotEmpty) 'status_filter': status,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+      );
+      if (response.statusCode == 200) {
+        return HrApplicationsResponseModel.fromJson(response.data as Map<String, dynamic>);
+      }
+      throw ServerException('Failed to get HR applications');
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Failed to get HR applications');
+    }
+  }
+
+  @override
+  Future<void> updateHrApplicationStatus(int applicationId, String status) async {
+    try {
+      final response = await dio.patch(
+        '/admin/hr/applications/$applicationId/status',
+        queryParameters: {'status_value': status},
+      );
+      if (response.statusCode != 200) {
+        throw ServerException('Failed to update application status');
+      }
+    } on DioException catch (e) {
+      throw ServerException(e.response?.data['detail'] ?? 'Failed to update application status');
     }
   }
 }

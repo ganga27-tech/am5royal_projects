@@ -1,25 +1,66 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../features/careers/data/careers_api.dart';
+import '../../features/careers/pages/career_application_page.dart';
 
-class CareersSection extends StatelessWidget {
+class CareersSection extends StatefulWidget {
   const CareersSection({
     super.key,
   });
 
   @override
+  State<CareersSection> createState() => _CareersSectionState();
+}
+
+class _CareersSectionState extends State<CareersSection> {
+  final CareersApi _api = CareersApi();
+  List<JobOpening> _openings = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOpenings();
+  }
+
+  Future<void> _loadOpenings() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final openings = await _api.getOpenings();
+      if (!mounted) return;
+      setState(() {
+        _openings = openings;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  void _openApplication(JobOpening opening) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CareerApplicationPage(opening: opening),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final double screenWidth = MediaQuery.sizeOf(context).width;
-
     final bool isDesktop = screenWidth >= 900;
 
     return Container(
       width: double.infinity,
-
-      // =====================================================================
-      // AM5ROYAL GLOBAL BACKGROUND
-      // =====================================================================
-
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -30,14 +71,16 @@ class CareersSection extends StatelessWidget {
           ],
         ),
       ),
-
       child: Column(
         children: [
-          _CareersHeader(
-            isDesktop: isDesktop,
-          ),
+          _CareersHeader(isDesktop: isDesktop),
           _OpenPositions(
             isDesktop: isDesktop,
+            openings: _openings,
+            isLoading: _isLoading,
+            error: _error,
+            onRetry: _loadOpenings,
+            onApply: _openApplication,
           ),
         ],
       ),
@@ -45,14 +88,8 @@ class CareersSection extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// CAREERS HEADER
-// =============================================================================
-
 class _CareersHeader extends StatelessWidget {
-  const _CareersHeader({
-    required this.isDesktop,
-  });
+  const _CareersHeader({required this.isDesktop});
 
   final bool isDesktop;
 
@@ -60,16 +97,10 @@ class _CareersHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 70 : 24,
         vertical: isDesktop ? 70 : 50,
       ),
-
-      // =====================================================================
-      // NAVY HEADER
-      // =====================================================================
-
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -80,29 +111,17 @@ class _CareersHeader extends StatelessWidget {
           ],
         ),
       ),
-
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 700,
-          ),
+          constraints: const BoxConstraints(maxWidth: 700),
           child: Column(
             children: [
-              // ===============================================================
-              // LABEL
-              // ===============================================================
-
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 8,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0x18FFFFFF),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: const Color(0x35FFFFFF),
-                  ),
+                  border: Border.all(color: const Color(0x35FFFFFF)),
                 ),
                 child: const Text(
                   'CAREERS AT AM5ROYAL',
@@ -114,13 +133,7 @@ class _CareersHeader extends StatelessWidget {
                   ),
                 ),
               ),
-
               const SizedBox(height: 20),
-
-              // ===============================================================
-              // TITLE
-              // ===============================================================
-
               Text(
                 'Join Our Team',
                 textAlign: TextAlign.center,
@@ -132,13 +145,7 @@ class _CareersHeader extends StatelessWidget {
                   height: 1.1,
                 ),
               ),
-
               const SizedBox(height: 14),
-
-              // ===============================================================
-              // DESCRIPTION
-              // ===============================================================
-
               const Text(
                 'We are hiring across engineering, marketing and operations '
                 'teams, pan-India.',
@@ -157,47 +164,22 @@ class _CareersHeader extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// OPEN POSITIONS
-// =============================================================================
-
 class _OpenPositions extends StatelessWidget {
   const _OpenPositions({
     required this.isDesktop,
+    required this.openings,
+    required this.isLoading,
+    required this.error,
+    required this.onRetry,
+    required this.onApply,
   });
 
   final bool isDesktop;
-
-  static const List<_JobData> jobs = [
-    _JobData(
-      icon: Icons.code_rounded,
-      category: 'Tech',
-      title: 'Backend Developer',
-      type: 'Full-Time',
-      location: 'Pan India (Remote / Hybrid)',
-    ),
-    _JobData(
-      icon: Icons.phone_android_rounded,
-      category: 'Tech',
-      title: 'Frontend Developer',
-      type: 'Full-Time',
-      location: 'Pan India (Remote / Hybrid)',
-    ),
-    _JobData(
-      icon: Icons.campaign_rounded,
-      category: 'Marketing',
-      title: 'Digital Marketing Executive',
-      type: 'Full-Time',
-      location: 'Pan India (Remote / Hybrid)',
-    ),
-    _JobData(
-      icon: Icons.verified_user_rounded,
-      category: 'Operations',
-      title: 'Vendor Verification Executive',
-      type: 'Full-Time · Multiple Languages',
-      location: 'Pan India',
-    ),
-  ];
+  final List<JobOpening> openings;
+  final bool isLoading;
+  final String? error;
+  final VoidCallback onRetry;
+  final ValueChanged<JobOpening> onApply;
 
   @override
   Widget build(BuildContext context) {
@@ -208,16 +190,10 @@ class _OpenPositions extends StatelessWidget {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 1100,
-          ),
+          constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ===============================================================
-              // SECTION TITLE
-              // ===============================================================
-
               const Text(
                 'Open Positions',
                 style: TextStyle(
@@ -227,9 +203,7 @@ class _OpenPositions extends StatelessWidget {
                   height: 1.2,
                 ),
               ),
-
               const SizedBox(height: 7),
-
               const Text(
                 'Currently hiring for the following roles across India.',
                 style: TextStyle(
@@ -238,46 +212,61 @@ class _OpenPositions extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
-
               const SizedBox(height: 28),
-
-              // ===============================================================
-              // DESKTOP GRID
-              // ===============================================================
-
-              if (isDesktop)
+              if (isLoading)
+                const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: CircularProgressIndicator(color: AppColors.royalBlue),
+                  ),
+                )
+              else if (error != null)
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Could not load openings.',
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+                    ],
+                  ),
+                )
+              else if (openings.isEmpty)
+                const Center(
+                  child: Text(
+                    'No open positions at the moment. Check back soon!',
+                    style: TextStyle(color: Color(0xFF536985)),
+                  ),
+                )
+              else if (isDesktop)
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: jobs.length,
+                  itemCount: openings.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 18,
                     crossAxisSpacing: 18,
-                    mainAxisExtent: 145,
+                    mainAxisExtent: 188,
                   ),
                   itemBuilder: (context, index) {
                     return _JobCard(
-                      job: jobs[index],
+                      opening: openings[index],
+                      onApply: () => onApply(openings[index]),
                     );
                   },
                 )
-
-              // ===============================================================
-              // MOBILE LIST
-              // ===============================================================
-
               else
                 Column(
                   children: [
-                    for (int index = 0; index < jobs.length; index++) ...[
+                    for (int index = 0; index < openings.length; index++) ...[
                       _JobCard(
-                        job: jobs[index],
+                        opening: openings[index],
+                        onApply: () => onApply(openings[index]),
                       ),
-                      if (index < jobs.length - 1)
-                        const SizedBox(
-                          height: 14,
-                        ),
+                      if (index < openings.length - 1) const SizedBox(height: 14),
                     ],
                   ],
                 ),
@@ -289,16 +278,14 @@ class _OpenPositions extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// JOB CARD
-// =============================================================================
-
 class _JobCard extends StatefulWidget {
   const _JobCard({
-    required this.job,
+    required this.opening,
+    required this.onApply,
   });
 
-  final _JobData job;
+  final JobOpening opening;
+  final VoidCallback onApply;
 
   @override
   State<_JobCard> createState() => _JobCardState();
@@ -309,26 +296,16 @@ class _JobCardState extends State<_JobCard> {
 
   @override
   Widget build(BuildContext context) {
+    final opening = widget.opening;
+
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (_) {
-        setState(() {
-          _hovered = true;
-        });
-      },
-      onExit: (_) {
-        setState(() {
-          _hovered = false;
-        });
-      },
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
-        transform: Matrix4.translationValues(
-          0,
-          _hovered ? -3 : 0,
-          0,
-        ),
+        transform: Matrix4.translationValues(0, _hovered ? -3 : 0, 0),
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -345,95 +322,90 @@ class _JobCardState extends State<_JobCard> {
             ),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // ===============================================================
-            // JOB ICON
-            // ===============================================================
-
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: const Color(0x0D0B4EA2),
-                borderRadius: BorderRadius.circular(13),
-              ),
-              child: Icon(
-                widget.job.icon,
-                color: AppColors.royalBlue,
-                size: 24,
-              ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: const Color(0x0D0B4EA2),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    categoryIcon(opening.category),
+                    color: AppColors.royalBlue,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 15),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _CategoryBadge(category: opening.category),
+                      const SizedBox(height: 7),
+                      Text(
+                        opening.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.navy,
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w800,
+                          height: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        '${opening.employmentType} • ${opening.location}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF65758B),
+                          fontSize: 12.5,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: _hovered ? const Color(0x120B4EA2) : Colors.transparent,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppColors.royalBlue,
+                  ),
+                ),
+              ],
             ),
-
-            const SizedBox(width: 15),
-
-            // ===============================================================
-            // JOB DETAILS
-            // ===============================================================
-
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _CategoryBadge(
-                    category: widget.job.category,
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: widget.onApply,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navy,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  minimumSize: const Size(0, 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(
-                    height: 7,
-                  ),
-                  Text(
-                    widget.job.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.navy,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 5,
-                  ),
-                  Text(
-                    '${widget.job.type} • '
-                    '${widget.job.location}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Color(0xFF65758B),
-                      fontSize: 12.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(width: 12),
-
-            // ===============================================================
-            // ARROW
-            // ===============================================================
-
-            AnimatedContainer(
-              duration: const Duration(
-                milliseconds: 180,
-              ),
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: _hovered
-                    ? const Color(
-                        0x120B4EA2,
-                      )
-                    : Colors.transparent,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 14,
-                color: AppColors.royalBlue,
+                ),
+                child: const Text('Apply Now'),
               ),
             ),
           ],
@@ -443,24 +415,15 @@ class _JobCardState extends State<_JobCard> {
   }
 }
 
-// =============================================================================
-// CATEGORY BADGE
-// =============================================================================
-
 class _CategoryBadge extends StatelessWidget {
-  const _CategoryBadge({
-    required this.category,
-  });
+  const _CategoryBadge({required this.category});
 
   final String category;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 9,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: const Color(0x0D0B4EA2),
         borderRadius: BorderRadius.circular(20),
@@ -476,24 +439,4 @@ class _CategoryBadge extends StatelessWidget {
       ),
     );
   }
-}
-
-// =============================================================================
-// JOB DATA
-// =============================================================================
-
-class _JobData {
-  const _JobData({
-    required this.icon,
-    required this.category,
-    required this.title,
-    required this.type,
-    required this.location,
-  });
-
-  final IconData icon;
-  final String category;
-  final String title;
-  final String type;
-  final String location;
 }

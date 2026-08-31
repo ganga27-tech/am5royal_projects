@@ -100,6 +100,18 @@ def deploy():
     exit_status = stdout.channel.recv_exit_status()
     print(f"\nCommand completed with exit code: {exit_status}")
 
+    if exit_status == 0:
+        migrate_cmd = (
+            f"cd {REMOTE_DIR} && docker compose exec -T backend "
+            f"python -m app.db.migrate_careers_tables"
+        )
+        print(f"Ensuring career tables: {migrate_cmd}")
+        stdin, stdout, stderr = ssh.exec_command(migrate_cmd, get_pty=True)
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
+        migrate_exit = stdout.channel.recv_exit_status()
+        print(f"Migration exit code: {migrate_exit}")
+
     # Verify containers running
     print("\nChecking docker container status...")
     stdin, stdout, stderr = ssh.exec_command("docker ps --filter name=am5", get_pty=True)

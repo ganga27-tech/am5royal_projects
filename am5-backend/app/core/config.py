@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     SMS_SENDER_ID: str = os.getenv("SMS_SENDER_ID", "AM5RYL")
     SMS_PEID: str = os.getenv("SMS_PEID", "1001643106236698456")
     SMS_OTP_TPID: str = os.getenv("SMS_OTP_TPID", "")
+    SMS_BOOKING_OTP_TPID: str = os.getenv(
+        "SMS_BOOKING_OTP_TPID", "1777178798785115241"
+    )
+    SMS_VENDOR_BOOKING_TPID: str = os.getenv(
+        "SMS_VENDOR_BOOKING_TPID", "1777178798976246693"
+    )
 
     # SMTP Configuration
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")
