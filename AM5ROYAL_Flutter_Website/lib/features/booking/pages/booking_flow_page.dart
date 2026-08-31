@@ -77,6 +77,9 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   bool _submitting = false;
   bool _usingLocationForVendors = false;
 
+  /// True when booking opened from homepage with a pre-selected category.
+  late final bool _entrySkippedCategoryStep = widget.initialCategoryId != null;
+
   @override
   void initState() {
     super.initState();
@@ -669,7 +672,14 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
   Widget build(BuildContext context) {
     final bool desktop = MediaQuery.sizeOf(context).width >= 900;
 
-    return Scaffold(
+    return PopScope(
+      canPop: _step == 0 || (_step == 1 && _entrySkippedCategoryStep),
+      onPopInvokedWithResult: (bool didPop, Object? result) {
+        if (!didPop) {
+          _handleBack();
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF9EBD1),
       appBar: AppBar(
         backgroundColor: AppColors.navy,
@@ -678,7 +688,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
         title: Text(_stepTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: _step > 0 ? _goBack : () => Navigator.pop(context),
+          onPressed: _handleBack,
         ),
       ),
       body: Row(
@@ -693,6 +703,7 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
           if (desktop && _step <= 4) _buildSummaryPanel(),
         ],
       ),
+    ),
     );
   }
 
@@ -726,6 +737,20 @@ class _BookingFlowPageState extends State<BookingFlowPage> {
       _selectedVendor?.servicePrice ??
       _selectedPackage?.price ??
       0;
+
+  void _handleBack() {
+    if (_step == 0) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    if (_step == 1 && _entrySkippedCategoryStep) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _goBack();
+  }
 
   void _goBack() {
     setState(() {
