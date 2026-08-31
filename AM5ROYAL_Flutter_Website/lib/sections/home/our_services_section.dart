@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_assets.dart';
-
 import '../../core/utils/vendor_navigation.dart';
 
 class OurServicesSection extends StatelessWidget {
@@ -11,29 +10,74 @@ class OurServicesSection extends StatelessWidget {
     this.onBookService,
   });
 
-  /// Called whenever the user selects a service.
   final VoidCallback? onServiceSelected;
   final VoidCallback? onBookService;
 
+  // ===========================================================================
+  // OUR SERVICES - 20
+  // ===========================================================================
+
   static const List<_ServiceItem> services = [
-    _ServiceItem('Pet Care', AppAssets.petCare),
-    _ServiceItem('AC Repair', AppAssets.acRepair),
-    _ServiceItem('Plumbing', AppAssets.plumbing),
-    _ServiceItem('Cooking', AppAssets.cooking),
-    _ServiceItem('Cleaning', AppAssets.cleaning),
-    _ServiceItem('Driver', AppAssets.driver),
-    _ServiceItem('Immediate Service', AppAssets.immediate),
-    _ServiceItem('Pest Control', AppAssets.pestControl),
-    _ServiceItem('Lab Test', AppAssets.labTest),
-    _ServiceItem('Painting', AppAssets.painting),
-    _ServiceItem('Physiotherapy', AppAssets.physiotherapy),
-    _ServiceItem('Waterproofing', AppAssets.waterproofing),
-    _ServiceItem('Beauty & Wellness', AppAssets.beautyWellness),
+    _ServiceItem(
+      'Pet Care',
+      AppAssets.petCare,
+    ),
+    _ServiceItem(
+      'AC Repair',
+      AppAssets.acRepair,
+    ),
+    _ServiceItem(
+      'Plumbing',
+      AppAssets.plumbing,
+    ),
+    _ServiceItem(
+      'Cooking',
+      AppAssets.cooking,
+    ),
+    _ServiceItem(
+      'Cleaning',
+      AppAssets.cleaning,
+    ),
+    _ServiceItem(
+      'Driver',
+      AppAssets.driver,
+    ),
+    _ServiceItem(
+      'Immediate Service',
+      AppAssets.immediate,
+    ),
+    _ServiceItem(
+      'Pest Control',
+      AppAssets.pestControl,
+    ),
+    _ServiceItem(
+      'Lab Test',
+      AppAssets.labTest,
+    ),
+    _ServiceItem(
+      'Painting',
+      AppAssets.painting,
+    ),
+    _ServiceItem(
+      'Physiotherapy',
+      AppAssets.physiotherapy,
+    ),
+    _ServiceItem(
+      'Waterproofing',
+      AppAssets.waterproofing,
+    ),
+    _ServiceItem(
+      'Beauty & Wellness',
+      AppAssets.beautyWellness,
+    ),
     _ServiceItem(
       'Home & Online Classes',
       AppAssets.homeOnlineClasses,
     ),
-    _ServiceItem('Caretaker', AppAssets.caretaker),
+    _ServiceItem(
+      'Caretaker',
+      AppAssets.caretaker,
+    ),
     _ServiceItem(
       '2 & 4 Wheeler Services',
       AppAssets.twoFourWheeler,
@@ -42,17 +86,24 @@ class OurServicesSection extends StatelessWidget {
       'Modular Works & Interior',
       AppAssets.modularInterior,
     ),
+    _ServiceItem(
+      'Smart & Normal Appliances Repair',
+      AppAssets.smartNormalAppliancesRepair,
+    ),
+    _ServiceItem(
+      'Smart & Normal Electrical',
+      AppAssets.smartNormalElectrical,
+    ),
+    _ServiceItem(
+      'Nursing',
+      AppAssets.nursing,
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-
-      // -----------------------------------------------------------------------
-      // AM5ROYAL WEBSITE BACKGROUND
-      // -----------------------------------------------------------------------
-
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -63,14 +114,12 @@ class OurServicesSection extends StatelessWidget {
           ],
         ),
       ),
-
       padding: const EdgeInsets.fromLTRB(
         24,
         42,
         24,
         48,
       ),
-
       child: Column(
         children: [
           const _SectionHeading(),
@@ -82,11 +131,18 @@ class OurServicesSection extends StatelessWidget {
             children: [
               OutlinedButton.icon(
                 onPressed: VendorNavigation.openVendorLogin,
-                icon: const Icon(Icons.person_outline_rounded, size: 18),
-                label: const Text('Become a Partner'),
+                icon: const Icon(
+                  Icons.person_outline_rounded,
+                  size: 18,
+                ),
+                label: const Text(
+                  'Become a Partner',
+                ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF0B4EA2),
-                  side: const BorderSide(color: Color(0xFF0B4EA2)),
+                  side: const BorderSide(
+                    color: Color(0xFF0B4EA2),
+                  ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 18,
                     vertical: 12,
@@ -95,8 +151,13 @@ class OurServicesSection extends StatelessWidget {
               ),
               ElevatedButton.icon(
                 onPressed: onBookService,
-                icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                label: const Text('Book a Service'),
+                icon: const Icon(
+                  Icons.calendar_month_outlined,
+                  size: 18,
+                ),
+                label: const Text(
+                  'Book a Service',
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0B4EA2),
                   foregroundColor: Colors.white,
@@ -105,13 +166,19 @@ class OurServicesSection extends StatelessWidget {
                     vertical: 12,
                   ),
                   elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 28),
           LayoutBuilder(
-            builder: (context, constraints) {
+            builder: (
+              BuildContext context,
+              BoxConstraints constraints,
+            ) {
               final double width = constraints.maxWidth;
 
               if (width >= 1100) {
@@ -169,7 +236,10 @@ class _DesktopServices extends StatelessWidget {
           mainAxisSpacing: 18,
           mainAxisExtent: 142,
         ),
-        itemBuilder: (context, index) {
+        itemBuilder: (
+          BuildContext context,
+          int index,
+        ) {
           return _ServiceCard(
             item: services[index],
             onTap: onServiceSelected,
@@ -209,7 +279,10 @@ class _TabletServices extends StatelessWidget {
           mainAxisSpacing: 16,
           mainAxisExtent: 140,
         ),
-        itemBuilder: (context, index) {
+        itemBuilder: (
+          BuildContext context,
+          int index,
+        ) {
           return _ServiceCard(
             item: services[index],
             onTap: onServiceSelected,
@@ -245,7 +318,10 @@ class _MobileServices extends StatelessWidget {
         mainAxisSpacing: 12,
         mainAxisExtent: 132,
       ),
-      itemBuilder: (context, index) {
+      itemBuilder: (
+        BuildContext context,
+        int index,
+      ) {
         return _ServiceCard(
           item: services[index],
           onTap: onServiceSelected,
@@ -283,17 +359,27 @@ class _ServiceCardState extends State<_ServiceCard> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) {
+        if (!mounted) {
+          return;
+        }
+
         setState(() {
           _hovered = true;
         });
       },
       onExit: (_) {
+        if (!mounted) {
+          return;
+        }
+
         setState(() {
           _hovered = false;
         });
       },
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+        duration: const Duration(
+          milliseconds: 180,
+        ),
         curve: Curves.easeOut,
         transform: Matrix4.translationValues(
           0,
@@ -320,22 +406,26 @@ class _ServiceCardState extends State<_ServiceCard> {
           color: Colors.transparent,
           child: InkWell(
             onTap: () {
-              setState(() {
-                _pressed = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _pressed = true;
+                });
+              }
 
               widget.onTap?.call();
 
-              Future.delayed(
+              Future<void>.delayed(
                 const Duration(
                   milliseconds: 180,
                 ),
                 () {
-                  if (mounted) {
-                    setState(() {
-                      _pressed = false;
-                    });
+                  if (!mounted) {
+                    return;
                   }
+
+                  setState(() {
+                    _pressed = false;
+                  });
                 },
               );
             },
@@ -348,10 +438,6 @@ class _ServiceCardState extends State<_ServiceCard> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // -----------------------------------------------------------
-                  // IMAGE
-                  // -----------------------------------------------------------
-
                   SizedBox(
                     width: 64,
                     height: 64,
@@ -359,10 +445,11 @@ class _ServiceCardState extends State<_ServiceCard> {
                       widget.item.image,
                       fit: BoxFit.contain,
                       alignment: Alignment.center,
+                      filterQuality: FilterQuality.high,
                       errorBuilder: (
-                        context,
-                        error,
-                        stackTrace,
+                        BuildContext context,
+                        Object error,
+                        StackTrace? stackTrace,
                       ) {
                         return const Icon(
                           Icons.home_repair_service_rounded,
@@ -372,13 +459,7 @@ class _ServiceCardState extends State<_ServiceCard> {
                       },
                     ),
                   ),
-
                   const SizedBox(height: 8),
-
-                  // -----------------------------------------------------------
-                  // SERVICE NAME
-                  // -----------------------------------------------------------
-
                   SizedBox(
                     height: 34,
                     child: Center(

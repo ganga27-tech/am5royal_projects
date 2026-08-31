@@ -20,6 +20,7 @@ import '../sections/navbar/navbar_section.dart';
 import '../sections/privacy_policy/privacy_policy_section.dart';
 import '../sections/terms_conditions/terms_conditions_section.dart';
 
+import 'contact_details_page.dart';
 import 'login_page.dart';
 import 'register_page.dart';
 
@@ -37,66 +38,169 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
+
   final GlobalKey _servicesSectionKey = GlobalKey();
 
   NavbarSectionId _currentSection = NavbarSectionId.home;
 
   static const Color backgroundStart = Color(0xFFF9EBD1);
+
   static const Color backgroundEnd = Color(0xFFFCEFDD);
 
   @override
   void initState() {
     super.initState();
+
     _bootstrapFromUrl();
-    SeoService.listenToNavigation(_handleBrowserNavigation);
+
+    SeoService.listenToNavigation(
+      _handleBrowserNavigation,
+    );
   }
+
+  // ===========================================================================
+  // URL / SEO
+  // ===========================================================================
 
   void _bootstrapFromUrl() {
     final NavbarSectionId section = SeoService.sectionFromCurrentPath();
+
     if (section == NavbarSectionId.services) {
       _currentSection = NavbarSectionId.home;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToServices());
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToServices();
+      });
+    } else if (section == NavbarSectionId.contact) {
+      // FIX: direct URL load (e.g. refreshing on /contact) must open the
+      // ContactDetailsPage instead of falling through to the empty
+      // SizedBox.shrink() branch in _buildCurrentContent().
+      _currentSection = NavbarSectionId.home;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (BuildContext context) => const ContactDetailsPage(),
+          ),
+        );
+      });
     } else {
       _currentSection = section;
     }
-    SeoService.applyMetadata(SeoRoutes.metadataForSection(section));
+
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(section),
+    );
   }
 
-  void _handleBrowserNavigation(NavbarSectionId section) {
+  void _handleBrowserNavigation(
+    NavbarSectionId section,
+  ) {
+    if (!mounted) {
+      return;
+    }
+
     if (section == NavbarSectionId.services) {
-      setState(() => _currentSection = NavbarSectionId.home);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToServices());
+      setState(() {
+        _currentSection = NavbarSectionId.home;
+      });
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToServices();
+      });
+    } else if (section == NavbarSectionId.contact) {
+      // FIX: browser back/forward navigation to the contact route must also
+      // open the ContactDetailsPage instead of rendering an empty section.
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) => const ContactDetailsPage(),
+        ),
+      );
+
+      SeoService.applyMetadata(
+        SeoRoutes.metadataForSection(section),
+      );
+
+      return;
     } else {
-      setState(() => _currentSection = section);
+      setState(() {
+        _currentSection = section;
+      });
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
           _scrollController.jumpTo(0);
         }
       });
     }
-    SeoService.applyMetadata(SeoRoutes.metadataForSection(section));
+
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(section),
+    );
   }
 
-  // ==========================================================================
+  // ===========================================================================
   // NAVIGATION
-  // ==========================================================================
+  // ===========================================================================
 
-  void _handleNavigation(NavbarSectionId section) {
+  void _handleNavigation(
+    NavbarSectionId section,
+  ) {
+    // -------------------------------------------------------------------------
+    // VENDOR
+    // -------------------------------------------------------------------------
+
     if (section == NavbarSectionId.vendor) {
       VendorNavigation.openVendorLogin();
       return;
     }
 
-    if (section == NavbarSectionId.services) {
-      setState(() => _currentSection = NavbarSectionId.home);
-      SeoService.applySection(NavbarSectionId.services);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToServices());
+    // -------------------------------------------------------------------------
+    // CONTACT
+    // -------------------------------------------------------------------------
+
+    if (section == NavbarSectionId.contact) {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (BuildContext context) => const ContactDetailsPage(),
+        ),
+      );
+
       return;
     }
+
+    // -------------------------------------------------------------------------
+    // SERVICES
+    // -------------------------------------------------------------------------
+
+    if (section == NavbarSectionId.services) {
+      setState(() {
+        _currentSection = NavbarSectionId.home;
+      });
+
+      SeoService.applySection(
+        NavbarSectionId.services,
+      );
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToServices();
+      });
+
+      return;
+    }
+
+    // -------------------------------------------------------------------------
+    // OTHER SECTIONS
+    // -------------------------------------------------------------------------
 
     setState(() {
       _currentSection = section;
     });
+
     SeoService.applySection(section);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -112,63 +216,133 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // ==========================================================================
-  // LOGIN
-  // ==========================================================================
+  // ===========================================================================
+  // SERVICES SCROLL
+  // ===========================================================================
 
   void _scrollToServices() {
-    final BuildContext? context = _servicesSectionKey.currentContext;
-    if (context != null) {
-      Scrollable.ensureVisible(
-        context,
-        duration: const Duration(milliseconds: 650),
-        curve: Curves.easeOutCubic,
-      );
+    final BuildContext? sectionContext = _servicesSectionKey.currentContext;
+
+    if (sectionContext == null) {
+      return;
     }
+
+    Scrollable.ensureVisible(
+      sectionContext,
+      duration: const Duration(milliseconds: 650),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
+    );
   }
 
+  // ===========================================================================
+  // BOOK SERVICE
+  // ===========================================================================
+
   Future<void> _handleBookService() async {
-    if (!mounted) return;
-    SeoService.applyMetadata(SeoMetadata.booking);
+    if (!widget.authService.isAuthenticated) {
+      final bool? loggedIn = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder: (BuildContext context) => LoginPage(
+            onRegisterPressed: _handleRegister,
+            onLoginSuccess: () {
+              if (!mounted) {
+                return;
+              }
+
+              setState(() {});
+            },
+          ),
+        ),
+      );
+
+      if (loggedIn != true && !widget.authService.isAuthenticated) {
+        return;
+      }
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    SeoService.applyMetadata(
+      SeoMetadata.booking,
+    );
+
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => const BookingFlowPage(),
+        builder: (BuildContext context) => const BookingFlowPage(),
       ),
     );
-    if (!mounted) return;
-    SeoService.applySection(_currentSection);
+
+    if (!mounted) {
+      return;
+    }
+
+    SeoService.applySection(
+      _currentSection,
+    );
   }
+
+  // ===========================================================================
+  // LOGIN
+  // ===========================================================================
 
   void _handleLogin() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => LoginPage(
+        builder: (BuildContext context) => LoginPage(
           onRegisterPressed: _handleRegister,
-          onLoginSuccess: () => setState(() {}),
+          onLoginSuccess: () {
+            if (!mounted) {
+              return;
+            }
+
+            setState(() {});
+          },
         ),
       ),
     );
   }
+
+  // ===========================================================================
+  // REGISTER
+  // ===========================================================================
 
   void _handleRegister() {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (context) => RegisterPage(
+        builder: (BuildContext context) => RegisterPage(
           onLoginPressed: _handleLogin,
-          onRegisterSuccess: () => setState(() {}),
+          onRegisterSuccess: () {
+            if (!mounted) {
+              return;
+            }
+
+            setState(() {});
+          },
         ),
       ),
     );
   }
 
+  // ===========================================================================
+  // LOGOUT
+  // ===========================================================================
+
   Future<void> _handleLogout() async {
     await widget.authService.logout();
-    if (mounted) setState(() {});
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {});
   }
 
-  // ==========================================================================
-  // SERVICE SELECTED
-  // ==========================================================================
+  // ===========================================================================
+  // SERVICE CARD SELECTED
+  // ===========================================================================
 
   void _handleServiceCardSelected() {
     if (_currentSection != NavbarSectionId.home) {
@@ -190,9 +364,9 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // ==========================================================================
-  // CURRENT PAGE
-  // ==========================================================================
+  // ===========================================================================
+  // CURRENT CONTENT
+  // ===========================================================================
 
   Widget _buildCurrentContent() {
     switch (_currentSection) {
@@ -204,13 +378,17 @@ class _HomePageState extends State<HomePage> {
         );
 
       case NavbarSectionId.services:
-        return _ServicesContent(onBookService: _handleBookService);
+        return _ServicesContent(
+          onBookService: _handleBookService,
+        );
 
       case NavbarSectionId.vendor:
         return const _VendorContent();
 
       case NavbarSectionId.customer:
-        return _CustomerContent(onBookService: _handleBookService);
+        return _CustomerContent(
+          onBookService: _handleBookService,
+        );
 
       case NavbarSectionId.freelancer:
         return const FreelancerSection();
@@ -218,8 +396,11 @@ class _HomePageState extends State<HomePage> {
       case NavbarSectionId.careers:
         return const CareersSection();
 
+      // Contact opens separately as a pushed route (see _handleNavigation,
+      // _handleBrowserNavigation and _bootstrapFromUrl), so there is
+      // intentionally nothing to render inline here.
       case NavbarSectionId.contact:
-        return const _ContactContent();
+        return const SizedBox.shrink();
 
       case NavbarSectionId.howItWorks:
         return const HowItWorksSection();
@@ -235,9 +416,9 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // ==========================================================================
+  // ===========================================================================
   // BUILD
-  // ==========================================================================
+  // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
@@ -260,7 +441,10 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // =================================================================
               // NAVBAR
+              // =================================================================
+
               NavbarSection(
                 currentSection: _currentSection,
                 onSectionSelected: _handleNavigation,
@@ -272,9 +456,14 @@ class _HomePageState extends State<HomePage> {
                 onBookService: _handleBookService,
               ),
 
+              // =================================================================
               // CONTENT
+              // =================================================================
+
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
+                duration: const Duration(
+                  milliseconds: 300,
+                ),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
                 child: KeyedSubtree(
@@ -285,7 +474,10 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
+              // =================================================================
               // FOOTER
+              // =================================================================
+
               FooterSection(
                 onSectionSelected: _handleNavigation,
               ),
@@ -315,7 +507,9 @@ class _HomeContent extends StatefulWidget {
   });
 
   final VoidCallback onServiceSelected;
+
   final VoidCallback onBookService;
+
   final GlobalKey servicesSectionKey;
 
   @override
@@ -351,14 +545,20 @@ class _HomeContentState extends State<_HomeContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // =====================================================================
         // HERO
+        // =====================================================================
+
         HeroSection(
           highlightCta: _highlightCta,
           onBookServicePressed: widget.onBookService,
           onPartnerPressed: VendorNavigation.openVendorLogin,
         ),
 
+        // =====================================================================
         // OUR SERVICES
+        // =====================================================================
+
         KeyedSubtree(
           key: widget.servicesSectionKey,
           child: OurServicesSection(
@@ -367,15 +567,24 @@ class _HomeContentState extends State<_HomeContent> {
           ),
         ),
 
+        // =====================================================================
         // UPCOMING SERVICES
+        // =====================================================================
+
         UpcomingServicesSection(
           onServiceSelected: _handleServiceSelected,
         ),
 
+        // =====================================================================
         // WHY CHOOSE
+        // =====================================================================
+
         const WhyChooseSection(),
 
+        // =====================================================================
         // APP CTA
+        // =====================================================================
+
         home_cta.HomeCtaSection(
           highlightCta: _highlightCta,
         ),
@@ -389,7 +598,9 @@ class _HomeContentState extends State<_HomeContent> {
 // =============================================================================
 
 class _ServicesContent extends StatelessWidget {
-  const _ServicesContent({required this.onBookService});
+  const _ServicesContent({
+    required this.onBookService,
+  });
 
   final VoidCallback onBookService;
 
@@ -438,7 +649,9 @@ class _VendorContent extends StatelessWidget {
 // =============================================================================
 
 class _CustomerContent extends StatelessWidget {
-  const _CustomerContent({required this.onBookService});
+  const _CustomerContent({
+    required this.onBookService,
+  });
 
   final VoidCallback onBookService;
 
@@ -479,10 +692,14 @@ class _CustomerContent extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0x120B4EA2),
+                  color: const Color(
+                    0x120B4EA2,
+                  ),
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(
-                    color: const Color(0x300B4EA2),
+                    color: const Color(
+                      0x300B4EA2,
+                    ),
                   ),
                 ),
                 child: const Text(
@@ -495,11 +712,15 @@ class _CustomerContent extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(
+                height: 22,
+              ),
               Text(
                 'Your Services.',
                 style: TextStyle(
-                  color: const Color(0xFF0B1F3A),
+                  color: const Color(
+                    0xFF0B1F3A,
+                  ),
                   fontSize: desktop ? 52 : 38,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
@@ -508,13 +729,17 @@ class _CustomerContent extends StatelessWidget {
               Text(
                 'Made Simple.',
                 style: TextStyle(
-                  color: const Color(0xFF0B4EA2),
+                  color: const Color(
+                    0xFF0B4EA2,
+                  ),
                   fontSize: desktop ? 52 : 38,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(
+                height: 22,
+              ),
               ConstrainedBox(
                 constraints: BoxConstraints(
                   maxWidth: 650,
@@ -530,11 +755,15 @@ class _CustomerContent extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(
+                height: 30,
+              ),
               ElevatedButton(
                 onPressed: onBookService,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B4EA2),
+                  backgroundColor: const Color(
+                    0xFF0B4EA2,
+                  ),
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(
@@ -542,7 +771,9 @@ class _CustomerContent extends StatelessWidget {
                     vertical: 15,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(
+                      11,
+                    ),
                   ),
                 ),
                 child: const Text(
@@ -556,28 +787,6 @@ class _CustomerContent extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-// =============================================================================
-// CONTACT PAGE
-// =============================================================================
-
-class _ContactContent extends StatelessWidget {
-  const _ContactContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return const _SimpleContent(
-      eyebrow: 'GET IN TOUCH',
-      title: 'We Are Here',
-      highlightedTitle: 'To Help.',
-      description:
-          'Have a question, enquiry or business requirement? Connect with '
-          'the AM5ROYAL team.',
-      primaryButton: 'Contact Us',
-      secondaryButton: 'Learn More',
     );
   }
 }
@@ -646,15 +855,23 @@ class _SimpleContent extends StatelessWidget {
                       width: 34,
                       height: 3,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5B301),
-                        borderRadius: BorderRadius.circular(20),
+                        color: const Color(
+                          0xFFF5B301,
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          20,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 11),
+                    const SizedBox(
+                      width: 11,
+                    ),
                     Text(
                       eyebrow,
                       style: const TextStyle(
-                        color: Color(0xFF0B4EA2),
+                        color: Color(
+                          0xFF0B4EA2,
+                        ),
                         fontSize: 12,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.8,
@@ -662,11 +879,15 @@ class _SimpleContent extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(
+                  height: 20,
+                ),
                 Text(
                   title,
                   style: TextStyle(
-                    color: const Color(0xFF0B1F3A),
+                    color: const Color(
+                      0xFF0B1F3A,
+                    ),
                     fontSize: desktop ? 52 : 38,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
@@ -675,13 +896,17 @@ class _SimpleContent extends StatelessWidget {
                 Text(
                   highlightedTitle,
                   style: TextStyle(
-                    color: const Color(0xFF0B4EA2),
+                    color: const Color(
+                      0xFF0B4EA2,
+                    ),
                     fontSize: desktop ? 52 : 38,
                     fontWeight: FontWeight.w900,
                     height: 1.1,
                   ),
                 ),
-                const SizedBox(height: 22),
+                const SizedBox(
+                  height: 22,
+                ),
                 ConstrainedBox(
                   constraints: const BoxConstraints(
                     maxWidth: 650,
@@ -689,21 +914,27 @@ class _SimpleContent extends StatelessWidget {
                   child: Text(
                     description,
                     style: const TextStyle(
-                      color: Color(0xFF536985),
+                      color: Color(
+                        0xFF536985,
+                      ),
                       fontSize: 16,
                       height: 1.7,
                     ),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(
+                  height: 28,
+                ),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
                   children: [
                     ElevatedButton(
-                      onPressed: onPrimaryPressed ?? () {},
+                      onPressed: onPrimaryPressed,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0B4EA2),
+                        backgroundColor: const Color(
+                          0xFF0B4EA2,
+                        ),
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
@@ -711,7 +942,9 @@ class _SimpleContent extends StatelessWidget {
                           vertical: 15,
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: BorderRadius.circular(
+                            11,
+                          ),
                         ),
                       ),
                       child: Text(
@@ -722,18 +955,24 @@ class _SimpleContent extends StatelessWidget {
                       ),
                     ),
                     OutlinedButton(
-                      onPressed: onSecondaryPressed ?? () {},
+                      onPressed: onSecondaryPressed,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF0B4EA2),
+                        foregroundColor: const Color(
+                          0xFF0B4EA2,
+                        ),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 22,
                           vertical: 15,
                         ),
                         side: const BorderSide(
-                          color: Color(0xFF0B4EA2),
+                          color: Color(
+                            0xFF0B4EA2,
+                          ),
                         ),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(11),
+                          borderRadius: BorderRadius.circular(
+                            11,
+                          ),
                         ),
                       ),
                       child: Text(

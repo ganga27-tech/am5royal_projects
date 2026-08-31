@@ -435,16 +435,17 @@ class _GooglePlayButton extends StatelessWidget {
             ),
           ),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.play_arrow_rounded,
-              size: 24,
-              color: Colors.white,
+            Image.asset(
+              'assets/images/google_play_icon.png',
+              width: 29,
+              height: 29,
+              fit: BoxFit.contain,
             ),
-            SizedBox(width: 8),
-            Column(
+            const SizedBox(width: 9),
+            const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -590,11 +591,6 @@ class _Phone extends StatelessWidget {
 
 // =============================================================================
 // PHONE CONTENT
-//
-// Width is fixed for a consistent mockup layout, but height is now allowed
-// to size itself to the content (mainAxisSize.min) instead of being locked
-// to a fixed value. The FittedBox in _Phone scales the whole thing down to
-// fit whatever space is available, so nothing overflows on any screen size.
 // =============================================================================
 
 class _PhoneContent extends StatelessWidget {

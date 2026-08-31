@@ -1,5 +1,4 @@
 /// Centralized asset paths for AM5ROYAL.
-
 abstract final class AppAssets {
   AppAssets._();
 
@@ -59,6 +58,27 @@ abstract final class AppAssets {
   static const String modularInterior =
       'assets/images/services/modular_interior.png';
 
+  // ---------------------------------------------------------------------------
+  // NEW OUR SERVICES
+  // ---------------------------------------------------------------------------
+
+  static const String smartNormalAppliancesRepair =
+      'assets/images/services/smart_normal_appliances_repair.png';
+
+  static const String smartNormalElectrical =
+      'assets/images/services/smart_normal_electrical.png';
+
+  static const String nursing = 'assets/images/services/nursing.png';
+
+  // ---------------------------------------------------------------------------
+  // EXISTING MAPPER COMPATIBILITY
+  //
+  // service_asset_mapper.dart expects healthcareMedical.
+  // Keep this name so existing code does not break.
+  // ---------------------------------------------------------------------------
+
+  static const String healthcareMedical = 'assets/images/services/nursing.png';
+
   // ===========================================================================
   // UPCOMING SERVICES
   // ===========================================================================
@@ -72,9 +92,6 @@ abstract final class AppAssets {
   static const String wholesaleDistribution =
       'assets/images/upcoming_services/wholesale_distribution.png';
 
-  static const String healthcareMedical =
-      'assets/images/upcoming_services/healthcare_medical.png';
-
   static const String travelTourism =
       'assets/images/upcoming_services/travel_tourism.png';
 
@@ -83,4 +100,10 @@ abstract final class AppAssets {
 
   static const String healthcareHospital =
       'assets/images/upcoming_services/healthcare_hospital.png';
+
+  static const String trainingEducation =
+      'assets/images/upcoming_services/training_education.png';
+
+  static const String foodAgricultureFarming =
+      'assets/images/upcoming_services/food_agriculture_farming.png';
 }
