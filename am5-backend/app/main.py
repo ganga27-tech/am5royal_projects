@@ -56,6 +56,7 @@ allowed_origins = [
     "https://admin.am5royal.com",
     "https://am5vendor.web.app",
     "https://am5vendor.firebaseapp.com",
+    "https://fb-chi-nine.vercel.app",
     "http://localhost",
     "http://localhost:3000",
     "http://localhost:8000",
@@ -70,7 +71,7 @@ for o in origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://([a-zA-Z0-9-]+\.)?am5royal\.com|https://.*\.web\.app|https://.*\.firebaseapp\.com|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?",
+    allow_origin_regex=r"https://([a-zA-Z0-9-]+\.)?am5royal\.com|https://.*\.web\.app|https://.*\.firebaseapp\.com|https://.*\.vercel\.app|http://localhost(:\d+)?|http://127\.0\.0\.1(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
