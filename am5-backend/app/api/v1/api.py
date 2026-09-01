@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, vendor_catalog, vendors, subscriptions, catalog, ai_verification, devices, wallet, orders, media, admin_auth, admin_vendors, employees, admin, marketing, vendor_management, vendor_dashboard, location, careers, admin_hr
+from app.api.v1.endpoints import auth, vendor_catalog, vendors, subscriptions, catalog, ai_verification, devices, wallet, orders, media, admin_auth, admin_vendors, employees, admin, marketing, vendor_management, vendor_dashboard, location, careers, admin_hr, developer
 
 api_router = APIRouter()
+api_router.include_router(developer.router, prefix="/developer", tags=["Developer Portal"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Vendor Auth"])
 api_router.include_router(admin_auth.router, prefix="/admin/auth", tags=["Admin Auth"])
 api_router.include_router(admin_vendors.router, prefix="/admin/vendors", tags=["Admin Vendors"])

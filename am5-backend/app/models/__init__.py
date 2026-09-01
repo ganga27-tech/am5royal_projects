@@ -16,3 +16,17 @@ from .vendor_extras import VendorSalesMedia, VendorOffer, VendorNewLaunch, Vendo
 from .verification_incentive import VerificationIncentive
 from .career import JobOpening, JobApplication
 from .call_log import TelecallerCallLog
+from .developer_portal import (
+    DevProject,
+    DevProjectMember,
+    DevProjectModule,
+    DevProjectApi,
+    DevTask,
+    DevTaskComment,
+    DevBug,
+    DevBugComment,
+    DevBugActivityHistory,
+    DevNotification,
+    DevDeployment,
+    DevAuditLog,
+)

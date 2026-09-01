@@ -1,3 +1,4 @@
+
 import os
 import paramiko
 import time
@@ -15,6 +16,17 @@ def deploy():
     sftp = ssh.open_sftp()
     
     files_to_sync = [
+        "app/main.py",
+        "app/api/v1/api.py",
+        "app/models/__init__.py",
+        "app/models/developer_portal.py",
+        "app/schemas/developer_portal.py",
+        "app/services/bug_workflow_service.py",
+        "app/services/developer_service.py",
+        "app/dependencies/developer_auth.py",
+        "app/api/v1/endpoints/developer.py",
+        "app/db/migrate_developer_portal.py",
+        "app/db/migrate_project_head.py",
         "app/api/v1/endpoints/auth.py",
         "app/api/v1/endpoints/location.py",
         "app/api/v1/endpoints/orders.py",
@@ -38,6 +50,15 @@ def deploy():
             print(f"Warning docker cp: {err}")
     
     sftp.close()
+
+    print("Running developer portal migration inside container...")
+    stdin, stdout, stderr = ssh.exec_command("docker exec -i am5_backend python -m app.db.migrate_developer_portal")
+    print(stdout.read().decode())
+    stdin, stdout, stderr = ssh.exec_command("docker exec -i am5_backend python -m app.db.migrate_project_head")
+    print(stdout.read().decode())
+    err = stderr.read().decode()
+    if err:
+        print("Migration error:", err)
     
     print("Rebuilding/restarting docker container...")
     # Restart am5_backend or docker compose down/up
