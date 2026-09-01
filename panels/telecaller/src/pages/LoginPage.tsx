@@ -45,14 +45,25 @@ export const LoginPage: React.FC = () => {
       return 'Email or 10-digit phone number is required';
     }
     const clean = val.trim();
-    const isDigitsOnly = /^\d+$/.test(clean.replace(/[\s\-+]/g, ''));
+    const cleanDigits = clean.replace(/[\s\-+]/g, '');
+    const isDigitsOnly = /^\d+$/.test(cleanDigits);
 
     if (isDigitsOnly) {
-      const mobileCheck = Validation.mobile(clean);
+      if (!/^[6-9]/.test(cleanDigits)) {
+        return 'Mobile number must start with 6, 7, 8, or 9';
+      }
+      if (cleanDigits.length < 10) {
+        return `Mobile number must be 10 digits (${cleanDigits.length}/10 entered)`;
+      }
+      const mobileCheck = Validation.mobile(cleanDigits);
       if (!mobileCheck.isValid) return mobileCheck.error;
     } else {
-      const emailCheck = Validation.email(clean, true);
-      if (!emailCheck.isValid) return emailCheck.error;
+      if (clean.includes('@') || clean.includes('.')) {
+        const emailCheck = Validation.email(clean, true);
+        if (!emailCheck.isValid) return emailCheck.error;
+      } else {
+        return 'Please enter a valid 10-digit mobile number or email';
+      }
     }
     return undefined;
   };
@@ -63,11 +74,25 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleIdentifierChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setIdentifier(val);
-    if (touched.identifier) {
-      setErrors((prev) => ({ ...prev, identifier: validateIdentifier(val) }));
+    let val = e.target.value;
+
+    // If number is being entered, do not allow more than 10 digits
+    const cleanDigits = val.replace(/[\s\-+]/g, '');
+    const isDigitsOnly = cleanDigits.length > 0 && /^\d+$/.test(cleanDigits);
+
+    if (isDigitsOnly) {
+      if (cleanDigits.length > 10) {
+        val = cleanDigits.slice(0, 10);
+      } else {
+        val = cleanDigits;
+      }
     }
+
+    setIdentifier(val);
+
+    // On typing show error immediately in real-time
+    setTouched((prev) => ({ ...prev, identifier: true }));
+    setErrors((prev) => ({ ...prev, identifier: validateIdentifier(val) }));
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -266,6 +291,7 @@ export const LoginPage: React.FC = () => {
                 onBlur={() => handleBlur('identifier')}
                 autoComplete="username"
                 disabled={isSubmitting}
+                maxLength={/^\d+$/.test(identifier.replace(/[\s\-+]/g, '')) ? 10 : 100}
               />
             </div>
             {touched.identifier && errors.identifier && (

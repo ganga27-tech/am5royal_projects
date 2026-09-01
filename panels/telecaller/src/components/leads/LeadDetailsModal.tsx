@@ -3,9 +3,10 @@
 // Comprehensive View: Customer Info, Business Info, Lead Meta & Activity Timeline
 // ============================================================================
 
-import React from 'react';
+import React, { useState } from 'react';
 import { TelecallerOnboardedVendor } from '../../types';
 import { formatDate } from '../../utils/formatters';
+import { callApi } from '../../api/callApi';
 import {
   X,
   User,
@@ -21,6 +22,8 @@ import {
   PhoneCall,
   Activity,
   Layers,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 
 interface LeadDetailsModalProps {
@@ -34,7 +37,45 @@ export const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
   vendor,
   onClose,
 }) => {
+  const [isCalling, setIsCalling] = useState(false);
+  const [callNotice, setCallNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   if (!isOpen) return null;
+
+  // Handle IVR Click-to-Call
+  const handleInitiateCall = async () => {
+    if (isCalling) return;
+    if (!vendor.mobileNumber) {
+      setCallNotice({ type: 'error', message: 'No mobile number recorded for this lead.' });
+      return;
+    }
+    setIsCalling(true);
+    setCallNotice(null);
+    try {
+      const res = await callApi.initiateCall({
+        vendorId: vendor.id,
+        phoneNumber: vendor.mobileNumber,
+      });
+      if (res.success) {
+        setCallNotice({
+          type: 'success',
+          message: `Call initiated to ${vendor.firstName} ${vendor.lastName} (${vendor.mobileNumber})!${res.call_session_id ? ` (Session: ${res.call_session_id.slice(0, 8)}...)` : ''}`,
+        });
+      } else {
+        setCallNotice({
+          type: 'error',
+          message: res.message || 'Unable to initiate call.',
+        });
+      }
+    } catch (err) {
+      setCallNotice({
+        type: 'error',
+        message: 'Failed to connect call. Please try again.',
+      });
+    } finally {
+      setIsCalling(false);
+    }
+  };
 
   // 8-stage Activity History pipeline per Section 9
   const stages = [
@@ -141,6 +182,38 @@ export const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
             <X size={16} />
           </button>
         </div>
+
+        {/* Call Notice Feedback Banner */}
+        {callNotice && (
+          <div
+            style={{
+              padding: '0.75rem 1.5rem',
+              background: callNotice.type === 'success' ? '#ecfdf5' : '#fef2f2',
+              borderBottom: `1px solid ${callNotice.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+              color: callNotice.type === 'success' ? '#065f46' : '#991b1b',
+              fontSize: '0.85rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {callNotice.type === 'success' ? (
+                <CheckCircle2 size={16} color="#059669" />
+              ) : (
+                <AlertCircle size={16} color="#dc2626" />
+              )}
+              <span style={{ fontWeight: 500 }}>{callNotice.message}</span>
+            </div>
+            <button
+              onClick={() => setCallNotice(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div
@@ -310,14 +383,35 @@ export const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
                   <div style={{ color: 'var(--text-subtle)', fontSize: '0.7rem' }}>Mobile Number</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.1rem' }}>
                     <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{vendor.mobileNumber}</span>
-                    <a
-                      href={`tel:${vendor.mobileNumber}`}
+                    <button
+                      type="button"
+                      onClick={handleInitiateCall}
+                      disabled={isCalling}
                       className="btn btn-sm btn-outline"
-                      style={{ padding: '0.15rem 0.5rem', fontSize: '0.7rem', color: 'var(--primary)' }}
+                      style={{
+                        padding: '0.15rem 0.5rem',
+                        fontSize: '0.7rem',
+                        color: isCalling ? '#b45309' : 'var(--primary)',
+                        borderColor: isCalling ? '#f59e0b' : undefined,
+                        cursor: isCalling ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                      }}
+                      title="Initiate Airtel IQ Click-to-Call"
                     >
-                      <PhoneCall size={11} />
-                      <span>Call</span>
-                    </a>
+                      {isCalling ? (
+                        <>
+                          <Loader2 size={11} className="spin" />
+                          <span>Calling...</span>
+                        </>
+                      ) : (
+                        <>
+                          <PhoneCall size={11} />
+                          <span>Call</span>
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -411,14 +505,33 @@ export const LeadDetailsModal: React.FC<LeadDetailsModalProps> = ({
           </span>
 
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <a
-              href={`tel:${vendor.mobileNumber}`}
+            <button
+              type="button"
+              onClick={handleInitiateCall}
+              disabled={isCalling}
               className="btn btn-primary"
-              style={{ fontSize: '0.85rem' }}
+              style={{
+                fontSize: '0.85rem',
+                cursor: isCalling ? 'not-allowed' : 'pointer',
+                opacity: isCalling ? 0.85 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+              }}
+              title="Initiate Airtel IQ Click-to-Call"
             >
-              <PhoneCall size={14} />
-              <span>Assist / Call Customer</span>
-            </a>
+              {isCalling ? (
+                <>
+                  <Loader2 size={14} className="spin" />
+                  <span>Connecting Call...</span>
+                </>
+              ) : (
+                <>
+                  <PhoneCall size={14} />
+                  <span>Assist / Call Customer</span>
+                </>
+              )}
+            </button>
             <button className="btn btn-outline" onClick={onClose} style={{ fontSize: '0.85rem' }}>
               Close
             </button>

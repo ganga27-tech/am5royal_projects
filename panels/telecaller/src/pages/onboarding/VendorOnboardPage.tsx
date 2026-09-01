@@ -89,13 +89,20 @@ export const VendorOnboardPage: React.FC = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+
+    // Restrict phone numbers to max 10 digits
+    if (name === 'mobile' || name === 'alternative_number') {
+      const cleanDigits = value.replace(/\D/g, '');
+      value = cleanDigits.slice(0, 10);
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (touched[name]) {
-      const err = validateField(name, value);
-      setErrors((prev) => ({ ...prev, [name]: err || '' }));
-    }
+    // Show error on typing immediately
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: err || '' }));
   };
 
   const handleBlur = (name: string) => {

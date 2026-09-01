@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { TelecallerOnboardedVendor } from '../../types';
 import { getStepIndex, getStatusBadgeClass, formatDate } from '../../utils/formatters';
 import { vendorActionsApi } from '../../api/vendorActionsApi';
+import { callApi } from '../../api/callApi';
 import { extractErrorMessage } from '../../api/client';
 import {
   Store,
@@ -47,6 +48,8 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
   const [showConfirmApprove, setShowConfirmApprove] = useState(false);
   const [showConfirmReject, setShowConfirmReject] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isCalling, setIsCalling] = useState(false);
+  const [callFeedback, setCallFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Exact 7-step sequence per Specification (Registration before Slots)
   const steps = [
@@ -105,6 +108,44 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
       setActionError(extractErrorMessage(err));
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle IVR Click-to-Call
+  const handleInitiateCall = async () => {
+    if (isCalling) return;
+    if (!vendor.mobileNumber) {
+      setCallFeedback({ type: 'error', message: 'Vendor has no mobile number recorded.' });
+      return;
+    }
+    setIsCalling(true);
+    setCallFeedback(null);
+    try {
+      const res = await callApi.initiateCall({
+        vendorId: vendor.id,
+        phoneNumber: vendor.mobileNumber,
+      });
+      if (res.success) {
+        setCallFeedback({
+          type: 'success',
+          message: `Call initiated to ${vendor.mobileNumber}!${res.call_session_id ? ` (Session: ${res.call_session_id.slice(0, 8)}...)` : ''}`,
+        });
+        setTimeout(() => {
+          setCallFeedback(null);
+        }, 6000);
+      } else {
+        setCallFeedback({
+          type: 'error',
+          message: res.message || 'Unable to initiate call.',
+        });
+      }
+    } catch (err) {
+      setCallFeedback({
+        type: 'error',
+        message: extractErrorMessage(err),
+      });
+    } finally {
+      setIsCalling(false);
     }
   };
 
@@ -265,20 +306,30 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
 
           {/* Right Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-            {/* Quick dial launcher */}
-            <a
-              href={`tel:${vendor.mobileNumber}`}
+            {/* Click-to-Call (Airtel IQ IVR) */}
+            <button
               className="btn btn-sm btn-outline"
+              onClick={handleInitiateCall}
+              disabled={isCalling}
               style={{
-                textDecoration: 'none',
-                borderColor: 'var(--primary-glow)',
-                color: 'var(--primary)',
+                borderColor: isCalling ? '#f59e0b' : 'var(--primary-glow)',
+                color: isCalling ? '#b45309' : 'var(--primary)',
+                cursor: isCalling ? 'not-allowed' : 'pointer',
               }}
-              title="Direct Call Dialer"
+              title="Initiate Airtel IQ Click-to-Call"
             >
-              <PhoneCall size={14} />
-              <span>Assist / Call</span>
-            </a>
+              {isCalling ? (
+                <>
+                  <Loader2 size={14} className="spin" />
+                  <span>Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <PhoneCall size={14} />
+                  <span>Assist / Call</span>
+                </>
+              )}
+            </button>
 
             {/* View Details (Section 9 Modal) */}
             <button
@@ -358,6 +409,39 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Call Feedback Banner */}
+        {callFeedback && (
+          <div
+            style={{
+              padding: '0.5rem 0.85rem',
+              background: callFeedback.type === 'success' ? '#ecfdf5' : 'var(--danger-light)',
+              border: `1px solid ${callFeedback.type === 'success' ? '#a7f3d0' : '#fecaca'}`,
+              borderRadius: 'var(--radius-sm)',
+              color: callFeedback.type === 'success' ? '#065f46' : 'var(--danger)',
+              fontSize: '0.8rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.4rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {callFeedback.type === 'success' ? (
+                <CheckCircle2 size={15} color="#059669" />
+              ) : (
+                <AlertTriangle size={15} />
+              )}
+              <span style={{ fontWeight: 500 }}>{callFeedback.message}</span>
+            </div>
+            <button
+              onClick={() => setCallFeedback(null)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}
+            >
+              <XCircle size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Error banner if action failed */}
         {actionError && (

@@ -66,6 +66,23 @@ class Settings(BaseSettings):
     EMAILS_FROM_EMAIL: str = os.getenv("EMAILS_FROM_EMAIL", "")
     EMAILS_FROM_NAME: str = os.getenv("EMAILS_FROM_NAME", "AM5ROYAL")
 
+    # Airtel IQ Click-to-Call Configuration
+    AIRTEL_IQ_APP_ID: str = os.getenv("AIRTEL_IQ_APP_ID", "MSKGRC_PRI_ooFzjj5bCeC72pDncgQm")
+    AIRTEL_IQ_API_KEY: str = os.getenv("AIRTEL_IQ_API_KEY", "G/AH@1^AuG")
+    AIRTEL_IQ_BASE_URL: str = os.getenv("AIRTEL_IQ_BASE_URL", "https://iqvoice.airtel.in")
+    AIRTEL_IQ_C2C_ENDPOINT: str = os.getenv(
+        "AIRTEL_IQ_C2C_ENDPOINT", "/gateway/airtel-xchange/v2/adv/click-to-call"
+    )
+    AIRTEL_IQ_CALLER_ID: str = os.getenv("AIRTEL_IQ_CALLER_ID", "8048249988")
+    AIRTEL_IQ_TO_CALLER_ID: str = os.getenv("AIRTEL_IQ_TO_CALLER_ID", "8048249988")
+    AIRTEL_IQ_CALL_FLOW_ID: str = os.getenv(
+        "AIRTEL_IQ_CALL_FLOW_ID", "1aa03a1b-2ad0-4ac9-8632-5eaa969b7bc6"
+    )
+    AIRTEL_IQ_DEFAULT_AGENT_NUMBER: str = os.getenv(
+        "AIRTEL_IQ_DEFAULT_AGENT_NUMBER", "8130078559"
+    )
+    AIRTEL_IQ_RECORD_CALLS: bool = True
+
 
     @property
     def CLOUDFLARE_ENDPOINT_URL(self) -> str:
@@ -89,7 +106,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
 settings = Settings()

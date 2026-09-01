@@ -7,9 +7,9 @@ import { apiClient } from './client';
 import { MainCategory, SubCategory, ServiceItem } from '../types';
 
 export const catalogApi = {
-  // GET /vendor-catalog/main-categories
+  // GET /vendor/catalog/main-categories
   async getMainCategories(): Promise<MainCategory[]> {
-    const response = await apiClient.get<any[]>('/vendor-catalog/main-categories');
+    const response = await apiClient.get<any[]>('/vendor/catalog/main-categories');
     return (response.data || []).map((c) => ({
       id: c.id,
       name: c.name || c.title || '',
@@ -18,10 +18,10 @@ export const catalogApi = {
     }));
   },
 
-  // GET /vendor-catalog/main-categories/{category_id}/sub-categories
+  // GET /vendor/catalog/main-categories/{category_id}/sub-categories
   async getSubCategories(categoryId: number): Promise<SubCategory[]> {
     const response = await apiClient.get<any[]>(
-      `/vendor-catalog/main-categories/${categoryId}/sub-categories`
+      `/vendor/catalog/main-categories/${categoryId}/sub-categories`
     );
     return (response.data || []).map((s) => ({
       id: s.id,
@@ -31,9 +31,9 @@ export const catalogApi = {
     }));
   },
 
-  // POST /vendor-catalog/sub-categories/services-batch
+  // POST /vendor/catalog/sub-categories/services-batch
   async getServicesBatch(subCategoryIds: number[]): Promise<ServiceItem[]> {
-    const response = await apiClient.post<any[]>('/vendor-catalog/sub-categories/services-batch', {
+    const response = await apiClient.post<any[]>('/vendor/catalog/sub-categories/services-batch', {
       sub_category_ids: subCategoryIds,
     });
     return (response.data || []).map((s) => ({

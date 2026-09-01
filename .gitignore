@@ -10,7 +10,11 @@ ENV/
 .coverage
 .coverage.*
 *.egg-info/
+# Node Modules & Frontend
+node_modules/
+**/node_modules/
 dist/
+**/dist/
 
 # Environments and Secrets
 .env

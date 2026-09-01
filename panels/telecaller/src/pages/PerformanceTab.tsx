@@ -78,20 +78,13 @@ export const PerformanceTab: React.FC = () => {
         limit,
         startDate: effectiveStart,
         endDate: effectiveEnd,
+        leadSource: 'direct_telecaller',
       });
 
-      // Filter out company leads so this table strictly reflects telecaller direct onboardings
-      const directVendors = response.vendors.filter(
-        (v: TelecallerOnboardedVendor) =>
-          v.leadSource !== 'company' &&
-          v.leadSource !== 'company_website' &&
-          v.leadSource !== 'company_mobile'
-      );
-
       if (reset) {
-        setVendors(directVendors);
+        setVendors(response.vendors);
       } else {
-        setVendors((prev) => [...prev, ...directVendors]);
+        setVendors((prev) => [...prev, ...response.vendors]);
       }
       setTotalVendors(response.total);
       if (!reset) {

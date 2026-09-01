@@ -112,6 +112,17 @@ def deploy():
         migrate_exit = stdout.channel.recv_exit_status()
         print(f"Migration exit code: {migrate_exit}")
 
+        call_log_cmd = (
+            f"cd {REMOTE_DIR} && docker compose exec -T backend "
+            f"python create_call_log_table.py"
+        )
+        print(f"Ensuring call log tables: {call_log_cmd}")
+        stdin, stdout, stderr = ssh.exec_command(call_log_cmd, get_pty=True)
+        for line in iter(stdout.readline, ""):
+            print(line, end="")
+        call_log_exit = stdout.channel.recv_exit_status()
+        print(f"Call log table creation exit code: {call_log_exit}")
+
     # Verify containers running
     print("\nChecking docker container status...")
     stdin, stdout, stderr = ssh.exec_command("docker ps --filter name=am5", get_pty=True)

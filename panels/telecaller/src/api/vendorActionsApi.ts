@@ -19,12 +19,11 @@ export const vendorActionsApi = {
     vendorId: number,
     data: VendorDetailsUpdateRequest
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await apiClient.put(`/employees/vendors/${vendorId}/details`, data);
-      return response.data;
-    } catch {
-      return { success: true, message: 'Vendor details updated successfully' };
-    }
+    const response = await apiClient.put(`/employees/vendors/${vendorId}/details`, data);
+    return {
+      success: response.data.success ?? true,
+      message: response.data.message || 'Vendor details updated successfully',
+    };
   },
 
   // PUT /employees/vendors/{vendor_id}/lead-status
@@ -33,15 +32,15 @@ export const vendorActionsApi = {
     status: string,
     notes?: string
   ): Promise<{ success: boolean; message: string; status: string }> {
-    try {
-      const response = await apiClient.put(`/employees/vendors/${vendorId}/lead-status`, {
-        status,
-        notes,
-      });
-      return response.data;
-    } catch {
-      return { success: true, message: `Status updated to ${status}`, status };
-    }
+    const response = await apiClient.put(`/employees/vendors/${vendorId}/lead-status`, {
+      status,
+      notes,
+    });
+    return {
+      success: response.data.success ?? true,
+      message: response.data.message || `Status updated to ${status}`,
+      status: response.data.status || status,
+    };
   },
 
   // POST /employees/contact-admin
@@ -50,19 +49,15 @@ export const vendorActionsApi = {
     message: string,
     category = 'support'
   ): Promise<{ success: boolean; message: string }> {
-    try {
-      const response = await apiClient.post('/employees/contact-admin', {
-        subject,
-        message,
-        category,
-      });
-      return response.data;
-    } catch {
-      return {
-        success: true,
-        message: 'Your message has been sent to the Operations Admin.',
-      };
-    }
+    const response = await apiClient.post('/employees/contact-admin', {
+      subject,
+      message,
+      category,
+    });
+    return {
+      success: response.data.success ?? true,
+      message: response.data.message || 'Your message has been sent to the Operations Admin.',
+    };
   },
 
   // POST /employees/vendors/send-whatsapp-invite

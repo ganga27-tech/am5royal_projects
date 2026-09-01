@@ -81,14 +81,16 @@ export const EditProfileModal: React.FC<EditProfileModalProps> = ({
     let formattedValue = value;
     if (name === 'bankIfscCode') {
       formattedValue = value.toUpperCase();
+    } else if (name === 'phoneNumber') {
+      formattedValue = value.replace(/\D/g, '').slice(0, 10);
     }
 
     setFormData((prev) => ({ ...prev, [name]: formattedValue }));
 
-    if (touched[name]) {
-      const err = validateField(name, formattedValue);
-      setErrors((prev) => ({ ...prev, [name]: err || '' }));
-    }
+    // Show error on typing immediately
+    setTouched((prev) => ({ ...prev, [name]: true }));
+    const err = validateField(name, formattedValue);
+    setErrors((prev) => ({ ...prev, [name]: err || '' }));
   };
 
   const handleBlur = (name: string) => {

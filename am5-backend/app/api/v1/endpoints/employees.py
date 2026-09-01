@@ -26,6 +26,13 @@ from app.schemas.employee import (
 from app.schemas.withdrawal import WithdrawalRequestCreate, WithdrawalRequestResponse
 from app.core.security import get_password_hash, verify_password, create_access_token
 from app.dependencies.auth import get_current_employee, get_current_admin
+from app.schemas.call import InitiateCallRequest, InitiateCallResponse
+from app.models.call_log import TelecallerCallLog
+from app.services.airtel_iq_service import airtel_iq_service
+from app.core.config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -780,7 +787,7 @@ async def get_telecaller_onboarded(
         elif lead_source == "freelancer":
             query_str += " AND v.lead_source = 'freelancer'"
         elif lead_source == "direct_telecaller":
-            query_str += " AND v.lead_source = 'direct_telecaller'"
+            query_str += " AND (v.lead_source = 'direct_telecaller' OR (v.onboarded_by_employee_id = :emp_id AND (v.lead_source NOT IN ('company', 'company_website', 'company_mobile', 'freelancer') OR v.lead_source IS NULL)))"
         else:
             query_str += " AND v.lead_source = :lead_source"
             params["lead_source"] = lead_source
@@ -1372,7 +1379,7 @@ async def update_vendor_details_by_telecaller(
 
     await db.commit()
     await db.refresh(vendor)
-    return {"message": "Vendor details updated successfully", "vendor_id": vendor_id}
+    return {"success": True, "message": "Vendor details updated successfully", "vendor_id": vendor_id}
 
 
 @router.put("/vendors/{vendor_id}/lead-status")
@@ -1527,6 +1534,80 @@ async def send_contact_admin_message(
         "success": True,
         "message": f"Support request '{req.subject}' received. An administrator will respond shortly."
     }
+
+
+@router.post("/telecaller-dashboard/call", response_model=InitiateCallResponse)
+async def initiate_telecaller_call(
+    call_req: InitiateCallRequest,
+    current_employee: Employee = Depends(get_current_employee),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Initiates an Airtel IQ Click-to-Call call from the logged-in telecaller to a vendor or lead.
+    Validates telecaller session, validates phone number, triggers Airtel IQ C2C,
+    and logs the call in the database.
+    """
+    # 1. Static agent calling number ('from') per requirement
+    agent_phone = settings.AIRTEL_IQ_DEFAULT_AGENT_NUMBER or "8130078559"
+
+    # 2. Validate target phone number
+    try:
+        norm_target = airtel_iq_service.normalize_phone_number(call_req.phone_number)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    # 3. Optional: Verify vendor existence if vendor_id is supplied
+    vendor_id = call_req.vendor_id
+    if vendor_id:
+        from app.models.vendor import Vendor
+        v_check = await db.execute(select(Vendor.id).where(Vendor.id == vendor_id))
+        if not v_check.scalar_one_or_none():
+            logger.warning(f"Vendor ID {vendor_id} not found in database; proceeding with phone {norm_target}")
+            vendor_id = None
+
+    # 4. Initiate Click-to-Call via Airtel IQ service
+    success, message, call_session_id = await airtel_iq_service.initiate_click_to_call(
+        agent_number=agent_phone,
+        target_number=norm_target,
+        record=settings.AIRTEL_IQ_RECORD_CALLS,
+    )
+
+    # 5. Log call in telecaller_call_logs table
+    call_log = TelecallerCallLog(
+        telecaller_id=current_employee.id,
+        vendor_id=vendor_id,
+        target_phone=norm_target,
+        agent_phone=agent_phone,
+        call_session_id=call_session_id,
+        record=settings.AIRTEL_IQ_RECORD_CALLS,
+        status="initiated" if success else "failed",
+        error_message=None if success else message,
+    )
+    db.add(call_log)
+    try:
+        await db.commit()
+    except Exception as db_err:
+        logger.error(f"Failed to commit call log: {db_err}")
+        await db.rollback()
+
+    if not success:
+        return InitiateCallResponse(
+            success=False,
+            message=message,
+            target_phone=norm_target,
+            agent_phone=agent_phone,
+        )
+
+    return InitiateCallResponse(
+        success=True,
+        message=message,
+        call_session_id=call_session_id,
+        target_phone=norm_target,
+        agent_phone=agent_phone,
+    )
 
 
 
