@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel
@@ -7,9 +7,9 @@ from datetime import datetime
 
 from app.db.session import get_db
 from app.models.device import DeviceInstallation
+from app.models.user_location import User
 from app.core.config import settings
 from jose import jwt
-from fastapi import Header
 
 router = APIRouter()
 

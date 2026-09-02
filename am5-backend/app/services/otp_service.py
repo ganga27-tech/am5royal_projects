@@ -62,13 +62,14 @@ class OTPService:
         """
         Send the OTP via mytext.in SMS API.
         """
-        if phone == "7569463687":
-            return True
-
         if not settings.SMS_USER_ID or not settings.SMS_PASSWORD:
             logger.warning("SMS_USER_ID or SMS_PASSWORD not set. Skipping SMS sending.")
             return False
             
+        clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "").strip()
+        if len(clean_phone) >= 10:
+            clean_phone = clean_phone[-10:]
+
         message = f"Welcome to AM5ROYAL! Your OTP for registration is {otp}. Please enter this code to complete your sign-up. Do not share this code with anyone. Thank you for choosing AM5ROYAL!"
         
         url = "https://sms.mytext.in/websms/sendsms.aspx"
@@ -76,7 +77,7 @@ class OTPService:
             "userid": settings.SMS_USER_ID,
             "password": settings.SMS_PASSWORD,
             "sender": settings.SMS_SENDER_ID,
-            "mobileno": phone,
+            "mobileno": clean_phone,
             "msg": message,
             "msgtype": "0",  # Short Plain Text
             "peid": settings.SMS_PEID,
@@ -89,25 +90,26 @@ class OTPService:
             response.raise_for_status()
             text = response.text
             if "Success" in text or "SUCCESS" in text:
-                logger.info(f"OTP sent successfully to {phone}: {text}")
+                logger.info(f"OTP sent successfully to {clean_phone}: {text}")
                 return True
             else:
-                logger.error(f"Failed to send OTP to {phone}: {text}")
+                logger.error(f"Failed to send OTP to {clean_phone}: {text}")
                 return False
         except Exception as e:
-            logger.error(f"Error sending SMS to {phone}: {str(e)}")
+            logger.error(f"Error sending SMS to {clean_phone}: {str(e)}")
             return False
 
     async def send_custom_sms(self, phone: str, message: str, tpid: Optional[str] = None) -> bool:
         """
         Send a custom SMS message via mytext.in SMS API.
         """
-        if phone == "7569463687":
-            return True
-
         if not settings.SMS_USER_ID or not settings.SMS_PASSWORD:
             logger.warning("SMS_USER_ID or SMS_PASSWORD not set. Skipping SMS sending.")
             return False
+            
+        clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "").strip()
+        if len(clean_phone) >= 10:
+            clean_phone = clean_phone[-10:]
             
         url = "https://sms.mytext.in/websms/sendsms.aspx"
         params = {

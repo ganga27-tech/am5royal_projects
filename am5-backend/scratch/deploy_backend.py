@@ -15,7 +15,7 @@ REMOTE_DIR = "/root/am5-backend"
 LOCAL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 EXCLUDE_DIRS = {".git", "venv", "scratch", "__pycache__", ".pytest_cache", ".idea", ".vscode"}
-EXCLUDE_FILES = {".DS_Store"}
+EXCLUDE_FILES = {".DS_Store", ".env"}
 
 def should_exclude(rel_path):
     parts = rel_path.replace("\\", "/").split("/")
@@ -89,8 +89,8 @@ def deploy():
     print(f"Uploaded {upload_count} files to {REMOTE_DIR}.")
     sftp.close()
 
-    # Run docker compose down && docker compose up -d --build
-    cmd = f"cd {REMOTE_DIR} && docker compose down && docker compose up -d --build"
+    # Run docker compose down && docker compose build --no-cache && docker compose up -d
+    cmd = f"cd {REMOTE_DIR} && docker builder prune -f && docker compose down && docker compose build --no-cache && docker compose up -d"
     print(f"Executing remote command: {cmd}")
     stdin, stdout, stderr = ssh.exec_command(cmd, get_pty=True)
 
@@ -101,31 +101,34 @@ def deploy():
     print(f"\nCommand completed with exit code: {exit_status}")
 
     if exit_status == 0:
-        migrate_cmd = (
-            f"cd {REMOTE_DIR} && docker compose exec -T backend "
-            f"python -m app.db.migrate_careers_tables"
-        )
-        print(f"Ensuring career tables: {migrate_cmd}")
-        stdin, stdout, stderr = ssh.exec_command(migrate_cmd, get_pty=True)
-        for line in iter(stdout.readline, ""):
-            print(line, end="")
-        migrate_exit = stdout.channel.recv_exit_status()
-        print(f"Migration exit code: {migrate_exit}")
-
-        call_log_cmd = (
-            f"cd {REMOTE_DIR} && docker compose exec -T backend "
-            f"python create_call_log_table.py"
-        )
-        print(f"Ensuring call log tables: {call_log_cmd}")
-        stdin, stdout, stderr = ssh.exec_command(call_log_cmd, get_pty=True)
-        for line in iter(stdout.readline, ""):
-            print(line, end="")
-        call_log_exit = stdout.channel.recv_exit_status()
-        print(f"Call log table creation exit code: {call_log_exit}")
+        migrations = [
+            ("Career tables", "python -m app.db.migrate_careers_tables"),
+            ("Call log tables", "python create_call_log_table.py"),
+            ("Developer portal tables", "python -m app.db.migrate_developer_portal"),
+            ("Project head migration", "python -m app.db.migrate_project_head"),
+        ]
+        for name, script in migrations:
+            subcmd = f"cd {REMOTE_DIR} && docker compose exec -T backend {script}"
+            print(f"Running {name}: {subcmd}")
+            stdin, stdout, stderr = ssh.exec_command(subcmd, get_pty=True)
+            for line in iter(stdout.readline, ""):
+                print(line, end="")
+            code = stdout.channel.recv_exit_status()
+            print(f"{name} exit code: {code}")
 
     # Verify containers running
     print("\nChecking docker container status...")
     stdin, stdout, stderr = ssh.exec_command("docker ps --filter name=am5", get_pty=True)
+    print(stdout.read().decode())
+
+    # Health check
+    print("\nTesting health endpoint...")
+    stdin, stdout, stderr = ssh.exec_command("curl -s http://localhost:8000/health", get_pty=True)
+    print(stdout.read().decode())
+
+    # Tail logs
+    print("\nTail of backend logs:")
+    stdin, stdout, stderr = ssh.exec_command("docker logs am5_backend --tail 25", get_pty=True)
     print(stdout.read().decode())
 
     ssh.close()

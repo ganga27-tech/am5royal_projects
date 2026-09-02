@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, vendor_catalog, vendors, subscriptions, catalog, ai_verification, devices, wallet, orders, media, admin_auth, admin_vendors, employees, admin, marketing, vendor_management, vendor_dashboard, location, careers, admin_hr, developer
+from app.api.v1.endpoints import auth, vendor_catalog, vendors, subscriptions, catalog, ai_verification, devices, wallet, orders, media, admin_auth, admin_vendors, employees, admin, marketing, vendor_management, vendor_dashboard, location, careers, admin_hr, developer, engagement, images
 
 api_router = APIRouter()
 api_router.include_router(developer.router, prefix="/developer", tags=["Developer Portal"])
@@ -19,7 +19,9 @@ api_router.include_router(ai_verification.router, prefix="/ai", tags=["ai-verifi
 api_router.include_router(devices.router, prefix="/devices", tags=["devices"])
 api_router.include_router(orders.router, prefix="/orders", tags=["orders"])
 api_router.include_router(media.router, prefix="/media", tags=["media"])
+api_router.include_router(images.router, prefix="/images", tags=["images"])
 api_router.include_router(marketing.router, prefix="/marketing", tags=["Marketing"])
 api_router.include_router(location.router, prefix="/location", tags=["location"])
+api_router.include_router(engagement.router, prefix="/engagement", tags=["engagement"])
 api_router.include_router(careers.router, prefix="/careers", tags=["careers"])
 api_router.include_router(admin_hr.router, prefix="/admin/hr", tags=["Admin HR"])

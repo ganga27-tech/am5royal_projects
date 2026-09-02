@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text, select, delete
@@ -27,6 +28,14 @@ OTP_STORE = {}
 
 from app.services.otp_service import otp_service
 
+def normalize_phone_number(val: Optional[str]) -> Optional[str]:
+    if not val:
+        return None
+    cleaned = val.replace("+", "").replace(" ", "").replace("-", "").strip()
+    if cleaned.isdigit() and len(cleaned) >= 10:
+        return cleaned[-10:]
+    return None
+
 @router.post("/vendor/send-otp")
 async def send_vendor_otp(
     request: SendOTPRequest,
@@ -35,7 +44,8 @@ async def send_vendor_otp(
     if not request.mobile and not request.email:
         raise HTTPException(status_code=400, detail="Mobile or email is required")
         
-    identifier = request.mobile or request.email
+    identifier = (request.mobile or request.email).strip()
+    phone_10 = normalize_phone_number(identifier)
     
     # Generate 5 digit OTP
     otp = str(random.randint(10000, 99999))
@@ -43,9 +53,11 @@ async def send_vendor_otp(
     # Store OTP immediately so verify-otp works even if SMS delivery is slow
     await otp_service.store_otp(identifier, otp)
     
-    # Deliver OTP asynchronously — do not block the HTTP response on SMS/email gateways
-    if identifier.isdigit():
-        background_tasks.add_task(otp_service.send_otp_sms, identifier, otp)
+    if phone_10:
+        for variant in (phone_10, f"+91{phone_10}", f"91{phone_10}"):
+            if variant != identifier:
+                await otp_service.store_otp(variant, otp)
+        background_tasks.add_task(otp_service.send_otp_sms, phone_10, otp)
     elif "@" in identifier:
         background_tasks.add_task(otp_service.send_otp_email, identifier, otp)
     
@@ -59,16 +71,35 @@ async def verify_vendor_otp(request: VerifyOTPRequest, background_tasks: Backgro
     if not request.mobile and not request.email:
         raise HTTPException(status_code=400, detail="Mobile or email is required")
         
-    identifier = request.mobile or request.email
+    identifier = (request.mobile or request.email).strip()
+    phone_10 = normalize_phone_number(identifier)
     
     is_valid = await otp_service.verify_otp(identifier, request.otp)
+    if not is_valid and phone_10:
+        for variant in (phone_10, f"+91{phone_10}", f"91{phone_10}"):
+            if variant != identifier:
+                is_valid = await otp_service.verify_otp(variant, request.otp)
+                if is_valid:
+                    break
+                    
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     
     # Check if user exists
-    user_query = await db.execute(
-        select(User).where((User.mobile == identifier) | (User.email == identifier)).order_by(User.id.asc())
-    )
+    if phone_10:
+        user_query = await db.execute(
+            select(User).where(
+                (User.mobile == identifier) |
+                (User.mobile == phone_10) |
+                (User.mobile == f"+91{phone_10}") |
+                (User.mobile == f"91{phone_10}") |
+                (User.email == identifier)
+            ).order_by(User.id.asc())
+        )
+    else:
+        user_query = await db.execute(
+            select(User).where((User.mobile == identifier) | (User.email == identifier)).order_by(User.id.asc())
+        )
     user = user_query.scalars().first()
     
     if user and user.deletion_scheduled_at:
@@ -186,15 +217,18 @@ async def send_customer_otp(
     if not request.mobile and not request.email:
         raise HTTPException(status_code=400, detail="Mobile or email is required")
         
-    identifier = request.mobile or request.email
+    identifier = (request.mobile or request.email).strip()
+    phone_10 = normalize_phone_number(identifier)
     
     # Generate 5 digit OTP
     otp = str(random.randint(10000, 99999))
     
     await otp_service.store_otp(identifier, otp)
-    
-    if identifier.isdigit():
-        background_tasks.add_task(otp_service.send_otp_sms, identifier, otp)
+    if phone_10:
+        for variant in (phone_10, f"+91{phone_10}", f"91{phone_10}"):
+            if variant != identifier:
+                await otp_service.store_otp(variant, otp)
+        background_tasks.add_task(otp_service.send_otp_sms, phone_10, otp)
     elif "@" in identifier:
         background_tasks.add_task(otp_service.send_otp_email, identifier, otp)
     
@@ -208,16 +242,35 @@ async def verify_customer_otp(request: VerifyOTPRequest, background_tasks: Backg
     if not request.mobile and not request.email:
         raise HTTPException(status_code=400, detail="Mobile or email is required")
         
-    identifier = request.mobile or request.email
+    identifier = (request.mobile or request.email).strip()
+    phone_10 = normalize_phone_number(identifier)
     
     is_valid = await otp_service.verify_otp(identifier, request.otp)
+    if not is_valid and phone_10:
+        for variant in (phone_10, f"+91{phone_10}", f"91{phone_10}"):
+            if variant != identifier:
+                is_valid = await otp_service.verify_otp(variant, request.otp)
+                if is_valid:
+                    break
+                    
     if not is_valid:
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
     
     # Check if user exists
-    user_query = await db.execute(
-        select(User).where((User.mobile == identifier) | (User.email == identifier)).order_by(User.id.asc())
-    )
+    if phone_10:
+        user_query = await db.execute(
+            select(User).where(
+                (User.mobile == identifier) | 
+                (User.mobile == phone_10) | 
+                (User.mobile == f"+91{phone_10}") | 
+                (User.mobile == f"91{phone_10}") | 
+                (User.email == identifier)
+            ).order_by(User.id.asc())
+        )
+    else:
+        user_query = await db.execute(
+            select(User).where((User.mobile == identifier) | (User.email == identifier)).order_by(User.id.asc())
+        )
     user = user_query.scalars().first()
     
     if user and user.deletion_scheduled_at:
@@ -234,9 +287,9 @@ async def verify_customer_otp(request: VerifyOTPRequest, background_tasks: Backg
     if not user:
         is_new_user = True
         # Create User
-        is_mobile = identifier.isdigit() or (identifier.startswith('+') and identifier[1:].isdigit())
-        mobile = identifier if is_mobile else None
-        email = identifier if not is_mobile else f"customer_{identifier}@am5royal.com"
+        is_mobile = bool(phone_10)
+        mobile = phone_10 if is_mobile else None
+        email = identifier if not is_mobile else f"customer_{phone_10}@am5royal.com"
         
         user = User(
             mobile=mobile,
