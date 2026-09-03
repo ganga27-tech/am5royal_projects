@@ -113,6 +113,85 @@ async def notify_vendor_new_booking(
         await send_user_push_notification(vendor.user_id, title, body, data)
 
 
+async def notify_customer_vendor_accepted(
+    db: AsyncSession,
+    order: Order,
+    vendor: Vendor,
+    background_tasks=None,
+) -> None:
+    """SMS + push when vendor accepts a booking."""
+    customer_phone = order.customer_phone
+    if not customer_phone and order.customer_id:
+        customer_res = await db.execute(
+            select(Customer).where(Customer.id == order.customer_id)
+        )
+        customer = customer_res.scalar_one_or_none()
+        if customer:
+            customer_phone = customer.phone
+
+    vendor_name = (
+        order.vendor_name
+        or vendor.business_name
+        or "Vendor"
+    )
+    vendor_contact = order.vendor_phone or vendor.mobile or ""
+    booking_id = order.booking_reference or str(order.id)
+    service_name = order.service_name or "Service"
+
+    if customer_phone:
+        if background_tasks is not None:
+            background_tasks.add_task(
+                otp_service.send_customer_vendor_assigned_sms,
+                customer_phone,
+                vendor_name,
+                booking_id,
+                vendor_contact,
+                service_name,
+            )
+        else:
+            await otp_service.send_customer_vendor_assigned_sms(
+                customer_phone,
+                vendor_name,
+                booking_id,
+                vendor_contact,
+                service_name,
+            )
+    else:
+        logger.warning(
+            "No customer phone for order %s; skip vendor-assigned SMS",
+            booking_id,
+        )
+
+    if not order.customer_id:
+        return
+    customer_res = await db.execute(
+        select(Customer).where(Customer.id == order.customer_id)
+    )
+    customer = customer_res.scalar_one_or_none()
+    if not customer or not customer.user_id:
+        return
+
+    title = "Vendor Assigned"
+    body = (
+        f"{vendor_name} has accepted your booking for {service_name}. "
+        "They will contact you to confirm the schedule."
+    )
+    data = {
+        "type": "booking_accepted",
+        "order_id": booking_id,
+    }
+    if background_tasks is not None:
+        background_tasks.add_task(
+            send_user_push_notification,
+            customer.user_id,
+            title,
+            body,
+            data,
+        )
+    else:
+        await send_user_push_notification(customer.user_id, title, body, data)
+
+
 async def notify_customer_reassignment(
     db: AsyncSession,
     order: Order,

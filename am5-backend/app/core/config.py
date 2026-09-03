@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     SMS_VENDOR_BOOKING_TPID: str = os.getenv(
         "SMS_VENDOR_BOOKING_TPID", "1777178798976246693"
     )
+    SMS_CUSTOMER_VENDOR_ASSIGNED_TPID: str = os.getenv(
+        "SMS_CUSTOMER_VENDOR_ASSIGNED_TPID", "1777178834407438309"
+    )
 
     # SMTP Configuration
     SMTP_HOST: str = os.getenv("SMTP_HOST", "smtp.gmail.com")

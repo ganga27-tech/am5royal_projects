@@ -116,7 +116,7 @@ class OTPService:
             "userid": settings.SMS_USER_ID,
             "password": settings.SMS_PASSWORD,
             "sender": settings.SMS_SENDER_ID,
-            "mobileno": phone,
+            "mobileno": clean_phone,
             "msg": message,
             "msgtype": "0",
             "peid": settings.SMS_PEID,
@@ -172,6 +172,31 @@ class OTPService:
             phone=phone,
             message=message,
             tpid=settings.SMS_VENDOR_BOOKING_TPID,
+        )
+
+    async def send_customer_vendor_assigned_sms(
+        self,
+        phone: str,
+        vendor_name: str,
+        booking_id: str,
+        vendor_contact: str,
+        service_name: str,
+    ) -> bool:
+        """
+        Notify customer that a vendor accepted their booking (Vendor Details DLT template).
+        """
+        message = (
+            "Welcome to AM5ROYAL! Dear Customer, your service booking has been successfully "
+            f"assigned to a vendor. Vendor Name: {vendor_name}, Booking ID: {booking_id}, "
+            f"Contact number: {vendor_contact}, Service:{service_name}. "
+            "Please check your AM5ROYAL account for the vendor details and booking information. "
+            "The assigned vendor will contact you to confirm the service schedule. "
+            "Thank you for choosing AM5ROYAL. We look forward to serving you!"
+        )
+        return await self.send_custom_sms(
+            phone=phone,
+            message=message,
+            tpid=settings.SMS_CUSTOMER_VENDOR_ASSIGNED_TPID,
         )
 
     def _send_email_sync(self, email: str, otp: str) -> bool:

@@ -22,6 +22,7 @@ from app.core.rate_limit import limiter
 from app.services.booking_assignment_service import (
     build_initial_assignment_meta,
     notify_vendor_new_booking,
+    notify_customer_vendor_accepted,
     handle_vendor_decline_or_timeout,
     process_pending_booking_timeouts,
 )
@@ -251,6 +252,7 @@ class RejectBookingRequest(BaseModel):
 async def accept_booking(
     request: Request,
     order_id: str,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_vendor: Vendor = Depends(get_current_vendor),
 ):
@@ -272,7 +274,18 @@ async def accept_booking(
     order.status = "ACCEPTED"
     order.accepted_at = datetime.datetime.utcnow()
     order.confirmed_at = datetime.datetime.utcnow()
+    order.vendor_name = current_vendor.business_name or order.vendor_name
+    order.vendor_phone = current_vendor.mobile or order.vendor_phone
     await db.commit()
+    await db.refresh(order)
+
+    await notify_customer_vendor_accepted(
+        db,
+        order,
+        current_vendor,
+        background_tasks=background_tasks,
+    )
+
     return {
         "message": "Booking accepted successfully",
         "orderId": order.booking_reference,
