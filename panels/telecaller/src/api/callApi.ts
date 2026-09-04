@@ -8,6 +8,7 @@ import { apiClient, extractErrorMessage } from './client';
 export interface InitiateCallParams {
   vendorId?: number;
   phoneNumber: string;
+  agentPhone?: string;
 }
 
 export interface CallResponse {
@@ -30,6 +31,7 @@ export const callApi = {
         {
           vendor_id: params.vendorId ?? null,
           phone_number: params.phoneNumber,
+          agent_phone: params.agentPhone ?? null,
         }
       );
       return response.data;
