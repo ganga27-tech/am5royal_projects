@@ -732,17 +732,24 @@ async def get_telecaller_onboarded(
                 (SELECT TRIM(CONCAT(e.first_name, ' ', COALESCE(e.last_name, ''))) FROM employees e WHERE e.id = v.assigned_telecaller_id),
                 'Unassigned'
             ) as assigned_team_member,
+            EXISTS (SELECT 1 FROM vendor_services vs WHERE vs.vendor_id = v.id) as has_services,
+            (v.first_name IS NOT NULL AND v.first_name != '') as has_registration,
+            EXISTS (SELECT 1 FROM vendor_availability va WHERE va.vendor_id = v.id) as has_slots,
+            (EXISTS (SELECT 1 FROM vendor_documents vd WHERE vd.vendor_id = v.id) OR (v.aadhaar_number IS NOT NULL AND v.aadhaar_number != '')) as has_business_reg,
+            EXISTS (SELECT 1 FROM vendor_subscriptions vs WHERE vs.vendor_id = v.id AND vs.status = 'active') as has_payment,
+            (v.status = 'temporary_active') as is_temp_active,
+            (v.status = 'active') as is_activated,
             (
                 CASE
                     WHEN v.status = 'rejected' THEN 'rejected'
                     WHEN v.status = 'active' THEN 'active'
                     WHEN v.status = 'temporary_active' THEN 'temporary active'
                     WHEN EXISTS (SELECT 1 FROM vendor_subscriptions vs WHERE vs.vendor_id = v.id AND vs.status = 'active') THEN 'temporary active'
-                    WHEN v.business_name IS NOT NULL AND v.business_name != '' THEN 'payment'
-                    WHEN v.first_name IS NOT NULL AND v.first_name != '' THEN 'business registration'
-                    WHEN EXISTS (SELECT 1 FROM vendor_availability va WHERE va.vendor_id = v.id) THEN 'registration'
-                    WHEN EXISTS (SELECT 1 FROM vendor_services v_s WHERE v_s.vendor_id = v.id) THEN 'slots done'
-                    ELSE 'services added'
+                    WHEN EXISTS (SELECT 1 FROM vendor_documents vd WHERE vd.vendor_id = v.id) OR (v.aadhaar_number IS NOT NULL AND v.aadhaar_number != '') THEN 'business registration'
+                    WHEN EXISTS (SELECT 1 FROM vendor_availability va WHERE va.vendor_id = v.id) THEN 'slots'
+                    WHEN v.first_name IS NOT NULL AND v.first_name != '' THEN 'registration'
+                    WHEN EXISTS (SELECT 1 FROM vendor_services v_s WHERE v_s.vendor_id = v.id) THEN 'services'
+                    ELSE 'services'
                 END
             ) as status
         FROM vendors v
@@ -822,7 +829,7 @@ async def get_telecaller_onboarded(
             crm_status = "KYC Pending"
         elif st == "payment":
             crm_status = "Payment Pending"
-        elif st in ("business registration", "registration", "slots done", "services added"):
+        elif st in ("business registration", "registration", "slots done", "slots", "services added", "services"):
             crm_status = "Registration Pending"
 
         vendors.append({
@@ -839,7 +846,14 @@ async def get_telecaller_onboarded(
             "username": row.username or "",
             "service_name": row.service_name or "General Services",
             "assigned_team_member": row.assigned_team_member,
-            "lead_status": crm_status
+            "lead_status": crm_status,
+            "has_services": bool(row.has_services),
+            "has_registration": bool(row.has_registration),
+            "has_slots": bool(row.has_slots),
+            "has_business_reg": bool(row.has_business_reg),
+            "has_payment": bool(row.has_payment),
+            "is_temp_active": bool(row.is_temp_active),
+            "is_activated": bool(row.is_activated)
         })
         
     return {

@@ -125,12 +125,10 @@ class _ListViewState extends State<_ListView> {
           final p = state.items[index];
           return Card(
             child: ListTile(
-              onTap: () => context.push(
-                '/professionals/${p.id}${state.serviceId != null ? '?service_id=${state.serviceId}' : ''}',
-              ),
+              onTap: () => context.push('/vendors/${p.id}'),
               leading: CircleAvatar(
-                backgroundImage: p.avatarUrl != null ? NetworkImage(p.avatarUrl!) : null,
-                child: p.avatarUrl == null ? Text(p.displayName.substring(0, 1)) : null,
+                backgroundImage: p.hasAvatar ? NetworkImage(p.avatarUrl!) : null,
+                child: !p.hasAvatar ? Text(p.displayName.substring(0, 1)) : null,
               ),
               title: Row(
                 children: [

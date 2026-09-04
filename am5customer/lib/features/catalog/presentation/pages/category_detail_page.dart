@@ -7,6 +7,7 @@ import 'package:am5_ui/am5_ui.dart';
 
 import '../../../../core/customer_brand.dart';
 import '../../../../core/design_system/am5_colors.dart';
+import '../../../../shared/widgets/service_widgets.dart';
 import '../../../../shared/widgets/vendor_card.dart';
 
 class CategoryDetailPage extends StatefulWidget {
@@ -39,8 +40,9 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     final services = results[0] as List<CatalogServiceItem>;
     final categories = results[1] as List<CatalogCategory>;
     final vendors = results[2] as List<Professional>;
-    final category =
-        categories.where((c) => c.id == widget.categoryId).firstOrNull;
+    final category = categories
+        .where((c) => c.id == widget.categoryId)
+        .firstOrNull;
     return _CategoryPageData(
       category: category,
       services: services,
@@ -119,30 +121,91 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
     if (items.isEmpty && data.vendors.isEmpty) {
       return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(LivoraSpacing.xl),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 72,
-                height: 72,
+                width: 210,
+                height: 210,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.08),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
-                child: Icon(
-                  categoryIcon,
-                  size: 32,
-                  color: theme.colorScheme.primary,
+                clipBehavior: Clip.antiAlias,
+                child: Image.asset(
+                  'assets/images/coming_soon_location.png',
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => Container(
+                    color: Am5Colors.lightRed,
+                    child: Icon(
+                      Icons.location_city_rounded,
+                      size: 64,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: LivoraSpacing.lg),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Am5Colors.lightRed,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: Am5Colors.brandRed.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.near_me_rounded, size: 16, color: Am5Colors.brandRed),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Expanding Soon',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: Am5Colors.brandRed,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
               Text(
-                s.catalogEmpty,
+                'We are coming soon to your location!',
                 textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: Am5Colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'We are actively onboarding verified professionals in your area for ${category?.name ?? 'this category'}. Stay tuned!',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: const Text('Explore other categories'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
             ],
@@ -178,7 +241,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             const SizedBox(height: LivoraSpacing.lg),
             Row(
               children: [
-                const Icon(Icons.verified_user_outlined, size: 18, color: Color(0xFF16A34A)),
+                const Icon(
+                  Icons.verified_user_outlined,
+                  size: 18,
+                  color: Color(0xFF16A34A),
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Nearby Verified Providers (${data.vendors.length})',
@@ -200,7 +267,11 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
             const SizedBox(height: LivoraSpacing.lg),
             Row(
               children: [
-                Icon(Icons.category_outlined, size: 18, color: theme.colorScheme.primary),
+                Icon(
+                  Icons.category_outlined,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Available Packages (${items.length})',
@@ -315,7 +386,9 @@ class _CategoryHero extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(LivoraSpacing.radii.full),
+                    borderRadius: BorderRadius.circular(
+                      LivoraSpacing.radii.full,
+                    ),
                   ),
                   child: Text(
                     serviceCountLabel,
@@ -486,10 +559,7 @@ class _ServiceListCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              fromLabel,
-                              style: theme.textTheme.labelSmall,
-                            ),
+                            Text(fromLabel, style: theme.textTheme.labelSmall),
                             Text(
                               service.priceLabel,
                               style: theme.textTheme.titleLarge?.copyWith(
@@ -535,17 +605,4 @@ class _ServiceListCard extends StatelessWidget {
   }
 }
 
-IconData _categoryIcon(String slug) {
-  final s = slug.toLowerCase();
-  if (s.contains('beauty') || s.contains('wellness') || s.contains('salon')) {
-    return Icons.spa_outlined;
-  }
-  if (s.contains('clean')) return Icons.cleaning_services_outlined;
-  if (s.contains('ac') || s.contains('appliance')) return Icons.ac_unit_outlined;
-  if (s.contains('plumb')) return Icons.plumbing_outlined;
-  if (s.contains('electric')) return Icons.electrical_services_outlined;
-  if (s.contains('pest')) return Icons.bug_report_outlined;
-  if (s.contains('paint')) return Icons.format_paint_outlined;
-  if (s.contains('bath')) return Icons.bathtub_outlined;
-  return Icons.home_repair_service_outlined;
-}
+IconData _categoryIcon(String slug) => categoryIconFor(slug);

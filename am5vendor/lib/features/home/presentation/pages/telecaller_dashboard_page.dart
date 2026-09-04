@@ -2830,9 +2830,56 @@ class _TelecallerDashboardPageState extends State<TelecallerDashboardPage> {
           // Stepper
           Row(
             children: List.generate(steps.length, (index) {
-              final isActive = index == currentStep;
-              final isCompleted = index < currentStep;
               final stepName = steps[index];
+              bool isCompleted = false;
+              if (stepName == 'Services') {
+                isCompleted = vendor.hasServices;
+              } else if (stepName == 'Slots') {
+                isCompleted = vendor.hasSlots;
+              } else if (stepName == 'Registration') {
+                isCompleted = vendor.hasRegistration;
+              } else if (stepName == 'Business Reg') {
+                isCompleted = vendor.hasBusinessReg;
+              } else if (stepName == 'Payment') {
+                isCompleted = vendor.hasPayment;
+              }
+
+              final isActivated = stepName == 'Activated' &&
+                  (vendor.isActivated ||
+                      statusLower == 'active' ||
+                      statusLower == 'activated');
+              final isTempActive = stepName == 'Temp Active' &&
+                  (vendor.isTempActive || isUnderVerification);
+              final isCurrent = index == currentStep;
+
+              Color bgColor =
+                  isDark ? Colors.grey.shade900 : const Color(0xFFF3F4F6);
+              Color borderColor = isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFFE5E7EB);
+              Color textColor =
+                  isDark ? Colors.grey[400]! : Colors.grey[700]!;
+
+              if (isActivated) {
+                bgColor = const Color(0xFF0C3D98);
+                borderColor = const Color(0xFF0C3D98);
+                textColor = Colors.white;
+              } else if (isTempActive) {
+                bgColor = Colors.orange;
+                borderColor = Colors.orange;
+                textColor = Colors.white;
+              } else if (isCompleted) {
+                bgColor = const Color(0xFF10B981);
+                borderColor = const Color(0xFF10B981);
+                textColor = Colors.white;
+              } else if (isCurrent) {
+                bgColor =
+                    isDark ? Colors.grey.shade800 : const Color(0xFFE2E8F0);
+                borderColor =
+                    isDark ? Colors.grey.shade700 : const Color(0xFFCBD5E1);
+                textColor =
+                    isDark ? Colors.white70 : const Color(0xFF334155);
+              }
 
               return Expanded(
                 child: InkWell(
@@ -2843,25 +2890,13 @@ class _TelecallerDashboardPageState extends State<TelecallerDashboardPage> {
                     height: 38,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
-                      color: isActive
-                          ? const Color(0xFF0C3D98)
-                          : (isCompleted
-                              ? const Color(0xFF10B981)
-                              : (isDark
-                                  ? Colors.grey.shade900
-                                  : const Color(0xFFF3F4F6))),
+                      color: bgColor,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: isActive
-                            ? const Color(0xFF0C3D98)
-                            : (isCompleted
-                                ? const Color(0xFF10B981)
-                                : (isDark
-                                    ? Colors.white.withValues(alpha: 0.05)
-                                    : const Color(0xFFE5E7EB))),
+                        color: borderColor,
                         width: 1,
                       ),
-                      boxShadow: isActive
+                      boxShadow: isActivated
                           ? [
                               BoxShadow(
                                 color: const Color(0xFF0C3D98)
@@ -2874,16 +2909,14 @@ class _TelecallerDashboardPageState extends State<TelecallerDashboardPage> {
                     ),
                     alignment: Alignment.center,
                     child: Text(
-                      steps[index],
+                      isCompleted ? '✓ $stepName' : stepName,
                       textAlign: TextAlign.center,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.outfit(
                         fontSize: 10,
                         fontWeight: FontWeight.bold,
-                        color: (isActive || isCompleted)
-                            ? Colors.white
-                            : (isDark ? Colors.grey[400] : Colors.grey[700]),
+                        color: textColor,
                       ),
                     ),
                   ),

@@ -17,7 +17,7 @@ import '../../../../shared/widgets/search_and_header.dart';
 import '../../../../shared/widgets/service_widgets.dart';
 import '../../../../shared/widgets/vendor_card.dart';
 
-/// Premium AM5 Royal home — discovery-first with trust & conversion focus.
+/// Premium AM5 Royal home — Zomato-inspired discovery feed.
 class PremiumHomePage extends StatelessWidget {
   const PremiumHomePage({super.key});
 
@@ -30,8 +30,15 @@ class PremiumHomePage extends StatelessWidget {
   }
 }
 
-class _PremiumHomeView extends StatelessWidget {
+class _PremiumHomeView extends StatefulWidget {
   const _PremiumHomeView();
+
+  @override
+  State<_PremiumHomeView> createState() => _PremiumHomeViewState();
+}
+
+class _PremiumHomeViewState extends State<_PremiumHomeView> {
+  int _selectedCategory = 0;
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -90,30 +97,29 @@ class _PremiumHomeView extends StatelessWidget {
                   ),
                   SliverToBoxAdapter(
                     child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        Am5Spacing.lg,
+                        0,
+                        Am5Spacing.lg,
+                        Am5Spacing.md,
+                      ),
+                      child: SearchBarWidget(
+                        large: true,
+                        readOnly: true,
+                        hint: 'Search services, vendors, categories…',
+                        onTap: () => context.go('/search'),
+                        onMicTap: () => context.go('/assistant'),
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${_greeting()}, $firstName',
-                            style: theme.textTheme.headlineMedium,
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'What would you like help with today?',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: Am5Spacing.lg),
-                          SearchBarWidget(
-                            large: true,
-                            readOnly: true,
-                            onTap: () => context.go('/search'),
-                            onMicTap: () => context.go('/assistant'),
-                          ),
-                          const SizedBox(height: Am5Spacing.xxl),
-                        ],
+                      child: Text(
+                        '${_greeting()}, $firstName',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
@@ -130,13 +136,7 @@ class _PremiumHomeView extends StatelessWidget {
                     )
                   else ...[
                     if (state.categories.isNotEmpty) ...[
-                      SliverToBoxAdapter(
-                        child: SectionHeader(
-                          title: 'Categories',
-                          actionLabel: 'View all',
-                          onAction: () => context.go('/search'),
-                        ),
-                      ),
+                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.lg)),
                       SliverToBoxAdapter(
                         child: SizedBox(
                           height: 108,
@@ -144,90 +144,100 @@ class _PremiumHomeView extends StatelessWidget {
                             scrollDirection: Axis.horizontal,
                             padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
                             itemCount: state.categories.length + 1,
-                            separatorBuilder: (_, _) => const SizedBox(width: Am5Spacing.sm),
+                            separatorBuilder: (_, _) => const SizedBox(width: Am5Spacing.md),
                             itemBuilder: (context, i) {
-                              if (i == state.categories.length) {
+                              if (i == 0) {
                                 return CategoryCard(
-                                  label: 'More',
+                                  label: 'All',
                                   icon: Icons.apps_rounded,
-                                  onTap: () => context.go('/search'),
+                                  circular: true,
+                                  selected: _selectedCategory == 0,
+                                  onTap: () => setState(() => _selectedCategory = 0),
                                 );
                               }
-                              final cat = state.categories[i];
+                              final cat = state.categories[i - 1];
                               return CategoryCard(
                                 label: cat.name,
                                 icon: categoryIconFor(cat.slug),
-                                onTap: () => context.push('/categories/${cat.id}'),
+                                imageUrl: cat.iconUrl ?? cat.imageUrl,
+                                circular: true,
+                                selected: _selectedCategory == i,
+                                onTap: () {
+                                  setState(() => _selectedCategory = i);
+                                  context.push('/categories/${cat.id}');
+                                },
                               );
                             },
                           ),
                         ),
                       ),
-                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xl)),
                     ],
-                    if (state.banners.isNotEmpty)
-                      SliverToBoxAdapter(child: _PromoBanner(banner: state.banners.first)),
+                    if (state.banners.isNotEmpty) ...[
+                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.lg)),
+                      SliverToBoxAdapter(child: _PromoBannerCarousel(banners: state.banners)),
+                    ],
                     if (state.nearbyVendors.isNotEmpty) ...[
                       const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xl)),
                       SliverToBoxAdapter(
-                        child: SectionHeader(
-                          title: 'Nearby Verified Vendors',
-                          actionLabel: 'View all',
-                          onAction: () => context.push('/professionals'),
+                        child: _FeedSectionHeader(
+                          count: state.nearbyVendors.length,
+                          label: 'VERIFIED VENDORS NEAR YOU',
+                          badge: 'Featured',
+                          onViewAll: () => context.push('/professionals'),
                         ),
                       ),
                       SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
+                        padding: const EdgeInsets.fromLTRB(
+                          Am5Spacing.lg,
+                          Am5Spacing.md,
+                          Am5Spacing.lg,
+                          0,
+                        ),
                         sliver: SliverList.separated(
-                          itemCount: state.nearbyVendors.take(5).length,
-                          separatorBuilder: (_, _) => const SizedBox(height: Am5Spacing.md),
+                          itemCount: state.nearbyVendors.take(8).length,
+                          separatorBuilder: (_, _) => const SizedBox(height: Am5Spacing.lg),
                           itemBuilder: (context, i) {
                             final vendor = state.nearbyVendors[i];
-                            return VendorCard(vendor: vendor);
+                            return VendorCard(vendor: vendor, style: VendorCardStyle.feed);
                           },
                         ),
                       ),
                     ],
-                    if (state.featured.isNotEmpty) ...[
-                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xl)),
+                    if (state.featured.isNotEmpty || state.trending.isNotEmpty) ...[
+                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xxl)),
                       SliverToBoxAdapter(
-                        child: SectionHeader(title: 'Popular Services'),
-                      ),
-                      SliverPadding(
-                        padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
-                        sliver: SliverList.separated(
-                          itemCount: state.featured.take(3).length,
-                          separatorBuilder: (_, _) => const SizedBox(height: Am5Spacing.md),
-                          itemBuilder: (context, i) {
-                            final svc = state.featured[i];
-                            return ServiceCard(
-                              service: svc,
-                              badge: 'Popular',
-                              onTap: () => context.push('/services/${svc.id}'),
-                              onBook: () => openServiceBooking(context, svc),
-                            );
-                          },
+                        child: _FeedSectionHeader(
+                          count: state.trending.isNotEmpty
+                              ? state.trending.length
+                              : state.featured.length,
+                          label: 'POPULAR SERVICES',
+                          badge: 'Trending',
                         ),
                       ),
-                    ],
-                    if (state.trending.isNotEmpty) ...[
-                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xl)),
-                      SliverToBoxAdapter(child: SectionHeader(title: 'Featured Services')),
                       SliverToBoxAdapter(
                         child: SizedBox(
-                          height: 280,
+                          height: 268,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
-                            itemCount: state.trending.length,
+                            padding: const EdgeInsets.fromLTRB(
+                              Am5Spacing.lg,
+                              Am5Spacing.md,
+                              Am5Spacing.lg,
+                              0,
+                            ),
+                            itemCount: (state.trending.isNotEmpty ? state.trending : state.featured)
+                                .take(6)
+                                .length,
                             separatorBuilder: (_, _) => const SizedBox(width: Am5Spacing.md),
                             itemBuilder: (context, i) {
-                              final svc = state.trending[i];
+                              final services =
+                                  state.trending.isNotEmpty ? state.trending : state.featured;
+                              final svc = services[i];
                               return SizedBox(
-                                width: 260,
+                                width: 240,
                                 child: ServiceCard(
                                   service: svc,
-                                  badge: svc.isFeatured ? 'Bestseller' : null,
+                                  badge: svc.isFeatured ? 'Popular' : 'Trending',
                                   onTap: () => context.push('/services/${svc.id}'),
                                   onBook: () => openServiceBooking(context, svc),
                                 ),
@@ -238,14 +248,16 @@ class _PremiumHomeView extends StatelessWidget {
                       ),
                     ],
                     if (state.recentlyViewed.isNotEmpty) ...[
-                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xl)),
-                      SliverToBoxAdapter(child: SectionHeader(title: 'Recently viewed')),
+                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xxl)),
+                      SliverToBoxAdapter(
+                        child: SectionHeader(title: 'Recently viewed'),
+                      ),
                       SliverPadding(
                         padding: const EdgeInsets.fromLTRB(
                           Am5Spacing.lg,
-                          0,
+                          Am5Spacing.md,
                           Am5Spacing.lg,
-                          Am5Spacing.xxxl,
+                          0,
                         ),
                         sliver: SliverList.separated(
                           itemCount: state.recentlyViewed.take(3).length,
@@ -260,13 +272,12 @@ class _PremiumHomeView extends StatelessWidget {
                           },
                         ),
                       ),
-                    ] else
-                      const SliverToBoxAdapter(child: SizedBox(height: Am5Spacing.xxxl)),
+                    ],
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(
                           Am5Spacing.lg,
-                          0,
+                          Am5Spacing.xxl,
                           Am5Spacing.lg,
                           Am5Spacing.lg,
                         ),
@@ -276,6 +287,7 @@ class _PremiumHomeView extends StatelessWidget {
                           label: const Text('Browse service packages'),
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size.fromHeight(48),
+                            backgroundColor: Colors.white,
                           ),
                         ),
                       ),
@@ -302,56 +314,188 @@ class _PremiumHomeView extends StatelessWidget {
   }
 }
 
-class _PromoBanner extends StatelessWidget {
-  const _PromoBanner({required this.banner});
+class _FeedSectionHeader extends StatelessWidget {
+  const _FeedSectionHeader({
+    required this.count,
+    required this.label,
+    this.badge,
+    this.onViewAll,
+  });
 
-  final CatalogBanner banner;
+  final int count;
+  final String label;
+  final String? badge;
+  final VoidCallback? onViewAll;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        Am5Spacing.lg,
-        Am5Spacing.md,
-        Am5Spacing.lg,
-        Am5Spacing.xl,
-      ),
-      child: Container(
-        height: 160,
-        decoration: Am5Decorations.brandGradient(),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            if (banner.imageUrl.isNotEmpty)
-              Image.network(banner.imageUrl, fit: BoxFit.cover, opacity: const AlwaysStoppedAnimation(0.35)),
-            Padding(
-              padding: const EdgeInsets.all(Am5Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    banner.title,
-                    style: theme.textTheme.titleLarge?.copyWith(color: Colors.white),
+      padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$count $label',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: Am5Colors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
                   ),
-                  if (banner.subtitle != null)
-                    Text(banner.subtitle!, style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70)),
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: () => context.go('/search'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: theme.colorScheme.primary,
+                ),
+                if (badge != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    badge!,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.2,
                     ),
-                    child: Text(banner.ctaLabel ?? 'Book now'),
                   ),
                 ],
+              ],
+            ),
+          ),
+          if (onViewAll != null)
+            TextButton(
+              onPressed: onViewAll,
+              child: const Text('View all'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PromoBannerCarousel extends StatefulWidget {
+  const _PromoBannerCarousel({required this.banners});
+
+  final List<CatalogBanner> banners;
+
+  @override
+  State<_PromoBannerCarousel> createState() => _PromoBannerCarouselState();
+}
+
+class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
+  late final PageController _controller;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final banners = widget.banners;
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 148,
+          child: PageView.builder(
+            controller: _controller,
+            onPageChanged: (i) => setState(() => _page = i),
+            itemCount: banners.length,
+            itemBuilder: (context, i) {
+              final banner = banners[i];
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Am5Spacing.lg),
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Am5Colors.brandRed, Am5Colors.deepRed],
+                    ),
+                    borderRadius: BorderRadius.circular(Am5Spacing.radiusLg),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Am5Colors.brandRed.withValues(alpha: 0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (banner.imageUrl.isNotEmpty)
+                        Image.network(
+                          banner.imageUrl,
+                          fit: BoxFit.cover,
+                          opacity: const AlwaysStoppedAnimation(0.35),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.all(Am5Spacing.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              banner.title,
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            if (banner.subtitle != null)
+                              Text(
+                                banner.subtitle!,
+                                style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                              ),
+                            const Spacer(),
+                            FilledButton(
+                              onPressed: () => context.go('/search'),
+                              style: FilledButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: theme.colorScheme.primary,
+                                minimumSize: const Size(0, 40),
+                              ),
+                              child: Text(banner.ctaLabel ?? 'Book now'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        if (banners.length > 1) ...[
+          const SizedBox(height: Am5Spacing.sm),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              banners.length,
+              (i) => AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: _page == i ? 18 : 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: _page == i ? Am5Colors.brandRed : Am5Colors.outline,
+                  borderRadius: BorderRadius.circular(Am5Spacing.radiusFull),
+                ),
               ),
             ),
-          ],
-        ),
-      ),
+          ),
+        ],
+      ],
     );
   }
 }

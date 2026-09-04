@@ -31,8 +31,8 @@ import 'features/growth/presentation/pages/referral_page.dart';
 import 'features/growth/presentation/pages/invoices_page.dart';
 import 'features/catalog/presentation/pages/category_detail_page.dart';
 import 'features/catalog/presentation/pages/service_detail_page.dart';
-import 'features/professionals/presentation/pages/professional_detail_page.dart';
 import 'features/professionals/presentation/pages/professionals_list_page.dart';
+import 'features/professionals/presentation/pages/vendor_detail_page.dart';
 import 'features/profile/presentation/pages/edit_profile_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/search/presentation/pages/search_page.dart';
@@ -172,9 +172,14 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
         ),
         GoRoute(
           path: '/professionals/:id',
-          builder: (context, state) => ProfessionalDetailPage(
-            professionalId: state.pathParameters['id']!,
-            serviceId: state.uri.queryParameters['service_id'],
+          builder: (context, state) => VendorDetailPage(
+            vendorId: state.pathParameters['id']!,
+          ),
+        ),
+        GoRoute(
+          path: '/vendors/:id',
+          builder: (context, state) => VendorDetailPage(
+            vendorId: state.pathParameters['id']!,
           ),
         ),
         GoRoute(

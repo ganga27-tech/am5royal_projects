@@ -89,6 +89,28 @@ class CatalogApi {
     }
   }
 
+  Future<List<VendorServiceOffering>> listVendorServices(
+    String vendorId, {
+    String? categoryId,
+    String? subcategoryId,
+  }) async {
+    try {
+      final response = await _client.dio.get(
+        '/catalog/vendors/$vendorId/services',
+        queryParameters: {
+          if (categoryId != null) 'category_id': categoryId,
+          if (subcategoryId != null) 'subcategory_id': subcategoryId,
+        },
+      );
+      final list = response.data as List<dynamic>;
+      return list
+          .map((e) => VendorServiceOffering.fromJson(e as Map<String, dynamic>))
+          .toList();
+    } on DioException catch (e) {
+      throw _client.mapDioError(e);
+    }
+  }
+
   // Admin
   Future<CatalogCategory> adminCreateCategory(Map<String, dynamic> body) async {
     try {

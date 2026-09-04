@@ -94,8 +94,8 @@ class _DetailViewState extends State<_DetailView> {
                   children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundImage: p.avatarUrl != null ? NetworkImage(p.avatarUrl!) : null,
-                      child: p.avatarUrl == null ? Text(p.displayName.substring(0, 1)) : null,
+                      backgroundImage: p.hasAvatar ? NetworkImage(p.avatarUrl!) : null,
+                      child: !p.hasAvatar ? Text(p.displayName.substring(0, 1)) : null,
                     ),
                     const SizedBox(width: 16),
                     Expanded(

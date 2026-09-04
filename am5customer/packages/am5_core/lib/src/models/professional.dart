@@ -69,6 +69,14 @@ class Professional extends Equatable {
   String get ratingLabel => ratingCount == 0 ? 'New' : '${ratingAvg.toStringAsFixed(1)} ($ratingCount)';
   String get priceLabel => servicePrice != null && servicePrice! > 0 ? '₹${servicePrice!.toStringAsFixed(0)}' : '';
   String get distanceLabel => distanceKm != null && distanceKm! > 0 ? '${distanceKm!.toStringAsFixed(1)} km' : '';
+  bool get hasAvatar => avatarUrl != null && avatarUrl!.trim().isNotEmpty;
+  bool get hasBanner => bannerUrl != null && bannerUrl!.trim().isNotEmpty;
+
+  static String? _nullableUrl(dynamic value) {
+    if (value == null) return null;
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
 
   factory Professional.fromJson(Map<String, dynamic> json) {
     final avg = json['rating_avg'] ?? json['avg_rating'];
@@ -80,8 +88,8 @@ class Professional extends Equatable {
       displayName: json['display_name'] as String? ?? json['business_name'] as String? ?? 'Professional',
       headline: json['headline'] as String?,
       bio: json['bio'] as String? ?? json['business_description'] as String?,
-      avatarUrl: json['avatar_url'] as String? ?? json['photo_url'] as String?,
-      bannerUrl: json['banner_url'] as String? ?? json['background_banner'] as String?,
+      avatarUrl: _nullableUrl(json['avatar_url'] ?? json['photo_url']),
+      bannerUrl: _nullableUrl(json['banner_url'] ?? json['background_banner']),
       city: json['city'] as String? ?? json['operating_city'] as String?,
       state: json['state'] as String?,
       country: json['country'] as String? ?? 'IN',

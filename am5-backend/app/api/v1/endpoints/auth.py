@@ -477,7 +477,7 @@ async def register_vendor(
     existing_vendor.longitude = request.longitude
     existing_vendor.service_radius_km = request.service_radius_km
     existing_vendor.profile_image = request.profile_image
-    existing_vendor.status = "active"
+    existing_vendor.status = "registration"
     
     db.add(existing_vendor)
     vendor_id = existing_vendor.id

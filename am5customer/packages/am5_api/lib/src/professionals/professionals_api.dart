@@ -79,6 +79,9 @@ class ProfessionalsApi {
 
   Future<Professional> getProfessional(String id, {String? serviceId}) async {
     try {
+      final direct = await _findVendorInList(id);
+      if (direct != null) return direct;
+
       if (serviceId != null) {
         final parsed = int.tryParse(serviceId);
         if (parsed != null) {

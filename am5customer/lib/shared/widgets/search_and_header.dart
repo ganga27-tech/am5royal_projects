@@ -31,16 +31,17 @@ class SearchBarWidget extends StatelessWidget {
       color: Am5Colors.surface,
       elevation: 0,
       shadowColor: Am5Colors.shadow,
-      borderRadius: BorderRadius.circular(Am5Spacing.radiusXl),
+      borderRadius: BorderRadius.circular(Am5Spacing.radiusFull),
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(Am5Spacing.radiusXl),
-          border: Border.all(color: Am5Colors.outline.withValues(alpha: 0.6)),
+          borderRadius: BorderRadius.circular(Am5Spacing.radiusFull),
+          color: Am5Colors.surface,
+          border: Border.all(color: Am5Colors.outline.withValues(alpha: 0.45)),
           boxShadow: [
             BoxShadow(
               color: Am5Colors.shadow,
-              blurRadius: large ? 20 : 12,
-              offset: const Offset(0, 4),
+              blurRadius: large ? 24 : 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -49,21 +50,34 @@ class SearchBarWidget extends StatelessWidget {
           readOnly: readOnly,
           onTap: onTap,
           onSubmitted: onSubmitted,
-          style: theme.textTheme.bodyLarge,
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: theme.textTheme.bodyLarge?.copyWith(
+              color: Am5Colors.textSecondary,
+              fontWeight: FontWeight.w400,
+            ),
             filled: true,
             fillColor: Am5Colors.surface,
             contentPadding: EdgeInsets.symmetric(
               horizontal: Am5Spacing.lg,
-              vertical: large ? 18 : 14,
+              vertical: large ? 16 : 12,
             ),
-            prefixIcon: Icon(Icons.search_rounded, color: theme.colorScheme.primary),
-            suffixIcon: IconButton(
-              onPressed: onMicTap,
-              icon: Icon(Icons.mic_rounded, color: theme.colorScheme.primary),
-              tooltip: 'Voice search',
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: Am5Colors.textSecondary, size: 22),
+            suffixIcon: onMicTap != null
+                ? Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: theme.colorScheme.primary.withValues(alpha: 0.35)),
+                    ),
+                    child: IconButton(
+                      onPressed: onMicTap,
+                      icon: Icon(Icons.mic_rounded, color: theme.colorScheme.primary, size: 20),
+                      tooltip: 'Voice search',
+                    ),
+                  )
+                : null,
             border: InputBorder.none,
             enabledBorder: InputBorder.none,
             focusedBorder: InputBorder.none,

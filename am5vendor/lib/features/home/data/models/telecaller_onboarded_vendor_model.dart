@@ -8,6 +8,13 @@ class TelecallerOnboardedVendorModel {
   final String createdAt;
   final String mobileNumber;
   final String? leadSource;
+  final bool hasServices;
+  final bool hasRegistration;
+  final bool hasSlots;
+  final bool hasBusinessReg;
+  final bool hasPayment;
+  final bool isTempActive;
+  final bool isActivated;
 
   TelecallerOnboardedVendorModel({
     required this.id,
@@ -19,6 +26,13 @@ class TelecallerOnboardedVendorModel {
     required this.createdAt,
     required this.mobileNumber,
     this.leadSource,
+    this.hasServices = false,
+    this.hasRegistration = false,
+    this.hasSlots = false,
+    this.hasBusinessReg = false,
+    this.hasPayment = false,
+    this.isTempActive = false,
+    this.isActivated = false,
   });
 
   factory TelecallerOnboardedVendorModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +46,13 @@ class TelecallerOnboardedVendorModel {
       createdAt: json['created_at'] ?? '',
       mobileNumber: json['mobile_number'] ?? '',
       leadSource: json['lead_source'],
+      hasServices: json['has_services'] ?? false,
+      hasRegistration: json['has_registration'] ?? false,
+      hasSlots: json['has_slots'] ?? false,
+      hasBusinessReg: json['has_business_reg'] ?? false,
+      hasPayment: json['has_payment'] ?? false,
+      isTempActive: json['is_temp_active'] ?? false,
+      isActivated: json['is_activated'] ?? false,
     );
   }
 
@@ -46,6 +67,13 @@ class TelecallerOnboardedVendorModel {
       'created_at': createdAt,
       'mobile_number': mobileNumber,
       'lead_source': leadSource,
+      'has_services': hasServices,
+      'has_registration': hasRegistration,
+      'has_slots': hasSlots,
+      'has_business_reg': hasBusinessReg,
+      'has_payment': hasPayment,
+      'is_temp_active': isTempActive,
+      'is_activated': isActivated,
     };
   }
 }

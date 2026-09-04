@@ -27,7 +27,7 @@ abstract final class Am5Decorations {
           end: Alignment.bottomRight,
           colors: [
             Am5Colors.lightRed,
-            Am5Colors.surface,
+            Am5Colors.background,
           ],
         ),
         borderRadius: BorderRadius.circular(Am5Spacing.radiusLg),

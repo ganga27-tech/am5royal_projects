@@ -7,6 +7,7 @@ import 'package:am5_ui/am5_ui.dart';
 
 import '../../../../core/customer_brand.dart';
 import '../../../../core/design_system/am5_colors.dart';
+import '../../../../shared/widgets/service_widgets.dart';
 import '../../../address/presentation/cubit/address_cubit.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../comms/presentation/cubit/notifications_cubit.dart';
@@ -112,8 +113,9 @@ class _CatalogHomeView extends StatelessWidget {
       ];
     }
 
-    final greetingName =
-        (name != null && name.isNotEmpty) ? name : s.navProfile;
+    final greetingName = (name != null && name.isNotEmpty)
+        ? name
+        : s.navProfile;
 
     return [
       SliverToBoxAdapter(
@@ -130,16 +132,16 @@ class _CatalogHomeView extends StatelessWidget {
               Text(
                 '${s.homeGreeting}, $greetingName 👋',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: LivoraSpacing.xs),
               Text(
                 s.homePrompt,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: LivoraSpacing.lg),
               _SearchEntry(
@@ -160,7 +162,9 @@ class _CatalogHomeView extends StatelessWidget {
             child: SizedBox(
               height: 40,
               child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: LivoraSpacing.lg),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: LivoraSpacing.lg,
+                ),
                 scrollDirection: Axis.horizontal,
                 itemCount: state.categories.take(4).length + 1,
                 separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -170,7 +174,8 @@ class _CatalogHomeView extends StatelessWidget {
                     return _QuickChip(
                       icon: Icons.apps_rounded,
                       label: s.viewAll,
-                      onTap: () => _showAllCategories(context, state.categories, s),
+                      onTap: () =>
+                          _showAllCategories(context, state.categories, s),
                     );
                   }
                   final cat = take[index];
@@ -246,7 +251,9 @@ class _CatalogHomeView extends StatelessWidget {
         child: _SectionHeader(
           title: s.featuredServices,
           actionLabel: state.featured.isNotEmpty ? s.viewAll : null,
-          onAction: state.featured.isNotEmpty ? () => context.go('/search') : null,
+          onAction: state.featured.isNotEmpty
+              ? () => context.go('/search')
+              : null,
           padding: const EdgeInsets.fromLTRB(
             LivoraSpacing.lg,
             LivoraSpacing.xl,
@@ -388,9 +395,14 @@ class _CatalogHomeView extends StatelessWidget {
             itemBuilder: (context, index) {
               final cat = categories[index];
               return ListTile(
-                leading: Icon(_categoryIcon(cat.slug), color: Theme.of(context).colorScheme.primary),
+                leading: Icon(
+                  _categoryIcon(cat.slug),
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 title: Text(cat.name),
-                subtitle: cat.description != null ? Text(cat.description!) : null,
+                subtitle: cat.description != null
+                    ? Text(cat.description!)
+                    : null,
                 onTap: () {
                   Navigator.pop(ctx);
                   context.push('/categories/${cat.id}');
@@ -404,18 +416,7 @@ class _CatalogHomeView extends StatelessWidget {
   }
 }
 
-IconData _categoryIcon(String slug) {
-  final s = slug.toLowerCase();
-  if (s.contains('clean')) return Icons.cleaning_services_outlined;
-  if (s.contains('ac') || s.contains('appliance')) return Icons.ac_unit_outlined;
-  if (s.contains('plumb')) return Icons.plumbing_outlined;
-  if (s.contains('beauty') || s.contains('salon')) return Icons.spa_outlined;
-  if (s.contains('electric')) return Icons.electrical_services_outlined;
-  if (s.contains('pest')) return Icons.bug_report_outlined;
-  if (s.contains('paint')) return Icons.format_paint_outlined;
-  if (s.contains('bath')) return Icons.bathtub_outlined;
-  return Icons.home_repair_service_outlined;
-}
+IconData _categoryIcon(String slug) => categoryIconFor(slug);
 
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader({required this.strings});
@@ -438,9 +439,10 @@ class _HomeHeader extends StatelessWidget {
           Expanded(
             child: BlocBuilder<AddressCubit, AddressViewState>(
               builder: (context, addressState) {
-                final addr = addressState.addresses
-                    .where((a) => a.isDefault)
-                    .firstOrNull ??
+                final addr =
+                    addressState.addresses
+                        .where((a) => a.isDefault)
+                        .firstOrNull ??
                     addressState.addresses.firstOrNull;
                 final label = addr != null
                     ? '${addr.landmark?.isNotEmpty == true ? addr.landmark! : addr.line1.split(',').first}, ${addr.city}'
@@ -491,7 +493,9 @@ class _HomeHeader extends StatelessWidget {
             onPressed: () => context.go('/profile'),
             icon: CircleAvatar(
               radius: 16,
-              backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.12),
+              backgroundColor: theme.colorScheme.primary.withValues(
+                alpha: 0.12,
+              ),
               child: Icon(
                 Icons.person_rounded,
                 size: 18,
@@ -559,7 +563,10 @@ class _SearchEntry extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
           child: Row(
             children: [
-              Icon(Icons.search_rounded, color: theme.colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.search_rounded,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
@@ -858,7 +865,9 @@ class _HeroBanner extends StatelessWidget {
                     minimumSize: const Size(0, 40),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(LivoraSpacing.radii.full),
+                      borderRadius: BorderRadius.circular(
+                        LivoraSpacing.radii.full,
+                      ),
                     ),
                   ),
                   onPressed: () => _onCta(context),
@@ -1157,7 +1166,10 @@ class _TrustStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: LivoraSpacing.md, horizontal: 8),
+      padding: const EdgeInsets.symmetric(
+        vertical: LivoraSpacing.md,
+        horizontal: 8,
+      ),
       decoration: BoxDecoration(
         color: Am5Colors.background,
         borderRadius: BorderRadius.circular(LivoraSpacing.radii.lg),

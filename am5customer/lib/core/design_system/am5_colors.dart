@@ -5,7 +5,7 @@ abstract final class Am5Colors {
   static const brandRed = Color(0xFFE31E24);
   static const deepRed = Color(0xFFB91C1C);
   static const lightRed = Color(0xFFFFF1F2);
-  static const background = Color(0xFFFAFAFA);
+  static const background = Color(0xFFFFF9F5);
   static const surface = Color(0xFFFFFFFF);
   static const textPrimary = Color(0xFF171717);
   static const textSecondary = Color(0xFF6B7280);

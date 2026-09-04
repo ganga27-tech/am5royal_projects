@@ -472,21 +472,43 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
             }}
           >
             {steps.map((step, idx) => {
-              const isCompleted = idx < currentStep;
+              let isCompleted = false;
+              if (step === 'Services') {
+                isCompleted = vendor.hasServices ?? (!!vendor.serviceName && vendor.serviceName !== 'General Services');
+              } else if (step === 'Registration') {
+                isCompleted = vendor.hasRegistration ?? !!vendor.firstName;
+              } else if (step === 'Slots') {
+                isCompleted = vendor.hasSlots ?? false;
+              } else if (step === 'Business Reg') {
+                isCompleted = vendor.hasBusinessReg ?? false;
+              } else if (step === 'Payment') {
+                isCompleted = vendor.hasPayment ?? false;
+              }
+
+              const isActivatedStep = step === 'Activated' && (vendor.isActivated || statusLower === 'active' || statusLower === 'activated');
+              const isTempActiveStep = step === 'Temp Active' && (vendor.isTempActive || isUnderVerification);
               const isCurrent = idx === currentStep;
 
               let bg = '#f1f5f9';
               let color = '#64748b';
               let borderColor = '#e2e8f0';
 
-              if (isCompleted) {
+              if (isActivatedStep) {
+                bg = 'var(--primary)';
+                color = '#ffffff';
+                borderColor = 'var(--primary-hover)';
+              } else if (isTempActiveStep) {
+                bg = '#f59e0b';
+                color = '#ffffff';
+                borderColor = '#d97706';
+              } else if (isCompleted) {
                 bg = '#10b981';
                 color = '#ffffff';
                 borderColor = '#059669';
               } else if (isCurrent) {
-                bg = 'var(--primary)';
-                color = '#ffffff';
-                borderColor = 'var(--primary-hover)';
+                bg = '#e2e8f0';
+                color = '#334155';
+                borderColor = '#cbd5e1';
               }
 
               return (
@@ -513,7 +535,7 @@ export const VendorStepperCard: React.FC<VendorStepperCardProps> = ({
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    boxShadow: isCurrent ? '0 4px 12px var(--primary-glow)' : 'none',
+                    boxShadow: isActivatedStep ? '0 4px 12px var(--primary-glow)' : 'none',
                     transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}

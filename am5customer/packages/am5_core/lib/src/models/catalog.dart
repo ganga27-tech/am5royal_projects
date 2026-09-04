@@ -146,3 +146,56 @@ class CatalogBanner extends Equatable {
   @override
   List<Object?> get props => [id, title, placement];
 }
+
+class VendorServiceOffering extends Equatable {
+  const VendorServiceOffering({
+    required this.id,
+    required this.title,
+    required this.price,
+    required this.mainCategoryId,
+    required this.subCategoryId,
+    this.serviceId,
+    this.description,
+    this.discountedPrice,
+    this.negotiable = false,
+    this.subCategoryName,
+    this.imageUrl,
+  });
+
+  final String id;
+  final String? serviceId;
+  final String title;
+  final String? description;
+  final double price;
+  final double? discountedPrice;
+  final bool negotiable;
+  final String mainCategoryId;
+  final String subCategoryId;
+  final String? subCategoryName;
+  final String? imageUrl;
+
+  double get effectivePrice =>
+      discountedPrice != null && discountedPrice! > 0 ? discountedPrice! : price;
+
+  String get priceLabel => '₹${effectivePrice.toStringAsFixed(0)}';
+
+  factory VendorServiceOffering.fromJson(Map<String, dynamic> json) {
+    double n(dynamic v) => v is num ? v.toDouble() : double.tryParse('$v') ?? 0;
+    return VendorServiceOffering(
+      id: json['id']?.toString() ?? '',
+      serviceId: json['service_id']?.toString(),
+      title: json['title'] as String? ?? 'Service',
+      description: json['description'] as String?,
+      price: n(json['price']),
+      discountedPrice: json['discounted_price'] != null ? n(json['discounted_price']) : null,
+      negotiable: json['negotiable'] as bool? ?? false,
+      mainCategoryId: json['main_category_id']?.toString() ?? '',
+      subCategoryId: json['sub_category_id']?.toString() ?? '',
+      subCategoryName: json['sub_category_name'] as String?,
+      imageUrl: json['image_url'] as String?,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, title, subCategoryId, price];
+}

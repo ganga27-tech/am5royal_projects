@@ -101,6 +101,13 @@ class TelecallerOnboardedVendor(BaseModel):
     service_name: Optional[str] = None
     assigned_team_member: Optional[str] = None
     lead_status: Optional[str] = None
+    has_services: Optional[bool] = False
+    has_registration: Optional[bool] = False
+    has_slots: Optional[bool] = False
+    has_business_reg: Optional[bool] = False
+    has_payment: Optional[bool] = False
+    is_temp_active: Optional[bool] = False
+    is_activated: Optional[bool] = False
 
 class PaginatedOnboardedVendorsResponse(BaseModel):
     total: int

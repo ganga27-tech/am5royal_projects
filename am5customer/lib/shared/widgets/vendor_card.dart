@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/design_system/am5_colors.dart';
 
+enum VendorCardStyle { profile, feed }
+
 class VendorCard extends StatelessWidget {
   const VendorCard({
     super.key,
@@ -11,15 +13,21 @@ class VendorCard extends StatelessWidget {
     this.onTap,
     this.onBook,
     this.compact = false,
+    this.style = VendorCardStyle.profile,
   });
 
   final Professional vendor;
   final VoidCallback? onTap;
   final VoidCallback? onBook;
   final bool compact;
+  final VendorCardStyle style;
 
   @override
   Widget build(BuildContext context) {
+    if (style == VendorCardStyle.feed && !compact) {
+      return _FeedVendorCard(vendor: vendor, onTap: onTap);
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -42,7 +50,7 @@ class VendorCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ?? () => context.push('/professionals/${vendor.id}'),
+          onTap: onTap ?? () => context.push('/vendors/${vendor.id}'),
           child: compact ? _buildCompactLayout(context) : _buildFullLayout(context),
         ),
       ),
@@ -50,8 +58,8 @@ class VendorCard extends StatelessWidget {
   }
 
   Widget _buildFullLayout(BuildContext context) {
-    final hasBanner = vendor.bannerUrl != null && vendor.bannerUrl!.isNotEmpty;
-    final hasPhoto = vendor.avatarUrl != null && vendor.avatarUrl!.isNotEmpty;
+    final hasBanner = vendor.hasBanner;
+    final hasPhoto = vendor.hasAvatar;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,7 +297,7 @@ class VendorCard extends StatelessWidget {
                     ],
                   ),
                   ElevatedButton(
-                    onPressed: onBook ?? () => context.push('/professionals/${vendor.id}'),
+                    onPressed: onBook ?? () => context.push('/vendors/${vendor.id}'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE31E24),
                       foregroundColor: Colors.white,
@@ -315,7 +323,7 @@ class VendorCard extends StatelessWidget {
   }
 
   Widget _buildCompactLayout(BuildContext context) {
-    final hasPhoto = vendor.avatarUrl != null && vendor.avatarUrl!.isNotEmpty;
+    final hasPhoto = vendor.hasAvatar;
 
     return Padding(
       padding: const EdgeInsets.all(12),
@@ -388,6 +396,248 @@ class VendorCard extends StatelessWidget {
           ),
           const Icon(Icons.chevron_right, color: Colors.grey),
         ],
+      ),
+    );
+  }
+}
+
+class _FeedVendorCard extends StatelessWidget {
+  const _FeedVendorCard({required this.vendor, this.onTap});
+
+  final Professional vendor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasBanner = vendor.hasBanner;
+    final hasPhoto = vendor.hasAvatar;
+    final price = vendor.priceLabel.isNotEmpty ? vendor.priceLabel : '₹499';
+    final city = vendor.city != null && vendor.city!.isNotEmpty
+        ? vendor.city!
+        : 'Hyderabad';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap ?? () => context.push('/vendors/${vendor.id}'),
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.07),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                child: Stack(
+                  children: [
+                    SizedBox(
+                      height: 180,
+                      width: double.infinity,
+                      child: hasBanner
+                          ? Image.network(
+                              vendor.bannerUrl!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, _, _) => _imageFallback(hasPhoto),
+                            )
+                          : _imageFallback(hasPhoto),
+                    ),
+                    Positioned.fill(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.black.withValues(alpha: 0.05),
+                              Colors.black.withValues(alpha: 0.45),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (vendor.isVerified)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.verified, size: 14, color: Am5Colors.success),
+                              SizedBox(width: 4),
+                              Text(
+                                'Verified Vendor',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Am5Colors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      bottom: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          'Starts from $price',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            vendor.displayName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Am5Colors.success,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, size: 13, color: Colors.white),
+                              const SizedBox(width: 2),
+                              Text(
+                                vendor.ratingAvg.toStringAsFixed(1),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'For you',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Am5Colors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.bolt_rounded, size: 16, color: theme.colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          vendor.distanceKm != null ? 'Near & fast' : 'Verified professional',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Am5Colors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.location_on_outlined, size: 14, color: Am5Colors.textSecondary),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            city,
+                            style: theme.textTheme.bodySmall?.copyWith(color: Am5Colors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (vendor.ratingCount > 0)
+                          Text(
+                            '${vendor.ratingCount} reviews',
+                            style: theme.textTheme.bodySmall?.copyWith(color: Am5Colors.textSecondary),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _imageFallback(bool hasPhoto) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFFE31E24), Color(0xFF881337)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: CircleAvatar(
+          radius: 36,
+          backgroundColor: Colors.white.withValues(alpha: 0.2),
+          backgroundImage: hasPhoto ? NetworkImage(vendor.avatarUrl!) : null,
+          child: !hasPhoto
+              ? Text(
+                  vendor.displayName.isNotEmpty
+                      ? vendor.displayName.substring(0, 1).toUpperCase()
+                      : 'V',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                )
+              : null,
+        ),
       ),
     );
   }

@@ -72,6 +72,13 @@ export const telecallerApi = {
         serviceName: v.service_name || 'General Services',
         assignedTeamMember: v.assigned_team_member || 'Unassigned',
         leadStatus: v.lead_status || 'New',
+        hasServices: v.has_services ?? false,
+        hasRegistration: v.has_registration ?? false,
+        hasSlots: v.has_slots ?? false,
+        hasBusinessReg: v.has_business_reg ?? false,
+        hasPayment: v.has_payment ?? false,
+        isTempActive: v.is_temp_active ?? false,
+        isActivated: v.is_activated ?? false,
       })),
     };
   },

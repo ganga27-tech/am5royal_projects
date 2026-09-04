@@ -8,6 +8,24 @@ void openServiceBooking(BuildContext context, CatalogServiceItem service) {
   context.push('/book?service_id=${service.id}&service_name=$name');
 }
 
+void openVendorServiceBooking(
+  BuildContext context, {
+  required String vendorId,
+  required String vendorName,
+  required VendorServiceOffering service,
+}) {
+  final params = {
+    'professional_id': vendorId,
+    'service_id': service.subCategoryId,
+    'professional_name': vendorName,
+    'service_name': service.title,
+  };
+  final q = params.entries
+      .map((e) => '${e.key}=${Uri.encodeQueryComponent(e.value)}')
+      .join('&');
+  context.push('/book?$q');
+}
+
 void openServiceBookingById(
   BuildContext context, {
   required String serviceId,

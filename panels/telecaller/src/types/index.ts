@@ -68,6 +68,13 @@ export interface TelecallerOnboardedVendor {
   serviceName?: string;
   assignedTeamMember?: string;
   leadStatus?: string;
+  hasServices?: boolean;
+  hasRegistration?: boolean;
+  hasSlots?: boolean;
+  hasBusinessReg?: boolean;
+  hasPayment?: boolean;
+  isTempActive?: boolean;
+  isActivated?: boolean;
 }
 
 export interface PaginatedOnboardedVendorsResponse {
