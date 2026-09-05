@@ -15,10 +15,12 @@ class BookingsApi {
     String? addressId,
   }) async {
     try {
+      final vendorId = int.tryParse(professionalId);
       final response = await _client.dio.get(
         '/orders/availableServiceProviderSlots',
         queryParameters: {
           'serviceIds': serviceId,
+          if (vendorId != null) 'professionId': vendorId,
           'serviceDate': _formatDate(day),
           if (addressId != null) 'addressId': addressId,
         },
@@ -32,12 +34,23 @@ class BookingsApi {
     }
   }
 
+  Future<double> estimatePrice({
+    required String professionalId,
+    required String serviceId,
+  }) async {
+    final subcategoryId = int.tryParse(serviceId);
+    if (subcategoryId == null) return 499;
+    return _resolveUnitPrice(vendorId: professionalId, subcategoryId: subcategoryId);
+  }
+
   Future<Booking> createBooking({
     required String professionalId,
     required String serviceId,
     required String addressId,
     required DateTime scheduledStart,
     String? customerNotes,
+    String? serviceName,
+    String? professionalName,
   }) async {
     try {
       final subcategoryId = int.tryParse(serviceId);
@@ -58,6 +71,8 @@ class BookingsApi {
           'scheduled_at': scheduledStart.toUtc().toIso8601String(),
           'vendor_profile_id': int.tryParse(professionalId),
           'catalog_service_id': subcategoryId,
+          if (customerNotes != null && customerNotes.trim().isNotEmpty)
+            'special_instructions': customerNotes.trim(),
           'items': [
             {
               'subcategory_id': subcategoryId,
@@ -72,10 +87,11 @@ class BookingsApi {
       return Booking.fromAm5Order({
         'orderId': data['orderId'],
         'status': data['status'] ?? 'PENDING',
-        'service_name': 'Service',
+        'service_name': serviceName ?? 'Service',
+        'vendor_name': professionalName,
+        'finalAmount': unitPrice,
         'serviceDate': _formatDate(scheduledStart),
         'serviceTime': _formatTime(scheduledStart),
-        'finalAmount': unitPrice,
       });
     } on DioException catch (e) {
       throw _client.mapDioError(e);

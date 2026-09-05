@@ -8,7 +8,9 @@ import 'package:am5_ui/am5_ui.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.redirectTo});
+
+  final String? redirectTo;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -50,7 +52,10 @@ class _LoginPageState extends State<LoginPage> {
         }
         if (state.otpDestination != null && state.otpDestination!.isNotEmpty) {
           final dest = state.otpDestination!;
-          context.push('/otp?to=${Uri.encodeComponent(dest)}');
+          final redirect = widget.redirectTo;
+          final q = 'to=${Uri.encodeComponent(dest)}'
+              '${redirect != null && redirect.isNotEmpty ? '&redirect=${Uri.encodeComponent(redirect)}' : ''}';
+          context.push('/otp?$q');
         }
       },
       builder: (context, state) {

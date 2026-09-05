@@ -99,3 +99,7 @@ final class AuthEmailResendRequested extends AuthEvent {
 final class AuthMessageCleared extends AuthEvent {
   const AuthMessageCleared();
 }
+
+final class AuthSessionRefreshed extends AuthEvent {
+  const AuthSessionRefreshed();
+}

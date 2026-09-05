@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>AM5 Royal needs microphone access for voice search.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>AM5 Royal uses speech recognition to convert your voice into search queries.</string>
 </dict>
 </plist>

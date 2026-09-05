@@ -22,6 +22,8 @@ dependencies:
   flutter_map: ^8.1.1
   latlong2: ^0.9.1
   flutter_svg: ^2.0.17
+  speech_to_text: ^7.0.0
+  permission_handler: ^11.4.0
   am5_ui:
     path: packages/am5_ui
   am5_core:

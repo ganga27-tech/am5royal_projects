@@ -166,7 +166,7 @@ class Booking extends Equatable {
       bookingCode: json['orderId']?.toString() ?? '',
       customerUserId: '',
       professionalId: '',
-      professionalName: null,
+      professionalName: json['professional_name'] as String? ?? json['vendor_name'] as String?,
       serviceId: '',
       addressId: '',
       scheduledStart: start,

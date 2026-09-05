@@ -75,6 +75,28 @@ class UserProfile extends Equatable {
 
   String get name => displayName?.isNotEmpty == true ? displayName! : fullName;
 
+  String get displayPhone {
+    final raw = phone?.trim();
+    if (raw != null && raw.isNotEmpty) {
+      return _formatIndianPhone(raw);
+    }
+    final mail = email?.trim();
+    if (mail != null && mail.isNotEmpty) {
+      final match = RegExp(r'(\d{10})').firstMatch(mail);
+      if (match != null) {
+        return _formatIndianPhone(match.group(1)!);
+      }
+    }
+    return '—';
+  }
+
+  static String _formatIndianPhone(String value) {
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+    final phone10 = digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
+    if (phone10.length != 10) return value;
+    return '+91 $phone10';
+  }
+
   @override
   List<Object?> get props => [userId, fullName, displayName, preferredLocale, city];
 }

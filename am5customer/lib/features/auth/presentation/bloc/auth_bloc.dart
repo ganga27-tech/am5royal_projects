@@ -18,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthOtpVerified>(_onOtpVerify);
     on<AuthLogoutRequested>(_onLogout);
     on<AuthSessionExpired>(_onSessionExpired);
+    on<AuthSessionRefreshed>(_onSessionRefreshed);
     on<AuthMessageCleared>(_onClearMessage);
   }
 
@@ -79,6 +80,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         message: 'Your session expired. Please sign in again.',
       ),
     );
+  }
+
+  Future<void> _onSessionRefreshed(AuthSessionRefreshed event, Emitter<AuthState> emit) async {
+    try {
+      final user = await _authApi.me();
+      emit(AuthState.authenticated(user));
+    } on Failure catch (f) {
+      emit(AuthState.unauthenticated(message: f.message));
+    } catch (_) {
+      emit(const AuthState.unauthenticated());
+    }
   }
 
   void _onClearMessage(AuthMessageCleared event, Emitter<AuthState> emit) {

@@ -79,4 +79,23 @@ class AuthApi {
   Future<void> logout() async {
     await _client.tokenStorage.clear();
   }
+
+  Future<void> sendBookingSecurityOtp() async {
+    try {
+      await _client.dio.post('/auth/customer/booking-security/send-otp');
+    } on DioException catch (e) {
+      throw _client.mapDioError(e);
+    }
+  }
+
+  Future<void> verifyBookingSecurityOtp({required String code}) async {
+    try {
+      await _client.dio.post(
+        '/auth/customer/booking-security/verify-otp',
+        data: {'otp': code},
+      );
+    } on DioException catch (e) {
+      throw _client.mapDioError(e);
+    }
+  }
 }

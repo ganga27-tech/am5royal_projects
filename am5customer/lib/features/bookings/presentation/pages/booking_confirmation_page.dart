@@ -54,14 +54,25 @@ class BookingConfirmationPage extends StatelessWidget {
                     Text(booking.serviceName, style: theme.textTheme.titleMedium),
                     const SizedBox(height: 8),
                     Text(
-                      '${booking.scheduledStart.day}/${booking.scheduledStart.month}/${booking.scheduledStart.year} · $time',
+                      '${_formatDate(booking.scheduledStart)} · $time',
                       style: theme.textTheme.bodyMedium,
                     ),
-                    if (booking.professionalName != null) ...[
+                    if (booking.professionalName != null &&
+                        booking.professionalName!.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Professional: ${booking.professionalName}',
                         style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                    if (booking.priceAmount > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Estimated: ${booking.priceLabel}',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ],
@@ -98,5 +109,13 @@ class BookingConfirmationPage extends StatelessWidget {
     final h = d.hour.toString().padLeft(2, '0');
     final m = d.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+
+  String _formatDate(DateTime d) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }

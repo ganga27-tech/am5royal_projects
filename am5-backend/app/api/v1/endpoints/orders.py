@@ -224,6 +224,7 @@ async def create_order(
         vendor_email=vendor_email,
         service_name=package.name if package else (subcategory.name if subcategory else "General Service"),
         duration_minutes=package.duration_minutes if package else 60,
+        special_instructions=order_in.special_instructions,
         vendor_notes=build_initial_assignment_meta(order_in.catalog_service_id),
     )
 

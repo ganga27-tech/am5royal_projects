@@ -8,10 +8,12 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../address/presentation/cubit/address_cubit.dart';
 import '../../../comms/presentation/cubit/notifications_cubit.dart';
 import '../../../catalog/presentation/cubit/home_catalog_cubit.dart';
+import '../../../../core/auth/login_guard.dart';
 import '../../../../core/booking_routes.dart';
 import '../../../../core/design_system/am5_colors.dart';
 import '../../../../core/design_system/am5_decorations.dart';
 import '../../../../core/design_system/am5_spacing.dart';
+import '../../../../core/voice/voice_search_launcher.dart';
 import '../../../../shared/widgets/app_primitives.dart';
 import '../../../../shared/widgets/search_and_header.dart';
 import '../../../../shared/widgets/service_widgets.dart';
@@ -84,8 +86,18 @@ class _PremiumHomeViewState extends State<_PremiumHomeView> {
                             final unread = notif.items.where((n) => n.isUnread).length;
                             return LocationHeader(
                               locationLabel: city,
-                              onLocationTap: () => context.push('/profile/addresses'),
-                              onNotifications: () => context.push('/notifications'),
+                              onLocationTap: () => LoginGuard.runProtected(
+                                context,
+                                () => context.push('/profile/addresses'),
+                                message: 'Sign in to manage your addresses.',
+                                redirectTo: '/profile/addresses',
+                              ),
+                              onNotifications: () => LoginGuard.runProtected(
+                                context,
+                                () => context.push('/notifications'),
+                                message: 'Sign in to view notifications.',
+                                redirectTo: '/notifications',
+                              ),
                               onProfile: () => context.go('/profile'),
                               notificationCount: unread,
                               avatarInitial: user?.fullName,
@@ -108,7 +120,7 @@ class _PremiumHomeViewState extends State<_PremiumHomeView> {
                         readOnly: true,
                         hint: 'Search services, vendors, categories…',
                         onTap: () => context.go('/search'),
-                        onMicTap: () => context.go('/assistant'),
+                        onMicTap: () => VoiceSearchLauncher.openSearch(context),
                       ),
                     ),
                   ),

@@ -183,8 +183,6 @@ class _BookingsViewState extends State<_BookingsView> {
                         context.push('/bookings/${filtered[index].id}/pay'),
                     onTrack: () =>
                         context.push('/bookings/${filtered[index].id}/track'),
-                    onChat: () =>
-                        context.push('/bookings/${filtered[index].id}/chat'),
                     onCancel: () => context
                         .read<BookingsCubit>()
                         .cancel(filtered[index].id),
@@ -338,7 +336,6 @@ class _BookingCard extends StatelessWidget {
     required this.strings,
     required this.onPay,
     required this.onTrack,
-    required this.onChat,
     required this.onCancel,
   });
 
@@ -346,14 +343,12 @@ class _BookingCard extends StatelessWidget {
   final LivoraStrings strings;
   final VoidCallback onPay;
   final VoidCallback onTrack;
-  final VoidCallback onChat;
   final VoidCallback onCancel;
 
   bool get _canPay =>
       booking.paymentStatus != 'paid' && booking.status != 'cancelled';
   bool get _canTrack =>
       booking.status == 'confirmed' || booking.status == 'in_progress';
-  bool get _canChat => booking.status != 'cancelled';
   bool get _canCancel =>
       booking.status == 'pending' || booking.status == 'confirmed';
 
@@ -463,17 +458,15 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (_canPay || _canTrack || _canChat || _canCancel) ...[
+            if (_canPay || _canTrack || _canCancel) ...[
               const SizedBox(height: LivoraSpacing.md),
               _ActionRow(
                 canPay: _canPay,
                 canTrack: _canTrack,
-                canChat: _canChat,
                 canCancel: _canCancel,
                 strings: strings,
                 onPay: onPay,
                 onTrack: onTrack,
-                onChat: onChat,
                 onCancel: onCancel,
               ),
             ],
@@ -488,23 +481,19 @@ class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.canPay,
     required this.canTrack,
-    required this.canChat,
     required this.canCancel,
     required this.strings,
     required this.onPay,
     required this.onTrack,
-    required this.onChat,
     required this.onCancel,
   });
 
   final bool canPay;
   final bool canTrack;
-  final bool canChat;
   final bool canCancel;
   final LivoraStrings strings;
   final VoidCallback onPay;
   final VoidCallback onTrack;
-  final VoidCallback onChat;
   final VoidCallback onCancel;
 
   @override
@@ -544,12 +533,6 @@ class _ActionRow extends StatelessWidget {
             tooltip: strings.trackLive,
             icon: Icons.near_me_outlined,
             onPressed: onTrack,
-          ),
-        if (canChat)
-          _IconAction(
-            tooltip: strings.chat,
-            icon: Icons.chat_bubble_outline_rounded,
-            onPressed: onChat,
           ),
         if (canCancel)
           _IconAction(

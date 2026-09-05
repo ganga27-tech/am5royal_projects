@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:am5_core/am5_core.dart';
 import 'package:am5_ui/am5_ui.dart';
 
+import '../../../../core/auth/login_guard.dart';
 import '../../../../core/customer_brand.dart';
 import '../../../../core/design_system/am5_colors.dart';
 import '../bloc/profile_bloc.dart';
@@ -17,7 +18,13 @@ class ProfilePage extends StatelessWidget {
     final s = LivoraStrings.of(context);
     final theme = Theme.of(context);
 
-    return BlocConsumer<ProfileBloc, ProfileState>(
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, authState) {
+        if (authState.status != AuthStatus.authenticated) {
+          return _GuestProfileView(strings: s, theme: theme);
+        }
+
+        return BlocConsumer<ProfileBloc, ProfileState>(
       listenWhen: (p, c) => p.message != c.message || p.status != c.status,
       listener: (context, state) {
         if (state.status == ProfileStatus.deleted) {
@@ -143,46 +150,34 @@ class ProfilePage extends StatelessWidget {
                                 onTap: () => context.push('/shop'),
                               ),
                               _MenuItemData(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: s.wallet,
-                                onTap: () => context.push('/wallet'),
-                              ),
-                              _MenuItemData(
                                 icon: Icons.location_on_outlined,
                                 label: s.addresses,
-                                onTap: () =>
-                                    context.push('/profile/addresses'),
+                                onTap: () => LoginGuard.runProtected(
+                                  context,
+                                  () => context.push('/profile/addresses'),
+                                  message: 'Sign in to manage your addresses.',
+                                  redirectTo: '/profile/addresses',
+                                ),
                               ),
                               _MenuItemData(
                                 icon: Icons.event_note_outlined,
                                 label: s.myBookings,
-                                onTap: () => context.go('/bookings'),
+                                onTap: () => LoginGuard.runProtected(
+                                  context,
+                                  () => context.go('/bookings'),
+                                  message: 'Sign in to view your bookings.',
+                                  redirectTo: '/bookings',
+                                ),
                               ),
                               _MenuItemData(
                                 icon: Icons.notifications_none_rounded,
                                 label: s.notifications,
-                                onTap: () => context.push('/notifications'),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: LivoraSpacing.md),
-                          _MenuSection(
-                            title: s.navOffers,
-                            items: [
-                              _MenuItemData(
-                                icon: Icons.workspace_premium_outlined,
-                                label: s.membership,
-                                onTap: () => context.push('/membership'),
-                              ),
-                              _MenuItemData(
-                                icon: Icons.card_giftcard_outlined,
-                                label: s.referral,
-                                onTap: () => context.push('/referral'),
-                              ),
-                              _MenuItemData(
-                                icon: Icons.receipt_long_outlined,
-                                label: s.invoices,
-                                onTap: () => context.push('/invoices'),
+                                onTap: () => LoginGuard.runProtected(
+                                  context,
+                                  () => context.push('/notifications'),
+                                  message: 'Sign in to view notifications.',
+                                  redirectTo: '/notifications',
+                                ),
                               ),
                             ],
                           ),
@@ -214,6 +209,72 @@ class ProfilePage extends StatelessWidget {
           ),
         );
       },
+    );
+      },
+    );
+  }
+}
+
+class _GuestProfileView extends StatelessWidget {
+  const _GuestProfileView({required this.strings, required this.theme});
+
+  final LivoraStrings strings;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Am5Colors.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(LivoraSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                strings.profile,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: LivoraSpacing.xl),
+              Container(
+                padding: const EdgeInsets.all(LivoraSpacing.lg),
+                decoration: CustomerBrand.heroCard(context),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sign in to your account',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Access bookings, addresses, and notifications after signing in with OTP.',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: Colors.white.withValues(alpha: 0.85),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              FilledButton(
+                onPressed: () => context.push('/login?redirect=${Uri.encodeComponent('/profile')}'),
+                child: const Text('Sign in'),
+              ),
+              const SizedBox(height: LivoraSpacing.sm),
+              OutlinedButton(
+                onPressed: () => context.push('/shop'),
+                child: const Text('Browse shop'),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -302,7 +363,7 @@ class _ProfileHero extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  profile.email ?? '—',
+                  profile.displayPhone,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: Colors.white.withValues(alpha: 0.8),
                   ),

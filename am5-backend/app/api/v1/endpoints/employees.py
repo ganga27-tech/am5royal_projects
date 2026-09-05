@@ -1561,13 +1561,8 @@ async def initiate_telecaller_call(
     Validates telecaller session, validates phone number, triggers Airtel IQ C2C,
     and logs the call in the database.
     """
-    # 1. Agent calling number ('from') — uses logged in telecaller's phone number
-    agent_phone = (
-        call_req.agent_phone
-        or current_employee.phone_number
-        or settings.AIRTEL_IQ_DEFAULT_AGENT_NUMBER
-        or "8130078559"
-    )
+    # 1. Static agent calling number ('from') per company requirement
+    agent_phone = settings.AIRTEL_IQ_DEFAULT_AGENT_NUMBER or "8130078559"
 
     # 2. Validate target phone number
     try:

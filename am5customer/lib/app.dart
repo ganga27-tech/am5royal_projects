@@ -8,6 +8,7 @@ import 'package:am5_core/am5_core.dart';
 import 'package:am5_ui/am5_ui.dart';
 
 import 'core/customer_theme.dart';
+import 'core/auth/login_guard.dart';
 import 'features/address/presentation/pages/address_form_page.dart';
 import 'features/address/presentation/pages/address_list_page.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -67,14 +68,25 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
             loc == '/welcome' ||
             loc == '/login' ||
             loc == '/otp';
+        final isGuestBookingFlow = loc == '/book' ||
+            loc == '/booking-confirmed' ||
+            loc.startsWith('/professionals') ||
+            loc.startsWith('/vendors') ||
+            loc.startsWith('/services') ||
+            loc.startsWith('/categories');
+        final needsAuth = routeRequiresAuth(loc);
 
         if (auth.status == AuthStatus.unknown) {
           return loc == '/splash' ? null : '/splash';
         }
         if (auth.status == AuthStatus.authenticated) {
-          if (onAuthFlow || loc == '/splash') return '/home';
+          if (loc == '/splash' || loc == '/welcome' || loc == '/login') return '/home';
           return null;
         }
+        if (needsAuth) {
+          return '/login?redirect=${Uri.encodeComponent(loc)}';
+        }
+        if (isPublicAppRoute(loc) || isGuestBookingFlow) return null;
         if (!onAuthFlow && loc != '/welcome') return '/welcome';
         if (loc == '/splash') return '/welcome';
         return null;
@@ -82,10 +94,18 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
       routes: [
         GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
         GoRoute(path: '/welcome', builder: (context, state) => const WelcomePage()),
-        GoRoute(path: '/login', builder: (context, state) => const LoginPage()),
+        GoRoute(
+          path: '/login',
+          builder: (context, state) => LoginPage(
+            redirectTo: state.uri.queryParameters['redirect'],
+          ),
+        ),
         GoRoute(
           path: '/otp',
-          builder: (context, state) => OtpPage(destination: state.uri.queryParameters['to'] ?? ''),
+          builder: (context, state) => OtpPage(
+            destination: state.uri.queryParameters['to'] ?? '',
+            redirectTo: state.uri.queryParameters['redirect'],
+          ),
         ),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) =>

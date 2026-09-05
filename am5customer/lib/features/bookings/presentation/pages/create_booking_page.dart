@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -7,12 +5,12 @@ import 'package:am5_api/am5_api.dart';
 import 'package:am5_core/am5_core.dart';
 import 'package:am5_ui/am5_ui.dart';
 
-import '../../../../core/booking_routes.dart';
 import '../../../../core/design_system/am5_colors.dart';
 import '../../../../core/design_system/am5_spacing.dart';
 import '../../../../shared/widgets/app_primitives.dart';
 import '../../../../shared/widgets/booking_widgets.dart';
 import '../../../../shared/widgets/search_and_header.dart';
+import '../widgets/booking_otp_sheet.dart';
 import '../cubit/bookings_cubit.dart';
 
 class CreateBookingPage extends StatelessWidget {
@@ -208,15 +206,9 @@ class _BookingFlowViewState extends State<_BookingFlowView> {
             Text(s.selectAddress, style: theme.textTheme.titleMedium),
             const SizedBox(height: Am5Spacing.md),
             if (state.addresses.isEmpty)
-              AppButton(
-                label: s.addAddress,
-                outlined: true,
-                onPressed: () async {
-                  await context.push('/addresses/new');
-                  if (context.mounted) {
-                    await context.read<CreateBookingCubit>().reloadAddresses();
-                  }
-                },
+              _GuestAddressForm(
+                draft: state.guestAddress ?? const GuestAddressDraft(),
+                onChanged: context.read<CreateBookingCubit>().setGuestAddress,
               )
             else
               ...state.addresses.map((a) {
@@ -275,10 +267,11 @@ class _BookingFlowViewState extends State<_BookingFlowView> {
         final addr = state.addresses
             .where((a) => a.id == state.selectedAddressId)
             .firstOrNull;
+        final addressLine = addr?.summaryLine ?? state.guestAddress?.summaryLine;
         return ListView(
           padding: const EdgeInsets.all(Am5Spacing.lg),
           children: [
-            _SummaryCard(state: state, address: addr?.summaryLine),
+            _SummaryCard(state: state, address: addressLine),
             const SizedBox(height: Am5Spacing.lg),
             PaymentNoticeCard(
               acknowledged: _paymentAck,
@@ -294,7 +287,7 @@ class _BookingFlowViewState extends State<_BookingFlowView> {
   Widget? _buildFooter(BuildContext context, CreateBookingState state, LivoraStrings s) {
     final canNext = switch (_step) {
       0 => state.selectedSlot != null,
-      1 => state.selectedAddressId != null,
+      1 => state.selectedAddressId != null || (state.guestAddress?.isComplete ?? false),
       2 => true,
       3 => _paymentAck && !state.submitting,
       _ => false,
@@ -307,13 +300,33 @@ class _BookingFlowViewState extends State<_BookingFlowView> {
           label: _step == 3 ? s.confirmBooking : 'Continue',
           loading: state.submitting,
           onPressed: canNext
-              ? () {
+              ? () async {
                   if (_step < 3) {
                     setState(() => _step++);
                   } else {
-                    context.read<CreateBookingCubit>().submit(
-                          notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+                    final verified = await BookingOtpSheet.show(context);
+                    if (!context.mounted || !verified) return;
+                    final cubit = context.read<CreateBookingCubit>();
+                    try {
+                      await cubit.ensureAddressReady();
+                    } on Failure catch (f) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(SnackBar(content: Text(f.message)));
+                      }
+                      return;
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not save address')),
                         );
+                      }
+                      return;
+                    }
+                    if (!context.mounted) return;
+                    cubit.submit(
+                      notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+                    );
                   }
                 }
               : null,
@@ -405,16 +418,18 @@ class _SummaryCard extends StatelessWidget {
           const Divider(height: 24),
           _row('Service', state.serviceName ?? '', theme),
           _row('Professional', state.professionalName ?? '', theme),
-          _row('Date', state.day?.toString().split(' ').first ?? '', theme),
+          _row('Date', _formatDate(state.day), theme),
           _row('Time', state.selectedSlot?.label ?? '', theme),
           if (address != null) _row('Address', address!, theme),
           const Divider(height: 24),
           Row(
             children: [
-              Text('Estimated service charge', style: theme.textTheme.bodyMedium),
+              Text('Estimated charge', style: theme.textTheme.bodyMedium),
               const Spacer(),
               Text(
-                'At completion',
+                state.estimatedPrice != null
+                    ? '₹${state.estimatedPrice!.toStringAsFixed(0)}'
+                    : 'At completion',
                 style: theme.textTheme.titleLarge?.copyWith(
                   color: theme.colorScheme.primary,
                   fontWeight: FontWeight.w700,
@@ -442,6 +457,104 @@ class _SummaryCard extends StatelessWidget {
           Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
         ],
       ),
+    );
+  }
+
+  String _formatDate(DateTime? day) {
+    if (day == null) return '';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${day.day} ${months[day.month - 1]} ${day.year}';
+  }
+}
+
+class _GuestAddressForm extends StatefulWidget {
+  const _GuestAddressForm({required this.draft, required this.onChanged});
+
+  final GuestAddressDraft draft;
+  final ValueChanged<GuestAddressDraft> onChanged;
+
+  @override
+  State<_GuestAddressForm> createState() => _GuestAddressFormState();
+}
+
+class _GuestAddressFormState extends State<_GuestAddressForm> {
+  late final TextEditingController _line1;
+  late final TextEditingController _line2;
+  late final TextEditingController _city;
+  late final TextEditingController _state;
+  late final TextEditingController _pincode;
+
+  @override
+  void initState() {
+    super.initState();
+    _line1 = TextEditingController(text: widget.draft.line1);
+    _line2 = TextEditingController(text: widget.draft.line2 ?? '');
+    _city = TextEditingController(text: widget.draft.city);
+    _state = TextEditingController(text: widget.draft.state);
+    _pincode = TextEditingController(text: widget.draft.pincode);
+  }
+
+  @override
+  void dispose() {
+    _line1.dispose();
+    _line2.dispose();
+    _city.dispose();
+    _state.dispose();
+    _pincode.dispose();
+    super.dispose();
+  }
+
+  void _notify() {
+    widget.onChanged(
+      GuestAddressDraft(
+        line1: _line1.text.trim(),
+        line2: _line2.text.trim().isEmpty ? null : _line2.text.trim(),
+        city: _city.text.trim(),
+        state: _state.text.trim(),
+        pincode: _pincode.text.trim(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          controller: _line1,
+          decoration: const InputDecoration(labelText: 'Address line 1'),
+          onChanged: (_) => _notify(),
+        ),
+        const SizedBox(height: Am5Spacing.sm),
+        TextField(
+          controller: _line2,
+          decoration: const InputDecoration(labelText: 'Address line 2 (optional)'),
+          onChanged: (_) => _notify(),
+        ),
+        const SizedBox(height: Am5Spacing.sm),
+        TextField(
+          controller: _city,
+          decoration: const InputDecoration(labelText: 'City'),
+          onChanged: (_) => _notify(),
+        ),
+        const SizedBox(height: Am5Spacing.sm),
+        TextField(
+          controller: _state,
+          decoration: const InputDecoration(labelText: 'State'),
+          onChanged: (_) => _notify(),
+        ),
+        const SizedBox(height: Am5Spacing.sm),
+        TextField(
+          controller: _pincode,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          decoration: const InputDecoration(labelText: 'Pincode', counterText: ''),
+          onChanged: (_) => _notify(),
+        ),
+      ],
     );
   }
 }

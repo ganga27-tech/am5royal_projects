@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:am5_api/am5_api.dart';
 import 'package:am5_ui/am5_ui.dart';
 
+import '../auth/presentation/bloc/auth_bloc.dart';
+
 import '../comms/presentation/cubit/notifications_cubit.dart';
+import '../../core/auth/login_guard.dart';
 import '../../core/design_system/am5_colors.dart';
 import '../../core/design_system/am5_spacing.dart';
 
@@ -22,10 +25,20 @@ class CustomerShell extends StatelessWidget {
         body: navigationShell,
         bottomNavigationBar: _PremiumBottomNav(
           index: navigationShell.currentIndex,
-          onTap: (i) => navigationShell.goBranch(
-            i,
-            initialLocation: i == navigationShell.currentIndex,
-          ),
+          onTap: (i) async {
+            if (i == 3) {
+              final ok = await LoginGuard.ensureLoggedIn(
+                context,
+                message: 'Sign in to view your bookings.',
+                redirectTo: '/bookings',
+              );
+              if (!ok || !context.mounted) return;
+            }
+            navigationShell.goBranch(
+              i,
+              initialLocation: i == navigationShell.currentIndex,
+            );
+          },
         ),
       ),
     );

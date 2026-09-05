@@ -136,9 +136,33 @@ async def get_current_vendor(
         if deletion_scheduled_at <= datetime.utcnow():
             raise HTTPException(status_code=403, detail="Account deleted")
 
-    allowed_statuses = {"active", "onboarding", "temporary_active", "draft", "approved"}
+    allowed_statuses = {
+        "active",
+        "onboarding",
+        "registration",
+        "temporary_active",
+        "draft",
+        "approved",
+        "pending",
+        "verified",
+        "in_review",
+        "under_review",
+        "slots",
+        "payment",
+        "subscription",
+        "",
+    }
+    blocked_statuses = {
+        "inactive",
+        "suspended",
+        "blocked",
+        "banned",
+        "rejected",
+        "deleted",
+        "deactivated",
+    }
     vendor_status = (vendor.status or "").strip().lower().replace(" ", "_")
-    if vendor_status not in allowed_statuses:
+    if vendor_status in blocked_statuses or (vendor_status and vendor_status not in allowed_statuses):
         raise HTTPException(status_code=403, detail="Vendor account is not active")
         
     return vendor

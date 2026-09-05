@@ -7,6 +7,7 @@ import 'package:am5_ui/am5_ui.dart';
 
 import '../../../../core/customer_brand.dart';
 import '../../../../core/design_system/am5_colors.dart';
+import '../../../../core/voice/voice_search_launcher.dart';
 import '../cubit/search_cubit.dart';
 
 class SearchPage extends StatelessWidget {
@@ -112,6 +113,13 @@ class _SearchViewState extends State<_SearchView> {
                         onSearch: () => context
                             .read<SearchCubit>()
                             .submit(query: _controller.text),
+                        onMic: () async {
+                          final query = await VoiceSearchLauncher.capture(context);
+                          if (!context.mounted || query == null || query.isEmpty) {
+                            return;
+                          }
+                          _runQuery(query);
+                        },
                       ),
                     ],
                   ),
@@ -260,6 +268,7 @@ class _SearchField extends StatelessWidget {
     required this.onSubmitted,
     required this.onClear,
     required this.onSearch,
+    required this.onMic,
   });
 
   final TextEditingController controller;
@@ -270,6 +279,7 @@ class _SearchField extends StatelessWidget {
   final ValueChanged<String> onSubmitted;
   final VoidCallback onClear;
   final VoidCallback onSearch;
+  final VoidCallback onMic;
 
   @override
   Widget build(BuildContext context) {
@@ -320,21 +330,23 @@ class _SearchField extends StatelessWidget {
                 icon: const Icon(Icons.close_rounded),
               ),
             Material(
-              color: theme.colorScheme.primary,
+              color: Am5Colors.lightRed,
               shape: const CircleBorder(),
               child: InkWell(
                 customBorder: const CircleBorder(),
-                onTap: onSearch,
-                child: const Padding(
-                  padding: EdgeInsets.all(10),
+                onTap: onMic,
+                child: Padding(
+                  padding: const EdgeInsets.all(10),
                   child: Icon(
-                    Icons.arrow_forward_rounded,
+                    Icons.mic_rounded,
                     size: 18,
-                    color: LivoraColors.onPrimary,
+                    color: theme.colorScheme.primary,
                   ),
                 ),
               ),
             ),
+            const SizedBox(width: 4),
+         
           ],
         ),
       ),

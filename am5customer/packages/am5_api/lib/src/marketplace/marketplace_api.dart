@@ -15,31 +15,96 @@ class MarketplaceApi {
   static const _cartKey = 'am5_shop_cart';
   static const _ordersKey = 'am5_shop_orders';
 
+  static const _cleaningKeywords = [
+    'clean',
+    'cleaning',
+    'maid',
+    'mop',
+    'wash',
+    'disinfect',
+    'sanit',
+    'housekeep',
+  ];
+
+  static const _suppliesKeywords = [
+    'supply',
+    'supplies',
+    'tool',
+    'equipment',
+    'material',
+    'consumable',
+    'kit',
+  ];
+
   Future<List<MarketplaceProduct>> _loadPackages({
     String? category,
     String? q,
     int limit = 50,
     int offset = 0,
   }) async {
+    final subcategoryId = category != null ? int.tryParse(category) : null;
     final response = await _client.dio.get(
       '/catalog/packages',
       queryParameters: {
-        'limit': limit,
-        'offset': offset,
-        if (category != null && category != 'packages') 'subcategory_id': category,
+        if (subcategoryId != null) 'subcategory_id': subcategoryId,
       },
     );
     var list = (response.data as List<dynamic>)
         .map((e) => MarketplaceProduct.fromAm5Package(e as Map<String, dynamic>))
         .toList();
+
+    if (category != null && subcategoryId == null) {
+      list = _filterByShopCategory(list, category);
+    }
+
     if (q != null && q.isNotEmpty) {
       final query = q.toLowerCase();
       list = list
-          .where((p) => p.name.toLowerCase().contains(query))
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(query) ||
+                (p.shortDescription?.toLowerCase().contains(query) ?? false) ||
+                (p.description?.toLowerCase().contains(query) ?? false),
+          )
           .toList();
+    }
+
+    if (offset > 0) {
+      list = list.length > offset ? list.sublist(offset) : <MarketplaceProduct>[];
+    }
+    if (limit > 0 && list.length > limit) {
+      list = list.sublist(0, limit);
     }
     return list;
   }
+
+  List<MarketplaceProduct> _filterByShopCategory(
+    List<MarketplaceProduct> products,
+    String category,
+  ) {
+    switch (category) {
+      case 'cleaning':
+        return products.where(_matchesCleaning).toList();
+      case 'supplies':
+        return products.where(_matchesSupplies).toList();
+      case 'general':
+        return products
+            .where((p) => !_matchesCleaning(p) && !_matchesSupplies(p))
+            .toList();
+      default:
+        return products;
+    }
+  }
+
+  bool _matchesCleaning(MarketplaceProduct product) =>
+      _cleaningKeywords.any((keyword) => _textOf(product).contains(keyword));
+
+  bool _matchesSupplies(MarketplaceProduct product) =>
+      _suppliesKeywords.any((keyword) => _textOf(product).contains(keyword));
+
+  String _textOf(MarketplaceProduct product) =>
+      '${product.name} ${product.shortDescription ?? ''} ${product.description ?? ''}'
+          .toLowerCase();
 
   Future<List<MarketplaceProduct>> listProducts({
     String? category,

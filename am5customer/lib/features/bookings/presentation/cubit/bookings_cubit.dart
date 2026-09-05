@@ -179,7 +179,12 @@ class CreateBookingCubit extends Cubit<CreateBookingState> {
     required String serviceId,
     required DateTime day,
   }) async {
-    final addresses = await _addressApi.listAddresses();
+    List<UserAddress> addresses = [];
+    try {
+      addresses = await _addressApi.listAddresses();
+    } catch (_) {
+      addresses = [];
+    }
     final defaultAddr =
         addresses.where((a) => a.isDefault).firstOrNull ?? addresses.firstOrNull;
     final slots = await _bookingsApi.listSlots(
@@ -188,12 +193,17 @@ class CreateBookingCubit extends Cubit<CreateBookingState> {
       day: day,
       addressId: defaultAddr?.id,
     );
+    final estimatedPrice = await _bookingsApi.estimatePrice(
+      professionalId: professionalId,
+      serviceId: serviceId,
+    );
     emit(
       state.copyWith(
         status: CreateBookingStatus.ready,
         addresses: addresses,
         slots: slots,
         selectedAddressId: defaultAddr?.id,
+        estimatedPrice: estimatedPrice,
       ),
     );
   }
@@ -217,6 +227,32 @@ class CreateBookingCubit extends Cubit<CreateBookingState> {
   void selectSlot(BookingSlot slot) => emit(state.copyWith(selectedSlot: slot));
 
   void selectAddress(String id) => emit(state.copyWith(selectedAddressId: id));
+
+  void setGuestAddress(GuestAddressDraft draft) {
+    emit(state.copyWith(guestAddress: draft, selectedAddressId: null));
+  }
+
+  Future<void> ensureAddressReady() async {
+    if (state.selectedAddressId != null) return;
+    final guest = state.guestAddress;
+    if (guest == null || !guest.isComplete) {
+      throw const Failure('Please enter a complete delivery address');
+    }
+    final created = await _addressApi.createAddress({
+      'label': 'home',
+      'line1': guest.line1,
+      if (guest.line2 != null) 'line2': guest.line2,
+      'city': guest.city,
+      'state': guest.state,
+      'postal_code': guest.pincode,
+      'is_default': true,
+    });
+    emit(state.copyWith(
+      addresses: [...state.addresses, created],
+      selectedAddressId: created.id,
+      guestAddress: null,
+    ));
+  }
 
   Future<void> reloadAddresses() async {
     try {
@@ -252,6 +288,8 @@ class CreateBookingCubit extends Cubit<CreateBookingState> {
         addressId: state.selectedAddressId!,
         scheduledStart: state.selectedSlot!.start,
         customerNotes: notes,
+        serviceName: state.serviceName,
+        professionalName: state.professionalName,
       );
       emit(state.copyWith(submitting: false, created: booking, message: 'booked'));
     } on Failure catch (f) {
@@ -263,6 +301,49 @@ class CreateBookingCubit extends Cubit<CreateBookingState> {
 }
 
 enum CreateBookingStatus { initial, loading, ready, error }
+
+class GuestAddressDraft extends Equatable {
+  const GuestAddressDraft({
+    this.line1 = '',
+    this.line2,
+    this.city = '',
+    this.state = '',
+    this.pincode = '',
+  });
+
+  final String line1;
+  final String? line2;
+  final String city;
+  final String state;
+  final String pincode;
+
+  bool get isComplete =>
+      line1.trim().length >= 3 &&
+      city.trim().isNotEmpty &&
+      state.trim().isNotEmpty &&
+      pincode.trim().length >= 6;
+
+  String get summaryLine => '$line1, $city $pincode';
+
+  GuestAddressDraft copyWith({
+    String? line1,
+    String? line2,
+    String? city,
+    String? state,
+    String? pincode,
+  }) {
+    return GuestAddressDraft(
+      line1: line1 ?? this.line1,
+      line2: line2 ?? this.line2,
+      city: city ?? this.city,
+      state: state ?? this.state,
+      pincode: pincode ?? this.pincode,
+    );
+  }
+
+  @override
+  List<Object?> get props => [line1, line2, city, state, pincode];
+}
 
 class CreateBookingState extends Equatable {
   const CreateBookingState({
@@ -279,6 +360,8 @@ class CreateBookingState extends Equatable {
     this.submitting = false,
     this.created,
     this.message,
+    this.estimatedPrice,
+    this.guestAddress,
   });
 
   const CreateBookingState.initial() : this(status: CreateBookingStatus.initial);
@@ -296,6 +379,8 @@ class CreateBookingState extends Equatable {
   final bool submitting;
   final Booking? created;
   final String? message;
+  final double? estimatedPrice;
+  final GuestAddressDraft? guestAddress;
 
   CreateBookingState copyWith({
     CreateBookingStatus? status,
@@ -311,6 +396,8 @@ class CreateBookingState extends Equatable {
     bool? submitting,
     Booking? created,
     String? message,
+    double? estimatedPrice,
+    GuestAddressDraft? guestAddress,
     bool clearMessage = false,
   }) {
     return CreateBookingState(
@@ -327,6 +414,8 @@ class CreateBookingState extends Equatable {
       submitting: submitting ?? this.submitting,
       created: created ?? this.created,
       message: clearMessage ? null : (message ?? this.message),
+      estimatedPrice: estimatedPrice ?? this.estimatedPrice,
+      guestAddress: guestAddress ?? this.guestAddress,
     );
   }
 
@@ -343,5 +432,7 @@ class CreateBookingState extends Equatable {
         submitting,
         created,
         message,
+        estimatedPrice,
+        guestAddress,
       ];
 }

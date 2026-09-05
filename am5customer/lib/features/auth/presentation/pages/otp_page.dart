@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:am5_core/am5_core.dart';
 import 'package:am5_ui/am5_ui.dart';
 
 import '../bloc/auth_bloc.dart';
 
 class OtpPage extends StatefulWidget {
-  const OtpPage({super.key, required this.destination});
+  const OtpPage({super.key, required this.destination, this.redirectTo});
 
   final String destination;
+  final String? redirectTo;
 
   @override
   State<OtpPage> createState() => _OtpPageState();
@@ -28,8 +30,19 @@ class _OtpPageState extends State<OtpPage> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
-      listenWhen: (p, c) => p.message != c.message,
+      listenWhen: (p, c) =>
+          p.message != c.message ||
+          (p.status != c.status && c.status == AuthStatus.authenticated),
       listener: (context, state) {
+        if (state.status == AuthStatus.authenticated) {
+          final redirect = widget.redirectTo;
+          if (redirect != null && redirect.isNotEmpty) {
+            context.go(redirect);
+          } else {
+            context.go('/home');
+          }
+          return;
+        }
         if (state.message != null) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message!)));
           context.read<AuthBloc>().add(const AuthMessageCleared());

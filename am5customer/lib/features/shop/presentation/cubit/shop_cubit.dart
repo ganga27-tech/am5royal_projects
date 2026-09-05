@@ -13,8 +13,13 @@ class ShopCubit extends Cubit<ShopState> {
     try {
       final products = await _api.listProducts(category: category, q: q);
       emit(state.copyWith(status: ShopStatus.ready, products: products));
-    } catch (e) {
-      emit(state.copyWith(status: ShopStatus.error, message: e.toString()));
+    } on Failure catch (f) {
+      emit(state.copyWith(status: ShopStatus.error, message: f.message));
+    } catch (_) {
+      emit(state.copyWith(
+        status: ShopStatus.error,
+        message: 'Could not load products. Please try again.',
+      ));
     }
   }
 }
