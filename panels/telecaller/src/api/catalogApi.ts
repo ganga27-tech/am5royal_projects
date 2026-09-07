@@ -33,16 +33,56 @@ export const catalogApi = {
 
   // POST /vendor/catalog/sub-categories/services-batch
   async getServicesBatch(subCategoryIds: number[]): Promise<ServiceItem[]> {
-    const response = await apiClient.post<any[]>('/vendor/catalog/sub-categories/services-batch', {
-      sub_category_ids: subCategoryIds,
-    });
-    return (response.data || []).map((s) => ({
-      id: s.id,
-      title: s.title || s.name || '',
-      description: s.description || '',
-      main_category_id: s.main_category_id,
-      sub_category_id: s.sub_category_id,
-      base_price: s.base_price || s.price || 0,
-    }));
+    if (!subCategoryIds || subCategoryIds.length === 0) return [];
+
+    try {
+      const response = await apiClient.post<any[]>('/vendor/catalog/sub-categories/services-batch', {
+        sub_category_ids: subCategoryIds,
+      });
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        return response.data.map((s) => ({
+          id: s.id,
+          title: s.title || s.name || '',
+          description: s.description || '',
+          main_category_id: s.main_category_id,
+          sub_category_id: s.sub_category_id,
+          base_price: s.base_price || s.price || 500,
+        }));
+      }
+    } catch (e) {
+      console.warn('services-batch endpoint failed, attempting fallback to /catalog/services:', e);
+    }
+
+    // Fallback: fetch directly from /catalog/services for each subcategory
+    try {
+      const fallbackPromises = subCategoryIds.map((subId) =>
+        apiClient.get<any[]>('/catalog/services', {
+          params: { subcategory_id: subId, limit: 100 },
+        })
+      );
+      const results = await Promise.all(fallbackPromises);
+      const all: ServiceItem[] = [];
+      const seen = new Set<number>();
+
+      results.forEach((res) => {
+        (res.data || []).forEach((s: any) => {
+          if (!seen.has(s.id)) {
+            seen.add(s.id);
+            all.push({
+              id: s.id,
+              title: s.name || s.title || '',
+              description: s.description || '',
+              main_category_id: s.main_category_id || s.category_id,
+              sub_category_id: s.sub_category_id || s.subcategory_id,
+              base_price: s.base_price || s.price || 500,
+            });
+          }
+        });
+      });
+      return all;
+    } catch (fallbackErr) {
+      console.error('Fallback /catalog/services error:', fallbackErr);
+      return [];
+    }
   },
 };

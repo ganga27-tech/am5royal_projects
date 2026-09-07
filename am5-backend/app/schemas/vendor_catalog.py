@@ -21,6 +21,9 @@ class VendorServiceResponse(BaseModel):
     id: int
     name: str
     price: Optional[float] = None
+    main_category_id: Optional[int] = None
+    sub_category_id: Optional[int] = None
+    image_url: Optional[str] = None
     
     model_config = ConfigDict(from_attributes=True)
 

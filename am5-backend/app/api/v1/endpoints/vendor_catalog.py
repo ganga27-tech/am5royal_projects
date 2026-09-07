@@ -99,8 +99,8 @@ async def get_services_for_category(
     token_payload: dict = Depends(get_current_token_payload)
 ):
     """
-    Returns services (Packages) for a main category directly.
-    Finds all subcategories under the category and returns all their packages.
+    Returns services for a main category directly.
+    Finds all subcategories under the category and returns all their services.
     """
     # Find all subcategory ids for this category
     subcat_query = select(ServiceSubcategory.id).where(
@@ -110,17 +110,31 @@ async def get_services_for_category(
     subcat_res = await db.execute(subcat_query)
     subcat_ids = [row[0] for row in subcat_res.fetchall()]
     
-    if not subcat_ids:
-        return []
+    if subcat_ids:
+        svc_query = select(Service).where(
+            (Service.sub_category_id.in_(subcat_ids)) | (Service.main_category_id == category_id),
+            Service.is_active == True
+        )
+    else:
+        svc_query = select(Service).where(
+            Service.main_category_id == category_id,
+            Service.is_active == True
+        )
+    svc_res = await db.execute(svc_query)
+    services = svc_res.scalars().all()
+    if services:
+        return services
+
+    # Fallback to packages table if no services in services table
+    if subcat_ids:
+        pkg_query = select(Package).where(
+            Package.subcategory_id.in_(subcat_ids),
+            Package.is_active == True
+        )
+        pkg_res = await db.execute(pkg_query)
+        return pkg_res.scalars().all()
     
-    pkg_query = select(Package).where(
-        Package.subcategory_id.in_(subcat_ids),
-        Package.is_active == True
-    )
-    pkg_res = await db.execute(pkg_query)
-    packages = pkg_res.scalars().all()
-    
-    return packages
+    return []
 
 @router.post("/sub-categories/services-batch", response_model=List[VendorServiceResponse])
 async def get_services_batch(
@@ -129,19 +143,28 @@ async def get_services_batch(
     token_payload: dict = Depends(get_current_token_payload)
 ):
     """
-    Returns all services (Packages) for multiple subcategories at once.
+    Returns all services for multiple subcategories at once.
     """
     if not request.sub_category_ids:
         return []
         
+    svc_query = select(Service).where(
+        Service.sub_category_id.in_(request.sub_category_ids),
+        Service.is_active == True
+    )
+    svc_res = await db.execute(svc_query)
+    services = svc_res.scalars().all()
+    
+    if services:
+        return services
+
+    # Fallback to packages table if no services found in services table
     pkg_query = select(Package).where(
         Package.subcategory_id.in_(request.sub_category_ids),
         Package.is_active == True
     )
     pkg_res = await db.execute(pkg_query)
-    packages = pkg_res.scalars().all()
-    
-    return packages
+    return pkg_res.scalars().all()
 
 @router.post("/add-service")
 async def add_vendor_service(

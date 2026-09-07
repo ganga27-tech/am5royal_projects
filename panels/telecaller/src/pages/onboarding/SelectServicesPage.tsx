@@ -51,7 +51,7 @@ export const SelectServicesPage: React.FC = () => {
       return;
     }
     fetchServices();
-  }, [allSubCategoryIds]);
+  }, [allSubCategoryIds.join(',')]);
 
   const fetchServices = async () => {
     setIsLoadingServices(true);
