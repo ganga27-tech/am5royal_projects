@@ -24,15 +24,15 @@ interface SidebarProps {
 const navItems = [
   { name: 'Command Center', path: '/', icon: LayoutDashboard, badge: 'Live' },
   { name: 'SEO (On/Off Page)', path: '/seo', icon: Search, badge: 'Audit' },
-  { name: 'Backlinks & Outreach', path: '/backlinks', icon: Link2, badge: '34' },
-  { name: 'Blogs Publishing', path: '/blogs', icon: BookOpenText, badge: '18' },
-  { name: 'Articles & PR Media', path: '/articles', icon: Newspaper, badge: 'Vogue' },
-  { name: 'SMM & Paid Ads', path: '/smm', icon: Share2, badge: 'Viral' },
-  { name: 'Google Ads Command', path: '/google-ads', icon: BarChart3, badge: '4.8x' },
-  { name: 'GA4 Telemetry', path: '/analytics', icon: Activity, badge: 'Active' },
-  { name: 'Leads & Conversions', path: '/leads', icon: UsersRound, badge: 'Kanban' },
-  { name: 'Growth Strategies', path: '/strategies', icon: Target, badge: 'Q3' },
-  { name: 'Content & Copy Studio', path: '/content-creations', icon: Sparkles, badge: 'Studio' },
+  { name: 'Backlinks & Outreach', path: '/backlinks', icon: Link2, badge: 'CRM' },
+  { name: 'Blogs Publishing', path: '/blogs', icon: BookOpenText, badge: 'Studio' },
+  { name: 'Articles & PR Media', path: '/articles', icon: Newspaper, badge: 'Media' },
+  { name: 'SMM & Paid Ads', path: '/smm', icon: Share2, badge: 'Social' },
+  { name: 'Google Ads Command', path: '/google-ads', icon: BarChart3, badge: 'Ads' },
+  { name: 'GA4 Telemetry', path: '/analytics', icon: Activity, badge: 'Telemetry' },
+  { name: 'Leads & Conversions', path: '/leads', icon: UsersRound, badge: 'Funnel' },
+  { name: 'Growth Strategies', path: '/strategies', icon: Target, badge: 'Roadmaps' },
+  { name: 'Content & Copy Studio', path: '/content-creations', icon: Sparkles, badge: 'Creative' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {

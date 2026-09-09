@@ -419,13 +419,16 @@ export const marketingApi = {
     const totalSocialReach = smmPosts.reduce((sum, s) => sum + s.reach, 0);
     const activeCampaigns = googleAds.filter((g) => g.status === 'Active').length + smmPosts.filter((s) => s.status === 'Active Live').length;
 
+    const blendedRoas = totalAdSpendInr > 0 ? Number(((totalConversions * 50000) / totalAdSpendInr).toFixed(2)) : 0;
+    const blendedCpaInr = totalConversions > 0 ? Math.round(totalAdSpendInr / totalConversions) : 0;
+
     return {
       totalLeads,
       totalConversions,
       conversionRatePercent,
       totalAdSpendInr,
-      blendedRoas: 5.2,
-      blendedCpaInr: totalConversions > 0 ? Math.round(totalAdSpendInr / totalConversions) : 210,
+      blendedRoas,
+      blendedCpaInr,
       totalBacklinks: backlinks.length,
       publishedBlogs: blogs.filter((b) => b.status === 'Published').length,
       totalSocialReach,

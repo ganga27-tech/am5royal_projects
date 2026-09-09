@@ -7,6 +7,27 @@ import { MarketingUser } from '../types/marketing';
 const TOKEN_KEY = 'am5_marketing_token';
 const USER_KEY = 'am5_marketing_user';
 const DATA_PREFIX = 'am5_mkt_';
+const SCHEMA_VERSION_KEY = 'am5_mkt_schema_v2_zero';
+
+// Automatically clear legacy mock cache on initial run
+(() => {
+  try {
+    if (localStorage.getItem(SCHEMA_VERSION_KEY) !== 'active') {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith(DATA_PREFIX) || k === TOKEN_KEY || k === USER_KEY || k.startsWith('am5_mkt_'))) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      sessionStorage.clear();
+      localStorage.setItem(SCHEMA_VERSION_KEY, 'active');
+    }
+  } catch (e) {
+    console.warn('Could not initialize storage cleanup', e);
+  }
+})();
 
 export const storage = {
   getToken: (): string | null => {

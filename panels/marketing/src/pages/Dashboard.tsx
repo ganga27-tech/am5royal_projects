@@ -12,24 +12,17 @@ import {
   Share2,
   SearchCode,
   DollarSign,
-  ArrowUpRight,
-  Sparkles,
-  Zap,
-  Activity,
-  Layers,
-  Award,
   Crown,
-  ChevronRight,
-  Clock,
-  CheckCircle2,
   BarChart3,
   Target,
+  Sparkles,
+  Activity,
+  Layers,
+  Inbox,
 } from 'lucide-react';
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -54,29 +47,33 @@ export const Dashboard: React.FC = () => {
     loadOverview();
   }, []);
 
-  const monthlyGrowthData = [
-    { month: 'Apr', spend: 65000, revenue: 290000, leads: 180 },
-    { month: 'May', spend: 85000, revenue: 380000, leads: 240 },
-    { month: 'Jun', spend: 110000, revenue: 540000, leads: 340 },
-    { month: 'Jul', spend: 140000, revenue: 720000, leads: 460 },
-    { month: 'Aug', spend: 195000, revenue: 980000, leads: 620 },
-    { month: 'Sep', spend: 235000, revenue: 1220000, leads: 780 },
+  const totalLeadsCount = stats?.totalLeads ?? 0;
+  const totalSpendAmount = stats?.totalAdSpendInr ?? 0;
+
+  const monthlyGrowthData = totalSpendAmount > 0 ? [
+    { month: 'Apr', spend: 0, revenue: 0, leads: 0 },
+    { month: 'May', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Jun', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Jul', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Aug', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Sep', spend: totalSpendAmount, revenue: totalLeadsCount * 50000, leads: totalLeadsCount },
+  ] : [
+    { month: 'Apr', spend: 0, revenue: 0, leads: 0 },
+    { month: 'May', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Jun', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Jul', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Aug', spend: 0, revenue: 0, leads: 0 },
+    { month: 'Sep', spend: 0, revenue: 0, leads: 0 },
   ];
 
-  const channelAttributionData = [
-    { name: 'Google Ads', leads: 420, color: '#C59A27' },
-    { name: 'SEO Organic', leads: 310, color: '#059669' },
-    { name: 'Instagram Ads', leads: 240, color: '#E11D48' },
-    { name: 'Facebook Ads', leads: 180, color: '#0F4C81' },
-    { name: 'Blogs & PR', leads: 120, color: '#7C3AED' },
-  ];
-
-  const recentGrowthActivities = [
-    { title: 'New High-Intent Google Ad campaign launched in Mumbai', time: '20 mins ago', type: 'ads', badge: 'Active' },
-    { title: 'DoFollow backlink acquired from Architectural Digest India (DR 78)', time: '2 hours ago', type: 'backlink', badge: 'Verified' },
-    { title: '4K Satisfying Sofa Deep Clean reel crossed 148,000 views on Instagram', time: '4 hours ago', type: 'smm', badge: 'Viral' },
-    { title: 'New Vendor Onboarding lead converted: Shree Ganesh Clean Care (₹14,999)', time: 'Yesterday', type: 'lead', badge: 'Closed Won' },
-    { title: 'On-Page SEO Audit completed for Home Cleaning category (Score: 94/100)', time: 'Yesterday', type: 'seo', badge: 'Optimized' },
+  const channelAttributionData = totalLeadsCount > 0 ? [
+    { name: 'Google Ads', leads: 0, color: '#C59A27' },
+    { name: 'SEO Organic', leads: 0, color: '#059669' },
+    { name: 'Instagram Ads', leads: 0, color: '#E11D48' },
+    { name: 'Facebook Ads', leads: 0, color: '#0F4C81' },
+    { name: 'Blogs & PR', leads: 0, color: '#7C3AED' },
+  ] : [
+    { name: 'No Active Leads', leads: 1, color: '#EAE2D2' },
   ];
 
   return (
@@ -121,37 +118,37 @@ export const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatsCard
           title="Total Inbound Leads"
-          value={stats?.totalLeads || '1,842'}
+          value={totalLeadsCount.toString()}
           subtitle="Qualified conversion inquiries"
           icon={UsersRound}
-          change="+24.8%"
+          change="0%"
           isPositive={true}
           colorClass="from-[#FAF6EF] to-[#F5EFEB] text-[#8A6412] border-[#E5D8C1]"
         />
         <StatsCard
           title="Total Ad Spend"
-          value={`₹${((stats?.totalAdSpendInr || 235000) / 100000).toFixed(1)} Lakh`}
+          value={totalSpendAmount > 0 ? `₹${(totalSpendAmount / 100000).toFixed(1)} Lakh` : '₹0'}
           subtitle="Google & Meta Ad Budgets"
           icon={DollarSign}
-          change="+18.2%"
+          change="0%"
           isPositive={true}
           colorClass="from-blue-50 to-indigo-50 text-blue-800 border-blue-200"
         />
         <StatsCard
           title="Blended ROAS"
-          value={`${stats?.blendedRoas || 4.85}x`}
+          value={`${stats?.blendedRoas ?? 0}x`}
           subtitle="Return on Marketing Spend"
           icon={TrendingUp}
-          change="+0.65x"
+          change="0x"
           isPositive={true}
           colorClass="from-emerald-50 to-teal-50 text-emerald-800 border-emerald-200"
         />
         <StatsCard
           title="Avg Customer CAC"
-          value={`₹${stats?.blendedCpaInr || 214}`}
+          value={`₹${stats?.blendedCpaInr ?? 0}`}
           subtitle="Per verified vendor lead"
           icon={BadgePercent}
-          change="-12.4%"
+          change="0%"
           isPositive={true}
           colorClass="from-purple-50 to-pink-50 text-purple-800 border-purple-200"
         />
@@ -165,9 +162,6 @@ export const Dashboard: React.FC = () => {
             <div>
               <h3 className="font-outfit text-lg font-bold text-[#1E1B18] flex items-center gap-2">
                 <span>Marketing Spend vs Generated Revenue</span>
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 border border-emerald-200">
-                  +32% MoM
-                </span>
               </h3>
               <p className="text-xs text-[#8E8276] mt-0.5">
                 Monthly revenue generated through organic and paid marketing channels
@@ -225,7 +219,7 @@ export const Dashboard: React.FC = () => {
               Lead Attribution Share
             </h3>
             <p className="text-xs text-[#8E8276] mb-4">
-              Channel volume distribution for September 2026
+              Channel volume distribution
             </p>
 
             <div className="h-48 w-full relative flex items-center justify-center">
@@ -255,22 +249,28 @@ export const Dashboard: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="font-outfit text-2xl font-black text-[#1E1B18]">1,270</span>
+                <span className="font-outfit text-2xl font-black text-[#1E1B18]">{totalLeadsCount}</span>
                 <span className="text-[10px] text-[#8E8276] uppercase font-bold">Total Inbound</span>
               </div>
             </div>
 
             {/* Legends */}
             <div className="space-y-2 mt-4">
-              {channelAttributionData.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }}></span>
-                    <span className="text-[#4D443B] font-medium">{item.name}</span>
+              {totalLeadsCount > 0 ? (
+                channelAttributionData.map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }}></span>
+                      <span className="text-[#4D443B] font-medium">{item.name}</span>
+                    </div>
+                    <span className="font-bold text-[#1E1B18]">{item.leads} leads</span>
                   </div>
-                  <span className="font-bold text-[#1E1B18]">{item.leads} leads</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-center text-[#8E8276] italic py-2">
+                  No active channel leads recorded yet.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -291,16 +291,16 @@ export const Dashboard: React.FC = () => {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 pt-2">
           {[
-            { name: 'SEO Suite', path: '/seo', icon: SearchCode, count: 'Score 96', color: 'text-amber-700 bg-amber-50' },
-            { name: 'Backlinks', path: '/backlinks', icon: Link2, count: '34 DR 70+', color: 'text-blue-700 bg-blue-50' },
-            { name: 'Blogs Studio', path: '/blogs', icon: BookOpenText, count: '18 Published', color: 'text-emerald-700 bg-emerald-50' },
-            { name: 'PR Articles', path: '/articles', icon: Layers, count: 'Vogue & Forbes', color: 'text-purple-700 bg-purple-50' },
-            { name: 'SMM Hub', path: '/smm', icon: Share2, count: '1.4M Reach', color: 'text-pink-700 bg-pink-50' },
-            { name: 'Google Ads', path: '/google-ads', icon: BarChart3, count: '4.85x ROAS', color: 'text-indigo-700 bg-indigo-50' },
-            { name: 'GA4 Telemetry', path: '/analytics', icon: Activity, count: '24k Sessions', color: 'text-teal-700 bg-teal-50' },
-            { name: 'Leads Pipeline', path: '/leads', icon: UsersRound, count: '₹42.8L Value', color: 'text-amber-800 bg-amber-50' },
-            { name: 'Strategies', path: '/strategies', icon: Target, count: 'Q3 Blueprint', color: 'text-gold-800 bg-gold-50' },
-            { name: 'Content Studio', path: '/content-creations', icon: Sparkles, count: 'Copy Repository', color: 'text-rose-700 bg-rose-50' },
+            { name: 'SEO Suite', path: '/seo', icon: SearchCode, count: 'Audit & SERP', color: 'text-amber-700 bg-amber-50' },
+            { name: 'Backlinks', path: '/backlinks', icon: Link2, count: 'Outreach CRM', color: 'text-blue-700 bg-blue-50' },
+            { name: 'Blogs Studio', path: '/blogs', icon: BookOpenText, count: 'Publishing Hub', color: 'text-emerald-700 bg-emerald-50' },
+            { name: 'PR Articles', path: '/articles', icon: Layers, count: 'Media PR Studio', color: 'text-purple-700 bg-purple-50' },
+            { name: 'SMM Hub', path: '/smm', icon: Share2, count: 'Social Reach', color: 'text-pink-700 bg-pink-50' },
+            { name: 'Google Ads', path: '/google-ads', icon: BarChart3, count: 'Ads Command', color: 'text-indigo-700 bg-indigo-50' },
+            { name: 'GA4 Telemetry', path: '/analytics', icon: Activity, count: 'Web Analytics', color: 'text-teal-700 bg-teal-50' },
+            { name: 'Leads Pipeline', path: '/leads', icon: UsersRound, count: 'Inbound CRM', color: 'text-amber-800 bg-amber-50' },
+            { name: 'Strategies', path: '/strategies', icon: Target, count: 'Growth Roadmaps', color: 'text-gold-800 bg-gold-50' },
+            { name: 'Content Studio', path: '/content-creations', icon: Sparkles, count: 'Creative Copy', color: 'text-rose-700 bg-rose-50' },
           ].map((item, idx) => {
             const Icon = item.icon;
             return (

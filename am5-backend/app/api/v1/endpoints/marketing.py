@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy import func
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, Field
 from datetime import datetime
@@ -141,29 +142,7 @@ class SeoOnPageModel(BaseModel):
 
 @router.get("/seo/on-page")
 async def get_seo_on_page():
-    return [
-        {
-            "id": "seo-001",
-            "pageUrl": "https://am5royal.com/services/home-deep-cleaning-mumbai",
-            "pageTitle": "Luxury Home Deep Cleaning Services in Mumbai | AM5 ROYAL",
-            "metaTitle": "Professional Villa & Home Deep Cleaning Mumbai | 100% Verified Partners",
-            "metaDescription": "Book premium, certified 5-star home sanitization, kitchen degreasing, and sofa upholstery cleaning in Mumbai.",
-            "primaryKeyword": "home deep cleaning mumbai",
-            "secondaryKeywords": ["villa sanitization", "sofa dry cleaning mumbai", "luxury housekeeping"],
-            "canonicalUrl": "https://am5royal.com/services/home-deep-cleaning-mumbai",
-            "h1Tag": "Elite Residential & Villa Deep Cleaning in Mumbai",
-            "h2Tags": ["Why Choose AM5 ROYAL Certified Pros", "Our 6-Stage Deep Cleansing Protocol"],
-            "imageAltCount": 18,
-            "missingAltCount": 0,
-            "wordCount": 1840,
-            "keywordDensity": 1.8,
-            "schemaType": "LocalBusiness",
-            "robotsDirective": "index, follow",
-            "coreWebVitalsScore": 96,
-            "lastAuditDate": "2026-09-07",
-            "status": "Optimized"
-        }
-    ]
+    return []
 
 @router.post("/seo/on-page")
 async def save_seo_on_page(item: SeoOnPageModel):
@@ -193,23 +172,7 @@ class BacklinkModel(BaseModel):
 
 @router.get("/backlinks")
 async def get_backlinks():
-    return [
-        {
-            "id": "bl-001",
-            "targetUrl": "https://am5royal.com/services/bridal-makeup",
-            "referringDomain": "vogue.in",
-            "anchorText": "top luxury bridal artists by AM5 ROYAL",
-            "linkType": "DoFollow",
-            "domainRating": 84,
-            "spamScore": 1,
-            "liveVerifiedUrl": "https://www.vogue.in/wedding-trends-2026-curated-guide",
-            "acquisitionDate": "2026-08-15",
-            "costInr": 45000,
-            "outreachContact": "editor.editorial@vogue.in",
-            "status": "Live",
-            "notes": "Premium editorial placement in Annual Indian Wedding Issue"
-        }
-    ]
+    return []
 
 @router.post("/backlinks")
 async def save_backlink(item: BacklinkModel):
@@ -244,28 +207,7 @@ class BlogModel(BaseModel):
 
 @router.get("/blogs")
 async def get_blogs():
-    return [
-        {
-            "id": "blog-001",
-            "title": "The Connoisseur's Guide to Choosing Heritage Bridal Jewelry in 2026",
-            "slug": "heritage-bridal-jewelry-buyers-guide-2026",
-            "category": "Bridal & Luxury Fashion",
-            "targetSuperCategory": "Luxury Jewelry",
-            "authorName": "Aanya Sharma",
-            "readTimeMinutes": 7,
-            "wordCount": 1650,
-            "featuredImageUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=1200&q=80",
-            "metaTitle": "Heritage Bridal Jewelry Buying Guide 2026 | AM5 ROYAL Luxury",
-            "metaDescription": "Explore timeless uncut polki, temple gold, and certified solitaire masterworks from India's elite jewelers.",
-            "focusKeywords": ["bridal jewelry 2026", "polki diamond necklace", "heritage temple gold"],
-            "tags": ["Bridal", "Jewelry", "Luxury", "Wedding Trends"],
-            "content": "Discover the art of curating royal heirloom ornaments...",
-            "publishDate": "2026-09-02",
-            "status": "Published",
-            "viewsCount": 14250,
-            "sharesCount": 890
-        }
-    ]
+    return []
 
 @router.post("/blogs")
 async def save_blog(item: BlogModel):
@@ -296,24 +238,7 @@ class ArticleModel(BaseModel):
 
 @router.get("/articles")
 async def get_articles():
-    return [
-        {
-            "id": "art-001",
-            "title": "AM5 ROYAL Redefines Elite On-Demand Services Across Indian Metros",
-            "publicationName": "Forbes India Tech & Lifestyle",
-            "publicationType": "Press Release",
-            "authorByline": "Vikram Sethi",
-            "targetAudience": "HNW Families, C-Suite Executives, Luxury Homeowners",
-            "publicationDate": "2026-08-20",
-            "canonicalUrl": "https://am5royal.com/press/forbes-india-spotlight",
-            "liveArticleUrl": "https://www.forbesindia.com/article/special/am5-royal-luxury-marketplace",
-            "targetedKeywords": ["luxury home services marketplace", "AM5 ROYAL press release"],
-            "backlinkIncluded": True,
-            "contentSnippet": "AM5 ROYAL is pioneering white-glove artisan curation...",
-            "status": "Published",
-            "referralTraffic": 8420
-        }
-    ]
+    return []
 
 @router.post("/articles")
 async def save_article(item: ArticleModel):
@@ -351,31 +276,7 @@ class SmmPostModel(BaseModel):
 
 @router.get("/smm")
 async def get_smm_posts():
-    return [
-        {
-            "id": "smm-001",
-            "platform": "Instagram",
-            "postType": "Reel",
-            "title": "4K Satisfying Sofa Deep Cleansing Transformation",
-            "caption": "Watch our 5-stage hot-water extraction bring this Italian velvet sofa back to royal perfection ✨ #AM5Royal #LuxuryClean",
-            "hashtags": ["#AM5Royal", "#DeepClean", "#LuxuryHomeServices", "#MumbaiInteriors"],
-            "mediaAssetUrl": "https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=800&q=80",
-            "scheduledTime": "2026-09-06T18:30:00",
-            "targetAudience": "HNW Homeowners Mumbai & Bangalore 28-55",
-            "isPaidAd": True,
-            "adBudgetInt": 15000,
-            "impressions": 284000,
-            "reach": 198000,
-            "likes": 18450,
-            "comments": 412,
-            "saves": 3890,
-            "shares": 1240,
-            "linkClicks": 3480,
-            "spendInr": 12800,
-            "conversions": 146,
-            "status": "Active Live"
-        }
-    ]
+    return []
 
 @router.post("/smm")
 async def save_smm_post(item: SmmPostModel):
@@ -403,33 +304,13 @@ class GoogleAdsModel(BaseModel):
     avgCpcInr: float = 0
     conversions: int = 0
     cpaInr: float = 0
-    roasRatio: float = 4.5
+    roasRatio: float = 0.0
     status: str = "Active"
     startDate: str
 
 @router.get("/google-ads")
 async def get_google_ads_reports():
-    return [
-        {
-            "id": "gads-001",
-            "campaignName": "Search_HighIntent_Cleaning_Mumbai_PMax",
-            "campaignType": "Performance Max",
-            "targetSuperCategory": "Home Cleaning",
-            "targetKeywords": ["best deep cleaning mumbai", "villa sanitization service", "sofa dry clean near me"],
-            "negativeKeywords": ["free", "cheap", "diy"],
-            "dailyBudgetInr": 5000,
-            "totalSpendInr": 86400,
-            "impressions": 142000,
-            "clicks": 9840,
-            "ctrPercent": 6.93,
-            "avgCpcInr": 8.78,
-            "conversions": 482,
-            "cpaInr": 179.25,
-            "roasRatio": 5.8,
-            "status": "Active",
-            "startDate": "2026-08-01"
-        }
-    ]
+    return []
 
 @router.post("/google-ads")
 async def save_google_ads_report(item: GoogleAdsModel):
@@ -450,9 +331,9 @@ class StrategyModel(BaseModel):
     targetSuperCategories: List[str] = []
     targetRegions: List[str] = []
     coreChannels: List[str] = []
-    allocatedBudgetInr: float = 350000
+    allocatedBudgetInr: float = 0
     spentBudgetInr: float = 0
-    projectedLeads: int = 500
+    projectedLeads: int = 0
     actualLeads: int = 0
     kpis: List[str] = []
     milestones: List[Dict[str, Any]] = []
@@ -461,30 +342,7 @@ class StrategyModel(BaseModel):
 
 @router.get("/strategies")
 async def get_strategies():
-    return [
-        {
-            "id": "strat-001",
-            "title": "Festive Wedding Season 2026 Hyper-Growth Blueprint",
-            "horizonQuarter": "Q3-Q4 2026",
-            "objective": "Capture 45% luxury market share in high-intent bridal styling and bridal jewelry in Mumbai & Bangalore.",
-            "targetSuperCategories": ["Luxury Jewelry", "Bridal & Groom Styling"],
-            "targetRegions": ["Mumbai", "Bengaluru", "Delhi NCR"],
-            "coreChannels": ["Google Ads PMax", "Instagram Reels", "Vogue PR Editorial"],
-            "allocatedBudgetInr": 1250000,
-            "spentBudgetInr": 680000,
-            "projectedLeads": 2400,
-            "actualLeads": 1680,
-            "kpis": ["ROAS > 5.0x", "CAC < ₹250", "Brand Recall Top-3 in Metros"],
-            "milestones": [
-                {"id": "m-1", "title": "Deploy high-converting 4K bridal showcase landing pages", "dueDate": "2026-07-15", "completed": True},
-                {"id": "m-2", "title": "Onboard 50 certified heritage jewelry boutiques", "dueDate": "2026-08-01", "completed": True},
-                {"id": "m-3", "title": "Launch sponsored celebrity influencer Instagram series", "dueDate": "2026-09-01", "completed": True},
-                {"id": "m-4", "title": "Execute retargeting funnel with exclusive VIP invitation perks", "dueDate": "2026-09-25", "completed": False}
-            ],
-            "ownerName": "Vikram Sethi (Head of Growth)",
-            "status": "Active"
-        }
-    ]
+    return []
 
 @router.post("/strategies")
 async def save_strategy(item: StrategyModel):
@@ -513,22 +371,7 @@ class ContentModel(BaseModel):
 
 @router.get("/content")
 async def get_content_creations():
-    return [
-        {
-            "id": "cc-001",
-            "title": "Bridal Solitaire Ring Emotional Ad Script",
-            "contentType": "Short Video Script (Reel/Short)",
-            "platform": "Instagram",
-            "targetPersona": "Grooms & Bridal Couples (26-34)",
-            "copyText": "Scene 1: Close up of handcrafted diamond setting under soft studio light...\nHook: 'When forever begins with a masterpiece that tells your story.'",
-            "visualAssetUrl": "https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?auto=format&fit=crop&w=800&q=80",
-            "assignedCreator": "Aanya Sharma",
-            "deadlineDate": "2026-09-12",
-            "approvalStatus": "Approved",
-            "performanceTags": ["Bridal", "Diamond", "Luxury", "Reels"],
-            "createdAt": "2026-09-04"
-        }
-    ]
+    return []
 
 @router.post("/content")
 async def save_content_creation(item: ContentModel):
@@ -542,18 +385,20 @@ async def delete_content_creation(content_id: str):
 # 10. Overview & Collaterals
 # -----------------------------------------------------------------------------
 @router.get("/overview")
-async def get_marketing_overview():
+async def get_marketing_overview(db: AsyncSession = Depends(get_db)):
+    leads_count_res = await db.execute(select(func.count()).select_from(MarketingLead))
+    total_leads = leads_count_res.scalar() or 0
     return {
-        "totalLeads": 148,
-        "totalConversions": 42,
-        "conversionRatePercent": 28.4,
-        "totalAdSpendInr": 345000,
-        "blendedRoas": 5.4,
-        "blendedCpaInr": 210,
-        "totalBacklinks": 34,
-        "publishedBlogs": 18,
-        "totalSocialReach": 1480000,
-        "activeCampaigns": 8
+        "totalLeads": total_leads,
+        "totalConversions": 0,
+        "conversionRatePercent": 0.0,
+        "totalAdSpendInr": 0,
+        "blendedRoas": 0.0,
+        "blendedCpaInr": 0,
+        "totalBacklinks": 0,
+        "publishedBlogs": 0,
+        "totalSocialReach": 0,
+        "activeCampaigns": 0
     }
 
 class CollateralResponse(BaseModel):
