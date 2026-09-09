@@ -1,21 +1,19 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { UserRole } from '../types/marketing';
 import {
-  Crown,
   Lock,
   Mail,
   ArrowRight,
   ShieldCheck,
-  Sparkles,
-  Zap,
-  TrendingUp,
-  Search,
   CheckCircle2,
+  TrendingUp,
+  SearchCode,
+  Layers,
+  Sparkles,
 } from 'lucide-react';
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,39 +22,25 @@ export const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Please enter your email/phone and password.');
+    if (!identifier.trim() || !password.trim()) {
+      setErrorMessage('Please enter your phone number / email and password.');
       return;
     }
-    const success = await login(email, password, undefined, rememberMe);
+    const success = await login(identifier, password, undefined, rememberMe);
     if (!success) {
-      setErrorMessage('Invalid credentials. Please verify your email/phone and password.');
+      setErrorMessage('Invalid credentials. Please verify your phone/email and password.');
     }
   };
-
-  const handleQuickPreset = (presetEmail: string) => {
-    setEmail(presetEmail);
-    setPassword('am5royal2026');
-    setErrorMessage('');
-  };
-
-  const personas = [
-    { role: 'marketing_head', title: 'Marketing Head', email: 'marketing.head@am5royal.com', icon: '👑', desc: 'Full Omnichannel Command' },
-    { role: 'growth_hacker', title: 'Growth Hacker', email: 'growth@am5royal.com', icon: '🚀', desc: 'Google Ads & Paid Conversions' },
-    { role: 'seo_lead', title: 'SEO Lead', email: 'seo.lead@am5royal.com', icon: '🔍', desc: 'On/Off-Page & Backlinks' },
-    { role: 'content_strategist', title: 'Content Strategist', email: 'content@am5royal.com', icon: '✍️', desc: 'Blogs, PR & Copywriting' },
-    { role: 'smm_specialist', title: 'SMM Specialist', email: 'smm@am5royal.com', icon: '📱', desc: 'Social Reach & Viral Content' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#FAF7F2] flex items-center justify-center p-4 sm:p-6 lg:p-10 relative overflow-hidden">
-      {/* Luxurious Background Radial Highlights */}
+      {/* Background Radial Highlights */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-[#C59A27]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-[#0F4C81]/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl border border-[#E5D8C1] bg-[#FFFFFF] shadow-cream-xl overflow-hidden relative z-10">
-        {/* Left Side: Brand Story & Presets */}
-        <div className="lg:col-span-6 p-8 sm:p-12 bg-gradient-to-br from-[#FAF6EF] via-[#FFFFFF] to-[#FAF6EF] border-b lg:border-b-0 lg:border-r border-[#EAE2D2] flex flex-col justify-between text-left">
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-12 rounded-3xl border border-[#E5D8C1] bg-[#FFFFFF] shadow-cream-xl overflow-hidden relative z-10">
+        {/* Left Side: Brand Story & Security */}
+        <div className="lg:col-span-5 p-8 sm:p-10 bg-gradient-to-br from-[#FAF6EF] via-[#FFFFFF] to-[#FAF6EF] border-b lg:border-b-0 lg:border-r border-[#EAE2D2] flex flex-col justify-between text-left">
           <div>
             {/* Logo Badge */}
             <div className="inline-flex items-center gap-3 p-2 rounded-2xl bg-[#FFFFFF] border border-[#E5D8C1] shadow-cream-sm mb-6">
@@ -70,48 +54,36 @@ export const Login: React.FC = () => {
                   AM5 ROYAL
                 </p>
                 <p className="text-[10px] font-bold text-[#9B7314] uppercase">
-                  Marketing Portal
+                  Growth & Marketing
                 </p>
               </div>
             </div>
 
             <h1 className="font-serif text-2xl sm:text-3xl font-black text-[#1E1B18] tracking-tight leading-snug">
-              Omnichannel <span className="gold-gradient-text">Growth Engine</span>
+              Marketing <span className="gold-gradient-text">Command Center</span>
             </h1>
             <p className="text-xs sm:text-sm text-[#685D51] mt-2 leading-relaxed">
-              Enterprise control center for SEO auditing, backlinks CRM, blogs studio, PR media, Google Ads telemetry, and high-ticket leads.
+              Enterprise portal for omnichannel growth telemetry, SEO auditing, backlinks CRM, Google Ads management, and high-intent inbound lead pipelines.
             </p>
 
-            {/* Persona Quick Select */}
-            <div className="mt-8 space-y-2.5">
-              <p className="text-[11px] font-extrabold uppercase tracking-wider text-[#8E8276]">
-                1-Click Authorized Personas
-              </p>
-              <div className="space-y-2">
-                {personas.map((p) => (
-                  <button
-                    key={p.role}
-                    type="button"
-                    onClick={() => handleQuickPreset(p.email)}
-                    className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left ${
-                      email === p.email
-                        ? 'border-[#C59A27] bg-[#FAF6EF] shadow-cream-sm'
-                        : 'border-[#EAE2D2] bg-[#FFFFFF] hover:bg-[#FAF7F2] hover:border-[#D5C29F]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-base">{p.icon}</span>
-                      <div>
-                        <p className="text-xs font-bold text-[#1E1B18]">{p.title}</p>
-                        <p className="text-[10px] text-[#8E8276]">{p.desc}</p>
-                      </div>
+            {/* Feature Highlights */}
+            <div className="mt-8 space-y-3">
+              {[
+                { icon: TrendingUp, text: 'Real-time campaign telemetry & ROI tracking' },
+                { icon: SearchCode, text: 'Technical SEO audits & backlink indexing' },
+                { icon: Layers, text: 'Inbound conversion & high-ticket vendor funnels' },
+                { icon: Sparkles, text: 'Studio for publishing blogs, PR & creative copy' },
+              ].map((item, idx) => {
+                const Icon = item.icon;
+                return (
+                  <div key={idx} className="flex items-center gap-3 p-2.5 rounded-xl bg-[#FFFFFF] border border-[#EAE2D2]/80 shadow-cream-sm">
+                    <div className="p-1.5 rounded-lg bg-[#FAF6EF] text-[#9B7314]">
+                      <Icon className="w-3.5 h-3.5" />
                     </div>
-                    {email === p.email && (
-                      <CheckCircle2 className="w-4 h-4 text-[#C59A27]" />
-                    )}
-                  </button>
-                ))}
-              </div>
+                    <span className="text-xs font-semibold text-[#4D443B]">{item.text}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -125,13 +97,13 @@ export const Login: React.FC = () => {
         </div>
 
         {/* Right Side: Login Form */}
-        <div className="lg:col-span-6 p-8 sm:p-12 flex flex-col justify-center text-left bg-[#FFFFFF]">
+        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center text-left bg-[#FFFFFF]">
           <div className="max-w-md mx-auto w-full">
             <h2 className="font-outfit text-xl sm:text-2xl font-black text-[#1E1B18]">
-              Sign In to Marketing Hub
+              Sign In to Marketing Portal
             </h2>
             <p className="text-xs text-[#8E8276] mt-1">
-              Enter your credentials or select an authorized persona to continue.
+              Please enter your registered credentials to access your dashboard.
             </p>
 
             {errorMessage && (
@@ -143,17 +115,17 @@ export const Login: React.FC = () => {
             <form onSubmit={handleLogin} className="mt-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold text-[#4D443B] uppercase tracking-wider mb-2">
-                  Email or Phone Number
+                  Phone Number or Email Address
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-[#8E8276] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
                     required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#EAE2D2] bg-[#FAF7F2] text-[#1E1B18] text-sm focus:border-[#C59A27] focus:bg-[#FFFFFF] focus:outline-none transition-all shadow-inner"
-                    placeholder="e.g. marketing.head@am5royal.com"
+                    placeholder="e.g. 9876543210 or name@am5royal.com"
                   />
                 </div>
               </div>
@@ -170,7 +142,7 @@ export const Login: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#EAE2D2] bg-[#FAF7F2] text-[#1E1B18] text-sm focus:border-[#C59A27] focus:bg-[#FFFFFF] focus:outline-none transition-all shadow-inner"
-                    placeholder="••••••••••••"
+                    placeholder="Enter your password"
                   />
                 </div>
               </div>
@@ -183,7 +155,7 @@ export const Login: React.FC = () => {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="rounded border-[#D5C29F] text-[#C59A27] focus:ring-[#C59A27]"
                   />
-                  <span>Remember session for 30 days</span>
+                  <span>Remember session on this device</span>
                 </label>
               </div>
 
@@ -196,7 +168,7 @@ export const Login: React.FC = () => {
                   <div className="w-5 h-5 border-2 border-[#1E1B18]/30 border-t-[#1E1B18] rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <span>Enter Marketing Hub</span>
+                    <span>Sign In</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}

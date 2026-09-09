@@ -123,41 +123,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenQuickAction }) => {
                   </span>
                 </div>
 
-                {/* Role Switcher */}
-                <div className="py-2 border-b border-[#EAE2D2]">
-                  <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-[#8E8276] mb-1">
-                    Switch Active Persona
-                  </p>
-                  <button
-                    onClick={() => { switchRole('marketing_head'); setIsProfileMenuOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-[#FAF6EF] text-[#4D443B] font-medium flex items-center justify-between"
-                  >
-                    <span>👑 Marketing Head</span>
-                    {user?.role === 'marketing_head' && <span className="text-[#C59A27] text-xs font-bold">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => { switchRole('seo_lead'); setIsProfileMenuOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-[#FAF6EF] text-[#4D443B] font-medium flex items-center justify-between"
-                  >
-                    <span>🔍 SEO Lead</span>
-                    {user?.role === 'seo_lead' && <span className="text-[#C59A27] text-xs font-bold">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => { switchRole('growth_hacker'); setIsProfileMenuOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-[#FAF6EF] text-[#4D443B] font-medium flex items-center justify-between"
-                  >
-                    <span>🚀 Growth Hacker</span>
-                    {user?.role === 'growth_hacker' && <span className="text-[#C59A27] text-xs font-bold">✓</span>}
-                  </button>
-                  <button
-                    onClick={() => { switchRole('content_strategist'); setIsProfileMenuOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs rounded-lg hover:bg-[#FAF6EF] text-[#4D443B] font-medium flex items-center justify-between"
-                  >
-                    <span>✍️ Content Strategist</span>
-                    {user?.role === 'content_strategist' && <span className="text-[#C59A27] text-xs font-bold">✓</span>}
-                  </button>
-                </div>
-
                 <div className="pt-2">
                   <button
                     onClick={logout}
