@@ -220,13 +220,17 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
     }).toList();
   }
 
-  Map<String, dynamic> _subcategoryReturnExtra() {
+  Map<String, dynamic> _subcategoryReturnExtra({
+    required bool includeCurrentSubcategory,
+  }) {
     return {
       'categoryId': widget.mainCategory.id,
       'superCategoryTitle': widget.mainCategory.name,
       'mainCategory': widget.mainCategory,
       'isSingleService': widget.isSingleService,
-      'initialSelectedSubCategories': _selectedSubCategoriesAsItems(),
+      'initialSelectedSubCategories': includeCurrentSubcategory
+          ? _selectedSubCategoriesAsItems()
+          : const <SubCategoryItem>[],
     };
   }
 
@@ -234,7 +238,15 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
     OnboardingSessionGuard.instance.unlockOnForwardProgress();
     context.go(
       mapCategoryRoutePath(widget.mainCategory.name),
-      extra: _subcategoryReturnExtra(),
+      extra: _subcategoryReturnExtra(includeCurrentSubcategory: true),
+    );
+  }
+
+  void _handleBackToSubcategories() {
+    OnboardingSessionGuard.instance.unlockOnForwardProgress();
+    context.go(
+      mapCategoryRoutePath(widget.mainCategory.name),
+      extra: _subcategoryReturnExtra(includeCurrentSubcategory: false),
     );
   }
 
@@ -282,12 +294,7 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
                     size: 16,
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                   ),
-                  onPressed: () {
-                    context.go(
-                      mapCategoryRoutePath(widget.mainCategory.name),
-                      extra: _subcategoryReturnExtra(),
-                    );
-                  },
+                  onPressed: _handleBackToSubcategories,
                 ),
               ),
       ),

@@ -69,13 +69,35 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.initialSelectedSubCategories !=
         widget.initialSelectedSubCategories) {
-      for (final item in widget.initialSelectedSubCategories) {
-        if (!_selectedItems.any((i) => _isItemMatch(i, item))) {
-          _selectedItems.add(item);
+      _syncSelectedItemsFromSources();
+    }
+  }
+
+  void _syncSelectedItemsFromSources() {
+    final synced = <SubCategoryItem>[];
+
+    for (final initial in widget.initialSelectedSubCategories) {
+      if (!synced.any((i) => _isItemMatch(i, initial))) {
+        synced.add(initial);
+      }
+    }
+
+    final blocState = ref.read(subCategoryBlocProvider).state;
+    if (blocState is SubCategorySuccess) {
+      for (final entity in blocState.subcategories) {
+        if (entity.isSelected) {
+          final item = _mapEntityToItem(entity);
+          if (!synced.any((i) => _isItemMatch(i, item))) {
+            synced.add(item);
+          }
         }
       }
-      if (mounted) setState(() {});
     }
+
+    _selectedItems
+      ..clear()
+      ..addAll(synced);
+    if (mounted) setState(() {});
   }
 
   @override
@@ -501,16 +523,7 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
                 bloc: bloc,
                 listener: (context, state) {
                   if (state is SubCategorySuccess) {
-                    setState(() {
-                      for (final entity in state.subcategories) {
-                        if (entity.isSelected) {
-                          final item = _mapEntityToItem(entity);
-                          if (!_selectedItems.any((i) => _isItemMatch(i, item))) {
-                            _selectedItems.add(item);
-                          }
-                        }
-                      }
-                    });
+                    _syncSelectedItemsFromSources();
                   }
                 },
                 builder: (context, state) {
