@@ -10,6 +10,7 @@ import '../../../../core/services/auth_storage_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:new_version_plus/new_version_plus.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/services/onboarding_navigation_service.dart';
 import '../../../../core/services/payment_session_service.dart';
 import 'package:go_router/go_router.dart';
@@ -39,8 +40,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   bool _businessRegistrationDone = false;
   bool _subscription = false;
   String _vendorStatus = 'active';
-  bool _isTelecallerOnboarded = false;
-  bool _telecallerServicesUpdated = false;
 
   // Version check variables
   bool _needsForceUpdate = false;
@@ -102,7 +101,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             _authResolved = true;
             _timerFinished = true;
           });
-          context.go('/subscription?recover=1');
+          context.go('${AppRoutes.subscription}?recover=1');
         }
         return;
       }
@@ -159,16 +158,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 _isAuthenticated = true;
                 _authResolved = true;
               });
-              context.go('/admin-dashboard');
-            }
-            return;
-          } else if (role == 'telecaller' || role == 'tele_caller') {
-            if (mounted) {
-              setState(() {
-                _isAuthenticated = true;
-                _authResolved = true;
-              });
-              context.go('/telecaller-dashboard');
+              context.go(AppRoutes.adminDashboard);
             }
             return;
           } else if (role == 'marketing' ||
@@ -179,7 +169,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
                 _isAuthenticated = true;
                 _authResolved = true;
               });
-              context.go('/marketing-dashboard');
+              context.go(AppRoutes.marketingDashboard);
             }
             return;
           }
@@ -206,10 +196,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               data['business_registration_done'] ?? false;
           final bool subscription = data['subscription'] ?? false;
           final String vendorStatus = data['status']?.toString() ?? 'active';
-          final bool isTelecallerOnboarded =
-              data['is_telecaller_onboarded'] ?? false;
-          final bool telecallerServicesUpdated =
-              data['telecaller_services_updated'] ?? false;
 
           debugPrint('Splash Onboarding Parsed values: '
               'otpVerified=$otpVerified, '
@@ -229,8 +215,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
               _businessRegistrationDone = businessRegistrationDone;
               _subscription = subscription;
               _vendorStatus = vendorStatus;
-              _isTelecallerOnboarded = isTelecallerOnboarded;
-              _telecallerServicesUpdated = telecallerServicesUpdated;
               _authResolved = true;
             });
             _checkAndNavigate();
@@ -272,7 +256,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     if (_timerFinished && _authResolved) {
       if (_needsForceUpdate) {
         context.go(
-          '/force-update',
+          AppRoutes.forceUpdate,
           extra: {
             'currentVersion': _currentVersion,
             'requiredVersion': _requiredVersion,
@@ -293,12 +277,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
             'business_registration_done': _businessRegistrationDone,
             'subscription': _subscription,
             'status': _vendorStatus,
-            'is_telecaller_onboarded': _isTelecallerOnboarded,
-            'telecaller_services_updated': _telecallerServicesUpdated,
           },
         );
       } else {
-        context.go('/login');
+        context.go(AppRoutes.login);
       }
     }
   }

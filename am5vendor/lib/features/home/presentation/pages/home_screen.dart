@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -122,15 +123,12 @@ class _HomeScreenState extends State<HomeScreen>
       final role = authStorage.getUserRole();
       if (role != null && role.isNotEmpty) {
         if (role == 'admin') {
-          context.go('/admin-dashboard');
-          return;
-        } else if (role == 'telecaller' || role == 'tele_caller') {
-          context.go('/telecaller-dashboard');
+          context.go(AppRoutes.adminDashboard);
           return;
         } else if (role == 'marketing' ||
             role == 'marketing_team' ||
             role == 'field_sales') {
-          context.go('/marketing-dashboard');
+          context.go(AppRoutes.marketingDashboard);
           return;
         }
       }
@@ -864,7 +862,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 const SizedBox(width: 16),
                                 SpringButton(
                                   onTap: () {
-                                    context.push('/edit-profile');
+                                    context.push(AppRoutes.editProfile);
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
@@ -918,7 +916,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.category_rounded,
                           title: 'Category Management',
                           subtitle: 'Add, edit or remove categories & services',
-                          onTap: () => context.push('/manage-categories'),
+                          onTap: () => context.push(AppRoutes.manageCategories),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -947,7 +945,7 @@ class _HomeScreenState extends State<HomeScreen>
                           subtitle:
                               'View your partner registration certificate',
                           onTap: () =>
-                              context.push('/verification-certificate'),
+                              context.push(AppRoutes.verificationCertificate),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -955,7 +953,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.history_edu_rounded,
                           title: 'Our Story',
                           subtitle: 'The journey & vision of AM5ROYAL',
-                          onTap: () => context.push('/our-story'),
+                          onTap: () => context.push(AppRoutes.ourStory),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -963,7 +961,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.security_rounded,
                           title: 'Privacy Policy',
                           subtitle: 'How we guard your identity',
-                          onTap: () => context.push('/privacypolicy'),
+                          onTap: () => context.push(AppRoutes.privacyPolicy),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -971,7 +969,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.article_rounded,
                           title: 'Terms & Conditions',
                           subtitle: 'Vendor service rules & agreements',
-                          onTap: () => context.push('/terms-conditions'),
+                          onTap: () => context.push(AppRoutes.termsConditions),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -979,7 +977,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.contact_support_rounded,
                           title: 'Help & Support',
                           subtitle: 'FAQs & support channels',
-                          onTap: () => context.push('/help-support'),
+                          onTap: () => context.push(AppRoutes.helpSupport),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -987,7 +985,7 @@ class _HomeScreenState extends State<HomeScreen>
                           icon: Icons.policy_rounded,
                           title: 'Account Deletion Policy',
                           subtitle: 'Data retention & deletion rules',
-                          onTap: () => context.push('/delete-account-policy'),
+                          onTap: () => context.push(AppRoutes.deleteAccountPolicy),
                         ),
                         const SizedBox(height: 12),
                         _buildSettingsTile(
@@ -996,7 +994,7 @@ class _HomeScreenState extends State<HomeScreen>
                           title: 'Delete Account',
                           subtitle: 'Permanently deactivate your profile',
                           isDanger: true,
-                          onTap: () => context.push('/delete-account'),
+                          onTap: () => context.push(AppRoutes.deleteAccount),
                         ),
                       ],
                     ),
@@ -1341,7 +1339,7 @@ class _HomeScreenState extends State<HomeScreen>
                                             const SizedBox(height: 6),
                                             SpringButton(
                                               onTap: () {
-                                                context.push('/edit-profile');
+                                                context.push(AppRoutes.editProfile);
                                               },
                                               child: Container(
                                                 padding:
@@ -1467,7 +1465,7 @@ class _HomeScreenState extends State<HomeScreen>
                               subtitle:
                                   'Add, edit or remove categories & services',
                               isLocked: isTemporaryActive,
-                              onTap: () => context.push('/manage-categories'),
+                              onTap: () => context.push(AppRoutes.manageCategories),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1494,7 +1492,7 @@ class _HomeScreenState extends State<HomeScreen>
                               title: 'Vendor Dashboard',
                               subtitle: 'Analytics, service count & KPIs',
                               isLocked: isTemporaryActive,
-                              onTap: () => context.push('/vendor-dashboard'),
+                              onTap: () => context.push(AppRoutes.vendorDashboard),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1503,7 +1501,7 @@ class _HomeScreenState extends State<HomeScreen>
                               subtitle:
                                   'Promotions, photos/videos & new launches',
                               isLocked: isTemporaryActive,
-                              onTap: () => context.push('/offers-launches'),
+                              onTap: () => context.push(AppRoutes.offersLaunches),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1511,7 +1509,7 @@ class _HomeScreenState extends State<HomeScreen>
                               title: 'My Subscriptions',
                               subtitle: 'Upgrade & manage your plan',
                               isLocked: isTemporaryActive,
-                              onTap: () => context.push('/my-subscriptions'),
+                              onTap: () => context.push(AppRoutes.mySubscriptions),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1521,7 +1519,7 @@ class _HomeScreenState extends State<HomeScreen>
                                   'View your partner registration certificate',
                               isLocked: isTemporaryActive,
                               onTap: () =>
-                                  context.push('/verification-certificate'),
+                                  context.push(AppRoutes.verificationCertificate),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1529,42 +1527,42 @@ class _HomeScreenState extends State<HomeScreen>
                               title: 'My Earnings',
                               subtitle: 'Monthly stats & cashouts',
                               isLocked: isTemporaryActive,
-                              onTap: () => context.push('/earnings'),
+                              onTap: () => context.push(AppRoutes.earnings),
                             ),
                             _buildSettingsTile(
                               context: context,
                               icon: Icons.history_edu_rounded,
                               title: 'Our Story',
                               subtitle: 'The journey & vision of AM5ROYAL',
-                              onTap: () => context.push('/our-story'),
+                              onTap: () => context.push(AppRoutes.ourStory),
                             ),
                             _buildSettingsTile(
                               context: context,
                               icon: Icons.security_rounded,
                               title: 'Privacy Policy',
                               subtitle: 'How we guard your identity',
-                              onTap: () => context.push('/privacypolicy'),
+                              onTap: () => context.push(AppRoutes.privacyPolicy),
                             ),
                             _buildSettingsTile(
                               context: context,
                               icon: Icons.article_rounded,
                               title: 'Terms & Conditions',
                               subtitle: 'Vendor service rules & agreements',
-                              onTap: () => context.push('/terms-conditions'),
+                              onTap: () => context.push(AppRoutes.termsConditions),
                             ),
                             _buildSettingsTile(
                               context: context,
                               icon: Icons.contact_support_rounded,
                               title: 'Help & Support',
                               subtitle: 'FAQs & support channels',
-                              onTap: () => context.push('/help-support'),
+                              onTap: () => context.push(AppRoutes.helpSupport),
                             ),
                             _buildSettingsTile(
                               context: context,
                               icon: Icons.policy_rounded,
                               title: 'Account Deletion Policy',
                               subtitle: 'Data retention & deletion rules',
-                              onTap: () => context.push('/delete-account-policy'),
+                              onTap: () => context.push(AppRoutes.deleteAccountPolicy),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1572,7 +1570,7 @@ class _HomeScreenState extends State<HomeScreen>
                               title: 'Delete Account',
                               subtitle: 'Permanently deactivate your profile',
                               isDanger: true,
-                              onTap: () => context.push('/delete-account'),
+                              onTap: () => context.push(AppRoutes.deleteAccount),
                             ),
                             _buildSettingsTile(
                               context: context,
@@ -1736,7 +1734,7 @@ class _HomeScreenState extends State<HomeScreen>
                 // Dispatch logout event
                 context.read<AuthBloc>().add(const AuthEvent.logout());
                 // Navigate to Login page and clear stack
-                context.go('/login');
+                context.go(AppRoutes.login);
               },
               child: Container(
                 padding:
@@ -2124,7 +2122,7 @@ class _HomeScreenState extends State<HomeScreen>
               final walletBloc = context.read<WalletBloc>();
               context
                   .push(
-                '/order-details',
+                AppRoutes.orderDetails(order.id),
                 extra: order,
               )
                   .then((_) {

@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -29,7 +30,6 @@ class VendorRegistrationPage extends ConsumerStatefulWidget {
   final String mainCategoryName;
   final List<SubCategoryItem> selectedSubCategories;
   final List<SubSubCategoryItem> selectedServiceTypes;
-  final bool isTelecallerOnboarded;
 
   const VendorRegistrationPage({
     super.key,
@@ -37,7 +37,6 @@ class VendorRegistrationPage extends ConsumerStatefulWidget {
     required this.mainCategoryName,
     required this.selectedSubCategories,
     required this.selectedServiceTypes,
-    this.isTelecallerOnboarded = false,
   });
 
   @override
@@ -576,7 +575,7 @@ class _VendorRegistrationPageState
       if (!mounted) return;
       OnboardingSessionGuard.instance.unlockOnForwardProgress();
       context.go(
-        '/vendor-availability',
+        AppRoutes.vendorAvailability,
         extra: {
           'mainCategoryId': widget.mainCategoryId,
           'mainCategoryName': widget.mainCategoryName,
@@ -611,7 +610,7 @@ class _VendorRegistrationPageState
     if (context.canPop()) {
       context.pop();
     } else {
-      context.go('/map');
+      context.go(AppRoutes.map);
     }
   }
 
@@ -660,7 +659,7 @@ class _VendorRegistrationPageState
                 });
                 if (context.mounted) {
                   context.go(
-                    '/vendor-availability',
+                    AppRoutes.vendorAvailability,
                     extra: {
                       'firstName': _vendorNameController.text.trim(),
                       'lastName': _lastNameController.text.trim(),

@@ -27,6 +27,7 @@ import 'core/services/network_connectivity_service.dart';
 void main() async {
   // Ensure Flutter engine is initialized
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
 
   // Set default config if not set (e.g., running main.dart directly)
   try {
@@ -67,7 +68,6 @@ void main() async {
     debugPrint("DI/Razorpay init error: $e");
   }
 
-  usePathUrlStrategy();
   runApp(
     const ProviderScope(
       child: MyApp(),

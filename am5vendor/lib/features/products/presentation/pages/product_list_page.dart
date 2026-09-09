@@ -4,10 +4,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/services/permission_service.dart';
+import '../../../../core/router/app_navigation.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../features/auth/presentation/pages/login_page.dart';
 import '../../../../features/auth/domain/entities/auth.dart';
 import '../../domain/entities/product.dart';
 import '../bloc/product_bloc.dart';
@@ -215,13 +215,7 @@ class _ProductListPageState extends State<ProductListPage> {
             listener: (context, state) {
               state.maybeWhen(
                 initial: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            const LoginPage(fromLogout: true)),
-                    (route) => false,
-                  );
+                  context.goLogin(fromLogout: true);
                 },
                 orElse: () {},
               );

@@ -28,11 +28,11 @@ def should_exclude(rel_path):
     return False
 
 def deploy():
-    print(f"Connecting to {HOST}...")
+    print(f"Connecting to {HOST}...", flush=True)
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(HOST, username=USER, password=PASS, timeout=15)
-    print("SSH Connection established.")
+    print("SSH Connection established.", flush=True)
 
     sftp = ssh.open_sftp()
 

@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/di/injection_container.dart' as di;
 import '../../../../core/constants/colors.dart';
@@ -254,7 +255,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen>
     await OnboardingSessionGuard.instance.markPaymentCompleted();
     AnalyticsService().logEvent(name: 'subscription_payment_success');
     if (!mounted) return;
-    context.go('/home');
+    context.go(AppRoutes.home);
   }
 
   void _showPaymentMessage(String message) {

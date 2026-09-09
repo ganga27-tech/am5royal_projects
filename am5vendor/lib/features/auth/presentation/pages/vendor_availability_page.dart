@@ -6,6 +6,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/services/onboarding_session_guard.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../products/data/models/product_model.dart';
 import '../bloc/vendor_availability_bloc.dart';
 import '../bloc/vendor_availability_event.dart';
@@ -21,7 +22,6 @@ class VendorAvailabilityPage extends StatelessWidget {
   final String lastName;
   final String businessName;
   final bool isSingleService;
-  final bool isTelecallerOnboarded;
 
   final bool navigateToSubscriptionOnSave;
 
@@ -35,7 +35,6 @@ class VendorAvailabilityPage extends StatelessWidget {
     this.lastName = '',
     this.businessName = '',
     this.isSingleService = true,
-    this.isTelecallerOnboarded = false,
     this.navigateToSubscriptionOnSave = false,
   });
 
@@ -53,7 +52,6 @@ class VendorAvailabilityPage extends StatelessWidget {
         lastName: lastName,
         businessName: businessName,
         isSingleService: isSingleService,
-        isTelecallerOnboarded: isTelecallerOnboarded,
         navigateToSubscriptionOnSave: navigateToSubscriptionOnSave,
       ),
     );
@@ -69,7 +67,6 @@ class VendorAvailabilityView extends StatefulWidget {
   final String lastName;
   final String businessName;
   final bool isSingleService;
-  final bool isTelecallerOnboarded;
   final bool navigateToSubscriptionOnSave;
 
   const VendorAvailabilityView({
@@ -82,7 +79,6 @@ class VendorAvailabilityView extends StatefulWidget {
     required this.lastName,
     required this.businessName,
     required this.isSingleService,
-    required this.isTelecallerOnboarded,
     this.navigateToSubscriptionOnSave = false,
   });
 
@@ -111,11 +107,9 @@ class _VendorAvailabilityViewState extends State<VendorAvailabilityView> {
   void _handleBackNav(BuildContext context) {
     if (context.canPop()) {
       context.pop();
-    } else if (widget.isTelecallerOnboarded) {
-      context.go('/telecaller-vendor-services-update');
     } else {
       context.go(
-        '/vendor-registration',
+        AppRoutes.vendorRegistration,
         extra: {
           'mainCategoryId': widget.mainCategoryId,
           'mainCategoryName': widget.mainCategoryName,
@@ -288,26 +282,15 @@ class _VendorAvailabilityViewState extends State<VendorAvailabilityView> {
 
                   if (widget.navigateToSubscriptionOnSave) {
                     context.go(
-                      '/subscription?r=${DateTime.now().millisecondsSinceEpoch}',
+                      '${AppRoutes.subscription}?r=${DateTime.now().millisecondsSinceEpoch}',
                       extra: {
                         'fromOnboarding': true,
                         'selectedSubCategories': widget.selectedSubCategories,
                       },
                     );
-                  } else if (widget.isTelecallerOnboarded) {
-                    context.go(
-                      '/vendor-registration',
-                      extra: {
-                        'mainCategoryId': widget.mainCategoryId,
-                        'mainCategoryName': widget.mainCategoryName,
-                        'selectedSubCategories': widget.selectedSubCategories,
-                        'selectedServiceTypes': widget.selectedServiceTypes,
-                        'isTelecallerOnboarded': true,
-                      },
-                    );
                   } else {
                     context.go(
-                      '/business-registration',
+                      AppRoutes.businessRegistration,
                       extra: {
                         'firstName': widget.firstName,
                         'lastName': widget.lastName,

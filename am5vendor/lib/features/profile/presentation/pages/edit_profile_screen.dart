@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import '../bloc/profile_bloc.dart';
@@ -523,7 +524,7 @@ class _EditProfileViewState extends State<_EditProfileView> {
         listener: (context, state) {
           state.maybeWhen(
             initial: () {
-              context.go('/login');
+              context.go(AppRoutes.login);
             },
             error: (message) {
               ScaffoldMessenger.of(context).showSnackBar(

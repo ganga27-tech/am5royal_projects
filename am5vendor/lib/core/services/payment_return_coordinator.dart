@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../di/injection_container.dart' as di;
+import '../router/app_routes.dart';
 import '../utils/razorpay_checkout_helper.dart';
 import 'payment_session_service.dart';
 
@@ -26,7 +27,9 @@ class PaymentReturnCoordinator {
     _lastHandledAt = now;
     try {
       await RazorpayCheckoutHelper.dismissCheckout();
-      router.go('/subscription?recover=1&r=${now.millisecondsSinceEpoch}');
+      router.go(
+        '${AppRoutes.subscription}?recover=1&r=${now.millisecondsSinceEpoch}',
+      );
     } finally {
       _handling = false;
     }

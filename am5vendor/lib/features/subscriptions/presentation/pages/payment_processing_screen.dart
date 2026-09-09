@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -142,7 +143,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
     await _hydrateSession();
 
     if (!mounted || _orderId == null || _planId == null) {
-      if (mounted) context.go('/subscription');
+      if (mounted) context.go(AppRoutes.subscription);
       return;
     }
 
@@ -380,7 +381,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
     await di.sl<SharedPreferences>().setBool('subscription_completed', true);
 
     if (!mounted) return;
-    context.go('/home');
+    context.go(AppRoutes.home);
   }
 
   Future<void> _returnToPlans() async {
@@ -391,7 +392,7 @@ class _PaymentProcessingScreenState extends State<PaymentProcessingScreen>
 
     if (!mounted) return;
     context.go(
-      '/subscription?r=${DateTime.now().millisecondsSinceEpoch}',
+      '${AppRoutes.subscription}?r=${DateTime.now().millisecondsSinceEpoch}',
       extra: {'fromOnboarding': widget.fromOnboarding},
     );
   }

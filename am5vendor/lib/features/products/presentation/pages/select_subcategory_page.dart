@@ -4,15 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/category_route_utils.dart';
+import '../../../supercategory/domain/entities/subcategory_entity.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/constants/colors.dart';
 import '../../../supercategory/data/datasources/main_category_api_service.dart';
+import '../../../supercategory/data/models/main_category_model.dart';
 import '../../../supercategory/presentation/providers/main_category_providers.dart';
 import '../../../supercategory/presentation/providers/service_providers.dart';
 import '../../../supercategory/presentation/bloc/subcategory_bloc.dart';
 import '../../../supercategory/presentation/bloc/subcategory_event.dart';
 import '../../../supercategory/presentation/bloc/subcategory_state.dart';
-import '../../../supercategory/domain/entities/subcategory_entity.dart';
 import '../../../supercategory/domain/entities/main_category.dart';
 import '../../data/models/product_model.dart';
 import '../../../../core/services/onboarding_session_guard.dart';
@@ -61,16 +65,52 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
   }
 
   @override
+  void didUpdateWidget(covariant SelectSubcategoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialSelectedSubCategories !=
+        widget.initialSelectedSubCategories) {
+      for (final item in widget.initialSelectedSubCategories) {
+        if (!_selectedItems.any((i) => _isItemMatch(i, item))) {
+          _selectedItems.add(item);
+        }
+      }
+      if (mounted) setState(() {});
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
     _selectedItems.addAll(widget.initialSelectedSubCategories);
     _initSpeech();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref
-          .read(subCategoryBlocProvider)
-          .add(FetchSubCategories(widget.categoryId));
-    });
+    _fetchCategories();
+  }
+
+  Future<void> _fetchCategories() async {
+    int effectiveId = widget.categoryId;
+    if (effectiveId <= 0 || effectiveId == 1) {
+      try {
+        final mainCats = await di.sl<MainCategoryApiService>().getMainCategories();
+        final match = mainCats.firstWhere(
+          (c) =>
+              c.name.toLowerCase().contains('home') ||
+              c.name.toLowerCase() == widget.superCategoryTitle.toLowerCase(),
+          orElse: () => const MainCategoryModel(
+            id: 37,
+            name: 'Home Services',
+            iconUrl: '',
+            hasSubcategories: true,
+          ),
+        );
+        effectiveId = match.id;
+      } catch (_) {
+        effectiveId = 37;
+      }
+    }
+    if (mounted) {
+      ref.read(subCategoryBlocProvider).add(FetchSubCategories(effectiveId));
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -182,9 +222,7 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
         await repo.removeSubCategory(subId);
       }
       if (mounted) {
-        ref
-            .read(subCategoryBlocProvider)
-            .add(FetchSubCategories(widget.categoryId));
+        _fetchCategories();
       }
       return;
     }
@@ -195,31 +233,21 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
       iconUrl: item.iconUrl ?? '',
     );
 
-    final result = await context.push<bool>(
-      '/select-service',
+    final routePath = mapSubcategoryRoutePath(
+      widget.mainCategory.name,
+      item.title,
+    );
+
+    appRouter.go(
+      routePath,
       extra: {
         'mainCategory': widget.mainCategory,
         'selectedSubCategories': [subCategoryEntity],
+        'isSingleService': widget.isSingleService,
+        'categoryId': widget.categoryId,
+        'superCategoryTitle': widget.superCategoryTitle,
       },
     );
-
-    if (mounted) {
-      if (result == true) {
-        setState(() {
-          final isSelected = _selectedItems.any((i) => _isItemMatch(i, item));
-          if (!isSelected) {
-            if (widget.isSingleService) {
-              _selectedItems.clear();
-            }
-            _selectedItems.add(item);
-          }
-        });
-      }
-      // Re-fetch backend subcategories to ensure DB selection state is fresh
-      ref
-          .read(subCategoryBlocProvider)
-          .add(FetchSubCategories(widget.categoryId));
-    }
   }
 
   SubCategoryItem _mapEntityToItem(SubCategoryEntity entity) {
@@ -286,8 +314,8 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
     } catch (_) {}
 
     if (!mounted) return;
-    await context.push(
-      '/vendor-registration',
+    context.go(
+      AppRoutes.partnerRegistration,
       extra: {
         'mainCategoryId': widget.mainCategory.id,
         'mainCategoryName': widget.mainCategory.name,
@@ -295,14 +323,6 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
         'selectedServiceTypes': const [],
       },
     );
-
-    // Re-fetch when user comes back from registration screens so
-    // vendor_sub_categories DB state is synced (ticks stay selected)
-    if (mounted) {
-      ref
-          .read(subCategoryBlocProvider)
-          .add(FetchSubCategories(widget.categoryId));
-    }
   }
 
   @override
@@ -346,7 +366,13 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
               size: 18,
               color: isDark ? Colors.white : const Color(0xFF0F172A),
             ),
-            onPressed: () => context.pop(_selectedItems),
+            onPressed: () {
+              if (context.canPop()) {
+                context.pop(_selectedItems);
+              } else {
+                context.go(AppRoutes.map);
+              }
+            },
           ),
         ),
       ),
@@ -571,6 +597,41 @@ class _SelectSubcategoryPageState extends ConsumerState<SelectSubcategoryPage> {
                           onTap: () => _onSubcategoryTapped(sub),
                         );
                       },
+                    );
+                  } else if (state is SubCategoryEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.category_outlined,
+                            size: 56,
+                            color: isDark ? Colors.white38 : Colors.black38,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No subcategories available.',
+                            style: GoogleFonts.outfit(
+                              fontSize: 16,
+                              color: isDark ? Colors.white70 : Colors.black87,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _fetchCategories,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Refresh'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
                   }
                   return const SizedBox.shrink();

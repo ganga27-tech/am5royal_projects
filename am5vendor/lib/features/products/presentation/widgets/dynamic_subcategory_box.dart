@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../supercategory/presentation/providers/main_category_providers.dart';
 import '../../../supercategory/presentation/providers/service_providers.dart';
@@ -205,7 +206,7 @@ class _DynamicSubCategoryBoxState extends ConsumerState<DynamicSubCategoryBox> {
     );
 
     final result = await context.push<bool>(
-      '/select-service',
+      AppRoutes.selectService,
       extra: {
         'mainCategory': widget.mainCategory,
         'selectedSubCategories': [subCategoryEntity],

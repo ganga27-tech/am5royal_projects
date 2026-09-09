@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/constants/colors.dart';
@@ -201,7 +202,7 @@ class DeleteAccountPolicyScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 14),
                             InkWell(
-                              onTap: () => context.push('/delete-account'),
+                              onTap: () => context.push(AppRoutes.deleteAccount),
                               borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/colors.dart';
+import '../../../../core/router/app_navigation.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_event.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../features/auth/presentation/pages/login_page.dart';
 import '../../../../features/auth/domain/entities/auth.dart';
 
 class HomePage extends StatefulWidget {
@@ -117,13 +117,7 @@ class _HomePageState extends State<HomePage>
       listener: (context, state) {
         state.maybeWhen(
           initial: () {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const LoginPage(fromLogout: true),
-              ),
-              (route) => false,
-            );
+            context.goLogin(fromLogout: true);
           },
           orElse: () {},
         );

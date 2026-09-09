@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/di/injection_container.dart' as di;
@@ -309,7 +310,7 @@ class _ManageCategoryViewState extends ConsumerState<_ManageCategoryView> {
     final hostContext = context;
 
     final added = await hostContext.push<bool>(
-      '/select-service',
+      AppRoutes.selectService,
       extra: {
         'mainCategory': mainCategory,
         'selectedSubCategories': subCategories,
@@ -350,7 +351,7 @@ class _ManageCategoryViewState extends ConsumerState<_ManageCategoryView> {
     if (!navContext.mounted) return;
 
     navContext.push(
-      '/vendor-availability',
+      AppRoutes.vendorAvailability,
       extra: {'navigateToSubscriptionOnSave': true},
     );
   }

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../domain/entities/auth.dart';
 import '../bloc/auth_bloc.dart';
@@ -77,17 +78,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (role == 'admin') {
       setState(() => _isLoading = false);
-      context.go('/admin-dashboard');
-      return;
-    } else if (role == 'telecaller' || role == 'tele_caller') {
-      setState(() => _isLoading = false);
-      context.go('/telecaller-dashboard');
+      context.go(AppRoutes.adminDashboard);
       return;
     } else if (role == 'marketing' ||
         role == 'marketing_team' ||
         role == 'field_sales') {
       setState(() => _isLoading = false);
-      context.go('/marketing-dashboard');
+      context.go(AppRoutes.marketingDashboard);
       return;
     }
 
@@ -99,7 +96,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (mounted) {
       setState(() => _isLoading = false);
       if (!navigated) {
-        context.go('/map');
+        context.go(AppRoutes.map);
       }
     }
   }

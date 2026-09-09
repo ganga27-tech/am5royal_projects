@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/services/auth_storage_service.dart';
 import '../../../../core/di/injection_container.dart' as di;
@@ -134,7 +135,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: BlocListener<AuthBloc, AuthState>(
             listener: (context, state) {
               state.maybeWhen(
-                initial: () => context.go('/login'),
+                initial: () => context.go(AppRoutes.login),
                 orElse: () {},
               );
             },

@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../features/home/presentation/pages/home_screen.dart'; // import SpringButton
+import '../../../../core/router/app_navigation.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
-import '../../../auth/presentation/pages/login_page.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -47,10 +48,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         );
 
         // Redirect to Login page and clear stack
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-          (route) => false,
-        );
+        context.goLogin(fromLogout: true);
       }
     });
   }
@@ -200,7 +198,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       ),
                       // Policy banner link
                       InkWell(
-                        onTap: () => context.push('/delete-account-policy'),
+                        onTap: () => context.push(AppRoutes.deleteAccountPolicy),
                         borderRadius: BorderRadius.circular(12),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

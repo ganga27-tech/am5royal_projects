@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/widgets/responsive_layout.dart';
 import '../../../../core/di/injection_container.dart' as di;
@@ -110,13 +111,11 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
               final authStorage = di.sl<AuthStorageService>();
               final role = authStorage.getUserRole();
               if (role == 'admin') {
-                context.go('/admin-dashboard');
-              } else if (role == 'telecaller' || role == 'tele_caller') {
-                context.go('/telecaller-dashboard');
+                context.go(AppRoutes.adminDashboard);
               } else if (role == 'marketing' || role == 'marketing_team' || role == 'field_sales') {
-                context.go('/marketing-dashboard');
+                context.go(AppRoutes.marketingDashboard);
               } else {
-                context.go('/home');
+                context.go(AppRoutes.home);
               }
             },
             error: (message) {
@@ -876,7 +875,7 @@ class _EmployeeLoginPageState extends State<EmployeeLoginPage> {
                 // Go to Vendor Login Link
                 Center(
                   child: TextButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => context.go(AppRoutes.login),
                     style: TextButton.styleFrom(
                       foregroundColor: isDark
                           ? AppColors.accentLight

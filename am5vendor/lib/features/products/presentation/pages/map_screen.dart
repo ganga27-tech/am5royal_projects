@@ -1,15 +1,17 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_router.dart';
+import '../../../../core/router/app_navigation.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/category_route_utils.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../core/constants/colors.dart';
 import '../../../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../../../features/auth/presentation/bloc/auth_state.dart';
-import '../../../../features/auth/presentation/pages/login_page.dart';
-import 'vendor_registration_page.dart';
+import '../../../supercategory/domain/entities/subcategory_entity.dart';
 import '../../domain/entities/product.dart';
 import '../bloc/product_bloc.dart';
 import '../bloc/product_event.dart';
@@ -19,12 +21,8 @@ import '../widgets/product_form_dialog.dart';
 import '../widgets/map_screen_header.dart';
 import '../widgets/categories_dashboard.dart';
 import '../../data/models/product_model.dart';
-import '../widgets/dynamic_subcategory_box.dart';
-import '../../../../core/di/injection_container.dart' as di;
-import '../../../supercategory/data/datasources/main_category_api_service.dart';
 import '../../../../core/services/onboarding_session_guard.dart';
 import '../../../supercategory/domain/entities/main_category.dart';
-import '../../../supercategory/presentation/pages/select_service_page.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../supercategory/presentation/providers/main_category_providers.dart';
 import '../../../supercategory/presentation/bloc/main_category_bloc.dart';
@@ -189,13 +187,7 @@ class _MapScreenState extends State<MapScreen> {
             listener: (context, state) {
               state.maybeWhen(
                 initial: () {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const LoginPage(fromLogout: true),
-                    ),
-                    (route) => false,
-                  );
+                  context.goLogin(fromLogout: true);
                 },
                 error: (message) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -1201,6 +1193,7 @@ class _MapScreenState extends State<MapScreen> {
 
   void _handleCategoryTap(CategoryItem category) {
     OnboardingSessionGuard.instance.unlockOnForwardProgress();
+    final router = appRouter;
     if (!category.hasSubcategories) {
       showModalBottomSheet(
         context: context,
@@ -1592,12 +1585,14 @@ class _MapScreenState extends State<MapScreen> {
     }
 
     serviceTypeFuture.then((isSingleService) {
-      if (isSingleService == null || !context.mounted) return;
+      if (isSingleService == null || !mounted) return;
 
       if (category.hasSubcategories) {
         final categoryId = int.tryParse(category.id) ?? 0;
-        context.push<List<SubCategoryItem>>(
-          '/select-subcategory',
+        final routePath = mapCategoryRoutePath(category.title);
+
+        router.go(
+          routePath,
           extra: {
             'categoryId': categoryId,
             'superCategoryTitle': category.title,
@@ -1605,41 +1600,25 @@ class _MapScreenState extends State<MapScreen> {
             'isSingleService': isSingleService,
             'initialSelectedSubCategories': _selectedSubCategories,
           },
-        ).then((selectedList) {
-          if (selectedList != null && context.mounted) {
-            setState(() {
-              _selectedSubCategories = selectedList;
-              if (selectedList.isNotEmpty) {
-                _searchController.text =
-                    selectedList.map((s) => s.title).join(', ');
-              } else {
-                _searchController.text = category.title;
-              }
-            });
-          }
-        });
+        );
       } else {
         if (isSingleService) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VendorRegistrationPage(
-                mainCategoryId: mainCategory.id,
-                mainCategoryName: mainCategory.name,
-                selectedSubCategories: const [],
-                selectedServiceTypes: const [],
-              ),
-            ),
+          router.go(
+            AppRoutes.vendorRegistration,
+            extra: {
+              'mainCategoryId': mainCategory.id,
+              'mainCategoryName': mainCategory.name,
+              'selectedSubCategories': const <SubCategoryItem>[],
+              'selectedServiceTypes': const [],
+            },
           );
         } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => SelectServicePage(
-                mainCategory: mainCategory,
-                selectedSubCategories: const [],
-              ),
-            ),
+          router.go(
+            AppRoutes.selectService,
+            extra: {
+              'mainCategory': mainCategory,
+              'selectedSubCategories': const <SubCategoryEntity>[],
+            },
           );
         }
       }

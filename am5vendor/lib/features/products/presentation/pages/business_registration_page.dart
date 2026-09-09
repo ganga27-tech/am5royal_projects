@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
@@ -147,15 +148,15 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
       };
 
   void _goToEditServices() {
-    context.go('/manage-categories');
+    context.go(AppRoutes.manageCategories);
   }
 
-  void _goToEditSlots() {
-    context.go('/vendor-availability', extra: _availabilityExtra());
+  void _goToEditWorkingHours() {
+    context.go(AppRoutes.vendorAvailability, extra: _availabilityExtra());
   }
 
   void _goToEditPartnerDetails() {
-    context.go('/vendor-registration', extra: _registrationExtra());
+    context.go(AppRoutes.vendorRegistration, extra: _registrationExtra());
   }
 
   void _handleBack() {
@@ -167,7 +168,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
       context.pop();
       return;
     }
-    _goToEditSlots();
+    _goToEditWorkingHours();
   }
 
   bool get _canEditPreviousSteps =>
@@ -639,7 +640,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
           WidgetsBinding.instance.addPostFrameCallback((_) async {
             if (!context.mounted) return;
             final result = await context.push<bool>(
-              '/subscription',
+              AppRoutes.subscription,
               extra: {
                 'fromOnboarding': true,
                 'isSingleService': widget.isSingleService,
@@ -825,7 +826,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _goToEditSlots,
+                      onPressed: _goToEditWorkingHours,
                       icon: const Icon(Icons.schedule_rounded, size: 18),
                       label: Text(
                         'Edit Hours',
@@ -1375,7 +1376,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
           child: ElevatedButton(
             onPressed: () async {
               final result = await context.push<bool>(
-                '/subscription',
+                AppRoutes.subscription,
                 extra: {'fromOnboarding': true},
               );
               if (result == true) {
@@ -1519,7 +1520,7 @@ class _BusinessRegistrationPageState extends State<BusinessRegistrationPage> {
               final prefs = di.sl<SharedPreferences>();
               await prefs.setBool('business_verification_completed', true);
               if (!mounted) return;
-              context.go('/home');
+              context.go(AppRoutes.home);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,

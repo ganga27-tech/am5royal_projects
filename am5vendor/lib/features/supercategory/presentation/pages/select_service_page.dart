@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/router/app_routes.dart';
+import '../../../../core/utils/category_route_utils.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -22,15 +24,19 @@ import '../bloc/add_service_event.dart';
 import '../bloc/add_service_state.dart';
 import '../providers/service_providers.dart';
 import '../../../../core/widgets/app_network_image.dart';
+import '../../../../core/di/injection_container.dart' as di;
+import '../../data/datasources/main_category_api_service.dart';
 
 class SelectServicePage extends ConsumerStatefulWidget {
   final MainCategory mainCategory;
   final List<SubCategoryEntity> selectedSubCategories;
+  final bool isSingleService;
 
   const SelectServicePage({
     super.key,
     required this.mainCategory,
     required this.selectedSubCategories,
+    this.isSingleService = true,
   });
 
   @override
@@ -50,14 +56,43 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
     super.initState();
     _speech = stt.SpeechToText();
     _initSpeech();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(serviceBlocProvider).add(
-            FetchServices(
-              mainCategoryId: widget.mainCategory.id,
-              subcategoryIds:
-                  widget.selectedSubCategories.map((s) => s.id).toList(),
-            ),
-          );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      int mainCatId = widget.mainCategory.id;
+      if (mainCatId <= 0 || mainCatId == 1) {
+        mainCatId = 37; // Default production Home Services category ID
+      }
+
+      List<int> subCatIds = widget.selectedSubCategories.map((s) => s.id).toList();
+
+      // If subcategories have ID 0 (e.g. passed from URL slug), resolve by name from API
+      if (subCatIds.isEmpty || subCatIds.contains(0)) {
+        try {
+          final subCats = await di.sl<MainCategoryApiService>().getSubCategories(mainCatId);
+          final matchedIds = <int>[];
+          for (final selected in widget.selectedSubCategories) {
+            final target = selected.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+            for (final sc in subCats) {
+              final current = sc.name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]+'), '');
+              if (current.contains(target) || target.contains(current) || current == target) {
+                matchedIds.add(sc.id);
+                break;
+              }
+            }
+          }
+          if (matchedIds.isNotEmpty) {
+            subCatIds = matchedIds;
+          }
+        } catch (_) {}
+      }
+
+      if (mounted) {
+        ref.read(serviceBlocProvider).add(
+              FetchServices(
+                mainCategoryId: mainCatId,
+                subcategoryIds: subCatIds.where((id) => id > 0).toList(),
+              ),
+            );
+      }
     });
   }
 
@@ -141,13 +176,65 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
   void _navigateToRegistration(List<SubCategoryItem> mappedSubs,
       List<SubSubCategoryItem> mappedServices) {
     context.go(
-      '/vendor-registration',
+      AppRoutes.vendorRegistration,
       extra: {
         'mainCategoryId': widget.mainCategory.id,
         'mainCategoryName': widget.mainCategory.name,
         'selectedSubCategories': mappedSubs,
         'selectedServiceTypes': mappedServices,
       },
+    );
+  }
+
+  List<SubCategoryItem> _selectedSubCategoriesAsItems() {
+    return widget.selectedSubCategories.map((sub) {
+      SubCategoryItem? matchedItem;
+      for (final cat in ProductModel.categories) {
+        final subs = ProductModel.getSubCategoriesFor(cat.title);
+        for (final candidate in subs) {
+          if (candidate.title.toLowerCase() == sub.name.toLowerCase()) {
+            matchedItem = candidate;
+            break;
+          }
+        }
+        if (matchedItem != null) break;
+      }
+
+      if (matchedItem != null) {
+        return SubCategoryItem(
+          id: sub.id > 0 ? sub.id.toString() : matchedItem.id,
+          title: sub.name,
+          icon: matchedItem.icon,
+          color: matchedItem.color,
+          iconUrl: sub.iconUrl,
+        );
+      }
+
+      return SubCategoryItem(
+        id: sub.id > 0 ? sub.id.toString() : sub.name,
+        title: sub.name,
+        icon: Icons.category_rounded,
+        color: AppColors.primary,
+        iconUrl: sub.iconUrl,
+      );
+    }).toList();
+  }
+
+  Map<String, dynamic> _subcategoryReturnExtra() {
+    return {
+      'categoryId': widget.mainCategory.id,
+      'superCategoryTitle': widget.mainCategory.name,
+      'mainCategory': widget.mainCategory,
+      'isSingleService': widget.isSingleService,
+      'initialSelectedSubCategories': _selectedSubCategoriesAsItems(),
+    };
+  }
+
+  void _returnToSubcategorySelection() {
+    OnboardingSessionGuard.instance.unlockOnForwardProgress();
+    context.go(
+      mapCategoryRoutePath(widget.mainCategory.name),
+      extra: _subcategoryReturnExtra(),
     );
   }
 
@@ -196,15 +283,10 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
                     color: isDark ? Colors.white : const Color(0xFF0F172A),
                   ),
                   onPressed: () {
-                    final hasServices = bloc.state is ServiceSuccess &&
-                        (bloc.state as ServiceSuccess)
-                            .selectedServices
-                            .isNotEmpty;
-                    if (context.canPop()) {
-                      context.pop(hasServices);
-                    } else {
-                      Navigator.of(context).maybePop(hasServices);
-                    }
+                    context.go(
+                      mapCategoryRoutePath(widget.mainCategory.name),
+                      extra: _subcategoryReturnExtra(),
+                    );
                   },
                 ),
               ),
@@ -282,11 +364,7 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
           SafeArea(
             child: BlocListener<ServiceBloc, ServiceState>(
               bloc: bloc,
-              listener: (context, state) {
-                if (state is ServiceEmpty) {
-                  _navigateToRegistration(const [], const []);
-                }
-              },
+              listener: (context, state) {},
               child: BlocBuilder<ServiceBloc, ServiceState>(
                 bloc: bloc,
                 builder: (context, state) {
@@ -416,6 +494,107 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
                                     horizontal: 24, vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else if (state is ServiceEmpty) {
+                    final subCategoryName = widget.selectedSubCategories.isNotEmpty
+                        ? widget.selectedSubCategories.first.name
+                        : widget.mainCategory.name;
+                    return Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(32),
+                        margin: const EdgeInsets.all(24),
+                        constraints: const BoxConstraints(maxWidth: 480),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? const Color(0xFF1E293B).withValues(alpha: 0.7)
+                              : Colors.white.withValues(alpha: 0.95),
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.08)
+                                : Colors.black.withValues(alpha: 0.06),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.home_repair_service_rounded,
+                                color: AppColors.primary,
+                                size: 44,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              subCategoryName,
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'No specific sub-service packages listed under this category. You can proceed directly with $subCategoryName.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.outfit(
+                                fontSize: 14,
+                                color: isDark ? Colors.white70 : Colors.black54,
+                                height: 1.4,
+                              ),
+                            ),
+                            const SizedBox(height: 28),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 52,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  if (context.canPop()) {
+                                    _returnToSubcategorySelection();
+                                  } else {
+                                    final mappedSubs =
+                                        _selectedSubCategoriesAsItems();
+                                    _navigateToRegistration(mappedSubs, const []);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                child: Text(
+                                  'CONTINUE WITH THIS CATEGORY',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
@@ -743,11 +922,7 @@ class _SelectServicePageState extends ConsumerState<SelectServicePage> {
                                         ),
                                       );
                                     }
-                                  : () {
-                                      OnboardingSessionGuard.instance
-                                          .unlockOnForwardProgress();
-                                      context.pop(true);
-                                    },
+                                  : () => _returnToSubcategorySelection(),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,

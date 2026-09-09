@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../di/injection_container.dart' as di;
 import '../../features/auth/data/datasources/auth_local_data_source.dart';
 import 'onboarding_session_guard.dart';
 import 'payment_session_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../router/app_routes.dart';
 
 class OnboardingNavigationService {
   OnboardingNavigationService._();
@@ -67,9 +68,6 @@ class OnboardingNavigationService {
     final bool businessRegistrationDone =
         data['business_registration_done'] ?? false;
     final bool subscription = data['subscription'] ?? false;
-    final bool isTelecallerOnboarded = data['is_telecaller_onboarded'] ?? false;
-    final bool telecallerServicesUpdated =
-        data['telecaller_services_updated'] ?? false;
 
     final profile = await _loadCachedProfile();
     final firstName = profile?['firstName'] ?? 'Partner';
@@ -79,14 +77,10 @@ class OnboardingNavigationService {
 
     if (configureSession) {
       final onboardingIncomplete = !subscription &&
-          (isTelecallerOnboarded
-              ? (!telecallerServicesUpdated ||
-                  !availabilityAdded ||
-                  !businessRegistrationDone)
-              : (!servicesAdded ||
-                  !registrationDone ||
-                  !availabilityAdded ||
-                  !businessRegistrationDone));
+          (!servicesAdded ||
+              !registrationDone ||
+              !availabilityAdded ||
+              !businessRegistrationDone);
 
       await OnboardingSessionGuard.instance.configureOnAppLaunch(
         paymentCompleted: subscription,
@@ -102,44 +96,20 @@ class OnboardingNavigationService {
     if (!context.mounted) return;
 
     if (!otpVerified) {
-      context.go('/login');
+      context.go(AppRoutes.login);
       return;
     }
 
-    if (isTelecallerOnboarded && !telecallerServicesUpdated) {
-      context.go('/telecaller-vendor-services-update');
-      return;
-    }
-
-    if (!servicesAdded && !isTelecallerOnboarded) {
+    if (!servicesAdded) {
       OnboardingSessionGuard.instance.forceResumeSession();
-      context.go('/map');
-      return;
-    }
-
-    if (isTelecallerOnboarded && !availabilityAdded) {
-      OnboardingSessionGuard.instance.forceResumeSession();
-      context.go(
-        '/vendor-availability',
-        extra: {
-          'mainCategoryId': 1,
-          'mainCategoryName': 'Services',
-          'selectedSubCategories': const [],
-          'selectedServiceTypes': const [],
-          'firstName': firstName,
-          'lastName': lastName,
-          'businessName': businessName,
-          'isSingleService': false,
-          'isTelecallerOnboarded': true,
-        },
-      );
+      context.go(AppRoutes.map);
       return;
     }
 
     if (!registrationDone) {
       OnboardingSessionGuard.instance.forceResumeSession();
       context.go(
-        '/vendor-registration',
+        AppRoutes.vendorRegistration,
         extra: {
           'mainCategoryId': 1,
           'mainCategoryName': 'Services',
@@ -150,10 +120,10 @@ class OnboardingNavigationService {
       return;
     }
 
-    if (!isTelecallerOnboarded && !availabilityAdded) {
+    if (!availabilityAdded) {
       OnboardingSessionGuard.instance.forceResumeSession();
       context.go(
-        '/vendor-availability',
+        AppRoutes.vendorAvailability,
         extra: {
           'mainCategoryId': 1,
           'mainCategoryName': 'Home Services',
@@ -171,7 +141,7 @@ class OnboardingNavigationService {
     if (!businessRegistrationDone) {
       OnboardingSessionGuard.instance.forceResumeSession();
       context.go(
-        '/business-registration',
+        AppRoutes.businessRegistration,
         extra: {
           'firstName': firstName,
           'lastName': lastName,
@@ -184,11 +154,11 @@ class OnboardingNavigationService {
 
     if (!subscription) {
       OnboardingSessionGuard.instance.forceResumeSession();
-      context.go('/subscription');
+      context.go(AppRoutes.subscription);
       return;
     }
 
-    context.go('/home');
+    context.go(AppRoutes.home);
   }
 
   static Future<bool> fetchStatusAndNavigate(
@@ -238,6 +208,6 @@ class OnboardingNavigationService {
       onboardingIncomplete: true,
     );
     if (!context.mounted) return;
-    context.go('/map');
+    context.go(AppRoutes.map);
   }
 }
