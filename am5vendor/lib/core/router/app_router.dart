@@ -366,9 +366,33 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const TermsConditionsScreen(),
     ),
     GoRoute(
+      path: '/terms-condition',
+      redirect: (context, state) => AppRoutes.termsConditions,
+    ),
+    GoRoute(
+      path: '/terms-and-conditions',
+      redirect: (context, state) => AppRoutes.termsConditions,
+    ),
+    GoRoute(
+      path: '/termsandconditions',
+      redirect: (context, state) => AppRoutes.termsConditions,
+    ),
+    GoRoute(
+      path: '/terms',
+      redirect: (context, state) => AppRoutes.termsConditions,
+    ),
+    GoRoute(
       path: AppRoutes.privacyPolicy,
       name: AppRouteNames.privacyPolicy,
       builder: (context, state) => const PrivacyPolicyScreen(),
+    ),
+    GoRoute(
+      path: '/privacy-policy',
+      redirect: (context, state) => AppRoutes.privacyPolicy,
+    ),
+    GoRoute(
+      path: '/privacy',
+      redirect: (context, state) => AppRoutes.privacyPolicy,
     ),
     GoRoute(
       path: AppRoutes.myEarnings,
