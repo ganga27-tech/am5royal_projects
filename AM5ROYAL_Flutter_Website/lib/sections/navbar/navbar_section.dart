@@ -31,12 +31,15 @@ class NavbarSection extends StatefulWidget {
   });
 
   final NavbarSectionId currentSection;
+
   final ValueChanged<NavbarSectionId> onSectionSelected;
 
   final VoidCallback? onLoginPressed;
   final VoidCallback? onRegisterPressed;
+
   final bool isAuthenticated;
   final String? customerName;
+
   final VoidCallback? onLogout;
   final VoidCallback? onBookService;
 
@@ -47,15 +50,25 @@ class NavbarSection extends StatefulWidget {
 class _NavbarSectionState extends State<NavbarSection> {
   bool _menuOpen = false;
 
-  void _selectSection(NavbarSectionId section) {
-    widget.onSectionSelected(section);
+  // ===========================================================================
+  // SECTION SELECTION
+  // ===========================================================================
 
+  void _selectSection(NavbarSectionId section) {
+    // Close mobile menu first.
     if (_menuOpen) {
       setState(() {
         _menuOpen = false;
       });
     }
+
+    // Parent controls the actual section content and browser hash.
+    widget.onSectionSelected(section);
   }
+
+  // ===========================================================================
+  // AUTH
+  // ===========================================================================
 
   void _login() {
     widget.onLoginPressed?.call();
@@ -65,23 +78,36 @@ class _NavbarSectionState extends State<NavbarSection> {
     widget.onRegisterPressed?.call();
   }
 
+  // ===========================================================================
+  // BUILD
+  // ===========================================================================
+
   @override
   Widget build(BuildContext context) {
     final double width = MediaQuery.sizeOf(context).width;
 
-    // Full desktop navigation only when there is enough space.
+    // Full desktop navigation only when enough horizontal space exists.
     final bool isDesktop = width >= 1200;
 
     final bool isHome = widget.currentSection == NavbarSectionId.home;
 
+    final Color navbarBackground = isHome ? Colors.white : AppColors.navy;
+
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
+        // =====================================================================
+        // MAIN NAVBAR
+        // IMPORTANT:
+        // This is a normal Container, NOT AnimatedContainer.
+        // This prevents the navbar itself from visually transitioning/blinking
+        // when changing sections.
+        // =====================================================================
+
+        Container(
           width: double.infinity,
           decoration: BoxDecoration(
-            color: isHome ? Colors.white : AppColors.navy,
+            color: navbarBackground,
             boxShadow: const [
               BoxShadow(
                 color: Color(0x18000000),
@@ -168,7 +194,10 @@ class _NavbarSectionState extends State<NavbarSection> {
           ),
         ),
 
-        // MOBILE / TABLET MENU
+        // =====================================================================
+        // MOBILE / TABLET NAVIGATION
+        // =====================================================================
+
         if (!isDesktop && _menuOpen)
           _MobileNavigation(
             currentSection: widget.currentSection,
@@ -204,6 +233,7 @@ class _BrandLogo extends StatelessWidget {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: SizedBox(
           width: 175,
@@ -212,9 +242,9 @@ class _BrandLogo extends StatelessWidget {
             AppAssets.logo,
             fit: BoxFit.contain,
             errorBuilder: (
-              context,
-              error,
-              stackTrace,
+              BuildContext context,
+              Object error,
+              StackTrace? stackTrace,
             ) {
               return Text(
                 'AM5ROYAL',
@@ -257,10 +287,6 @@ class _DesktopNavigation extends StatelessWidget {
       id: NavbarSectionId.services,
       label: 'Services',
     ),
-    // _NavbarItemData(
-    // id: NavbarSectionId.vendor,
-    //label: 'Partner with us',
-    //),
     _NavbarItemData(
       id: NavbarSectionId.customer,
       label: 'Customer',
@@ -344,31 +370,30 @@ class _DesktopNavigationItemState extends State<_DesktopNavigationItem> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) {
+        if (!mounted) return;
+
         setState(() {
           _hovered = true;
         });
       },
       onExit: (_) {
+        if (!mounted) return;
+
         setState(() {
           _hovered = false;
         });
       },
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-
-          // IMPORTANT: proper spacing between nav items
+        child: Container(
           margin: const EdgeInsets.symmetric(
             horizontal: 5,
           ),
-
           padding: const EdgeInsets.symmetric(
             horizontal: 13,
             vertical: 11,
           ),
-
           decoration: BoxDecoration(
             color: active
                 ? (widget.isHome
@@ -377,7 +402,6 @@ class _DesktopNavigationItemState extends State<_DesktopNavigationItem> {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
-
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -385,23 +409,21 @@ class _DesktopNavigationItemState extends State<_DesktopNavigationItem> {
                 widget.item.label,
                 maxLines: 1,
                 softWrap: false,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: active ? activeColor : normalColor,
-
-                  // Professional readable size
                   fontSize: 15.5,
-
                   fontWeight:
                       widget.selected ? FontWeight.w700 : FontWeight.w600,
-
                   letterSpacing: 0.1,
                 ),
               ),
+
               const SizedBox(height: 6),
-              AnimatedContainer(
-                duration: const Duration(
-                  milliseconds: 180,
-                ),
+
+              // Static indicator instead of AnimatedContainer.
+              // This avoids an unnecessary transition when switching pages.
+              Container(
                 width: widget.selected ? 32 : 0,
                 height: 2.5,
                 decoration: BoxDecoration(
@@ -418,7 +440,7 @@ class _DesktopNavigationItemState extends State<_DesktopNavigationItem> {
 }
 
 // =============================================================================
-// DESKTOP LOGIN / REGISTER
+// DESKTOP LOGIN / REGISTER / AUTHENTICATED ACTIONS
 // =============================================================================
 
 class _DesktopAuthButtons extends StatelessWidget {
@@ -433,10 +455,13 @@ class _DesktopAuthButtons extends StatelessWidget {
   });
 
   final bool isHome;
+
   final VoidCallback onLogin;
   final VoidCallback onRegister;
+
   final bool isAuthenticated;
   final String? customerName;
+
   final VoidCallback? onLogout;
   final VoidCallback? onBookService;
 
@@ -444,15 +469,23 @@ class _DesktopAuthButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     final Color blue = AppColors.royalBlue;
 
+    // =========================================================================
+    // AUTHENTICATED USER
+    // =========================================================================
+
     if (isAuthenticated) {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (customerName != null)
+          if (customerName != null && customerName!.trim().isNotEmpty)
             Padding(
-              padding: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.only(
+                right: 12,
+              ),
               child: Text(
                 customerName!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: isHome ? blue : Colors.white,
                   fontWeight: FontWeight.w700,
@@ -467,13 +500,16 @@ class _DesktopAuthButtons extends StatelessWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accentGold,
                 foregroundColor: const Color(0xFF10233D),
+                elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: const Text(
                 'Book a Service',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -490,12 +526,16 @@ class _DesktopAuthButtons extends StatelessWidget {
       );
     }
 
+    // =========================================================================
+    // LOGGED OUT USER
+    // =========================================================================
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // ===============================================================
+        // ---------------------------------------------------------------------
         // LOGIN
-        // ===============================================================
+        // ---------------------------------------------------------------------
 
         SizedBox(
           width: 155,
@@ -526,9 +566,9 @@ class _DesktopAuthButtons extends StatelessWidget {
 
         const SizedBox(width: 12),
 
-        // ===============================================================
+        // ---------------------------------------------------------------------
         // REGISTER
-        // ===============================================================
+        // ---------------------------------------------------------------------
 
         SizedBox(
           width: 155,
@@ -578,14 +618,10 @@ class _MobileMenuButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       tooltip: isOpen ? 'Close menu' : 'Open menu',
-      icon: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        child: Icon(
-          isOpen ? Icons.close_rounded : Icons.menu_rounded,
-          key: ValueKey(isOpen),
-          color: isHome ? const Color(0xFF102A43) : Colors.white,
-          size: 30,
-        ),
+      icon: Icon(
+        isOpen ? Icons.close_rounded : Icons.menu_rounded,
+        color: isHome ? const Color(0xFF102A43) : Colors.white,
+        size: 30,
       ),
     );
   }
@@ -610,11 +646,15 @@ class _MobileNavigation extends StatelessWidget {
 
   final NavbarSectionId currentSection;
   final bool isHome;
+
   final ValueChanged<NavbarSectionId> onSectionSelected;
+
   final VoidCallback onLogin;
   final VoidCallback onRegister;
+
   final bool isAuthenticated;
   final String? customerName;
+
   final VoidCallback? onLogout;
   final VoidCallback? onBookService;
 
@@ -629,11 +669,6 @@ class _MobileNavigation extends StatelessWidget {
       label: 'Services',
       icon: Icons.home_repair_service_outlined,
     ),
-    //_NavbarItemData(
-    // id: NavbarSectionId.vendor,
-    // label: 'Partner with us',
-    // icon: Icons.handshake_outlined,
-    //),
     _NavbarItemData(
       id: NavbarSectionId.customer,
       label: 'Customer',
@@ -669,6 +704,10 @@ class _MobileNavigation extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // ===================================================================
+          // NAVIGATION ITEMS
+          // ===================================================================
+
           for (final item in items)
             _MobileNavigationItem(
               key: ValueKey(item.id),
@@ -676,23 +715,33 @@ class _MobileNavigation extends StatelessWidget {
               selected: currentSection == item.id,
               isHome: isHome,
               onTap: () {
-                onSectionSelected(
-                  item.id,
-                );
+                onSectionSelected(item.id);
               },
             ),
+
           const SizedBox(height: 12),
+
           Divider(
             height: 1,
             color: isHome ? const Color(0xFFE3EAF2) : const Color(0x35FFFFFF),
           ),
+
           const SizedBox(height: 15),
+
+          // ===================================================================
+          // AUTHENTICATED MOBILE USER
+          // ===================================================================
+
           if (isAuthenticated) ...[
-            if (customerName != null)
+            if (customerName != null && customerName!.trim().isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(
+                  bottom: 10,
+                ),
                 child: Text(
                   'Hi, $customerName',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: isHome ? AppColors.royalBlue : Colors.white,
                     fontWeight: FontWeight.w800,
@@ -707,10 +756,16 @@ class _MobileNavigation extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.accentGold,
                   foregroundColor: const Color(0xFF10233D),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9),
+                  ),
                 ),
                 child: const Text(
                   'Book a Service',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
             ),
@@ -725,70 +780,89 @@ class _MobileNavigation extends StatelessWidget {
                   side: BorderSide(
                     color: isHome ? AppColors.royalBlue : Colors.white,
                   ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9),
+                  ),
                 ),
-                child: const Text('Logout'),
+                child: const Text(
+                  'Logout',
+                ),
               ),
             ),
-          ] else
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: OutlinedButton(
-                    onPressed: onLogin,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor:
-                          isHome ? AppColors.royalBlue : Colors.white,
-                      side: BorderSide(
-                        color: isHome ? AppColors.royalBlue : Colors.white,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          9,
+          ]
+
+          // ===================================================================
+          // LOGGED OUT MOBILE USER
+          // ===================================================================
+
+          else
+            Row(
+              children: [
+                // -------------------------------------------------------------
+                // LOGIN
+                // -------------------------------------------------------------
+
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: OutlinedButton(
+                      onPressed: onLogin,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor:
+                            isHome ? AppColors.royalBlue : Colors.white,
+                        side: BorderSide(
+                          color: isHome ? AppColors.royalBlue : Colors.white,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            9,
+                          ),
                         ),
                       ),
-                    ),
-                    child: const Text(
-                      'Login',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                      child: const Text(
+                        'Login',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 46,
-                  child: ElevatedButton(
-                    onPressed: onRegister,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accentGold,
-                      foregroundColor: const Color(
-                        0xFF10233D,
-                      ),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(
-                          9,
+
+                const SizedBox(width: 12),
+
+                // -------------------------------------------------------------
+                // REGISTER
+                // -------------------------------------------------------------
+
+                Expanded(
+                  child: SizedBox(
+                    height: 46,
+                    child: ElevatedButton(
+                      onPressed: onRegister,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentGold,
+                        foregroundColor: const Color(0xFF10233D),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                            9,
+                          ),
                         ),
                       ),
-                    ),
-                    child: const Text(
-                      'Register',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
+                      child: const Text(
+                        'Register',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );

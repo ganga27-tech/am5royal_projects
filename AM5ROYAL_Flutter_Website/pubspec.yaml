@@ -69,6 +69,13 @@ flutter:
   assets:
     - assets/images/am5royal_logo.png
     - assets/images/hero_boy.png
+    - assets/images/google_play_icon.png
+    - assets/images/facebook.png
+    - assets/images/whatsapp.png
+    - assets/images/instagram.png
+    - assets/images/x.png
+    - assets/images/linkedin.png
+    - assets/images/youtube.png
     - assets/images/services/
     - assets/images/upcoming_services/
 

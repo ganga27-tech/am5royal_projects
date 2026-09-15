@@ -11,23 +11,21 @@ class HowItWorksSection extends StatelessWidget {
       icon: Icons.search_rounded,
       title: 'Choose a Service',
       description:
-      'Browse categories like electrical, plumbing, cleaning, AC repair, '
+          'Browse categories like electrical, plumbing, cleaning, AC repair, '
           'painting and carpentry on the AM5ROYAL app.',
     ),
     _StepData(
       number: '02',
       icon: Icons.event_available_rounded,
       title: 'Book Your Slot',
-      description:
-      'Pick a convenient date and time, and confirm your booking '
+      description: 'Pick a convenient date and time, and confirm your booking '
           'in a few taps.',
     ),
     _StepData(
       number: '03',
       icon: Icons.handshake_rounded,
       title: 'Get Matched',
-      description:
-      'A verified vendor near you is assigned to your service '
+      description: 'A verified vendor near you is assigned to your service '
           'request automatically.',
     ),
     _StepData(
@@ -35,7 +33,7 @@ class HowItWorksSection extends StatelessWidget {
       icon: Icons.task_alt_rounded,
       title: 'Service Delivered',
       description:
-      'Your vendor completes the job. Pay securely through the app '
+          'Your vendor completes the job. Pay securely through the app '
           'and rate your experience.',
     ),
   ];
@@ -47,15 +45,29 @@ class HowItWorksSection extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF7F9FC),
+
+      // ======================================================================
+      // WEBSITE BACKGROUND COLOR
+      // ======================================================================
+
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF9EBD1),
+            Color(0xFFFCEFDD),
+          ],
+        ),
+      ),
+
       child: Column(
         children: [
           _PageHeader(
             isDesktop: isDesktop,
             eyebrow: 'HOW IT WORKS',
             title: 'Getting Started is Simple',
-            subtitle:
-            'From booking to service delivery — here is how AM5ROYAL '
+            subtitle: 'From booking to service delivery — here is how AM5ROYAL '
                 'works for you.',
           ),
           Padding(
@@ -68,22 +80,28 @@ class HowItWorksSection extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 1100),
                 child: isDesktop
                     ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (int i = 0; i < steps.length; i++) ...[
-                      if (i != 0) const SizedBox(width: 20),
-                      Expanded(child: _StepCard(step: steps[i])),
-                    ],
-                  ],
-                )
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (int i = 0; i < steps.length; i++) ...[
+                            if (i != 0) const SizedBox(width: 20),
+                            Expanded(
+                              child: _StepCard(
+                                step: steps[i],
+                              ),
+                            ),
+                          ],
+                        ],
+                      )
                     : Column(
-                  children: [
-                    for (int i = 0; i < steps.length; i++) ...[
-                      if (i != 0) const SizedBox(height: 16),
-                      _StepCard(step: steps[i]),
-                    ],
-                  ],
-                ),
+                        children: [
+                          for (int i = 0; i < steps.length; i++) ...[
+                            if (i != 0) const SizedBox(height: 16),
+                            _StepCard(
+                              step: steps[i],
+                            ),
+                          ],
+                        ],
+                      ),
               ),
             ),
           ),
@@ -94,7 +112,9 @@ class HowItWorksSection extends StatelessWidget {
 }
 
 class _StepCard extends StatelessWidget {
-  const _StepCard({required this.step});
+  const _StepCard({
+    required this.step,
+  });
 
   final _StepData step;
 
@@ -106,7 +126,9 @@ class _StepCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0x140B4EA2)),
+        border: Border.all(
+          color: const Color(0x140B4EA2),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0F0B1F3A),
@@ -127,7 +149,11 @@ class _StepCard extends StatelessWidget {
                   color: const Color(0x0D0B4EA2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(step.icon, color: AppColors.royalBlue, size: 22),
+                child: Icon(
+                  step.icon,
+                  color: AppColors.royalBlue,
+                  size: 22,
+                ),
               ),
               const Spacer(),
               Text(
@@ -178,7 +204,10 @@ class _StepData {
   final String description;
 }
 
-// Shared header widget — used only within this file.
+// =============================================================================
+// SHARED HEADER WIDGET
+// =============================================================================
+
 class _PageHeader extends StatelessWidget {
   const _PageHeader({
     required this.isDesktop,
@@ -204,12 +233,17 @@ class _PageHeader extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.navy, AppColors.royalBlue],
+          colors: [
+            AppColors.navy,
+            AppColors.royalBlue,
+          ],
         ),
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
+          constraints: const BoxConstraints(
+            maxWidth: 700,
+          ),
           child: Column(
             children: [
               Container(
@@ -220,7 +254,9 @@ class _PageHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0x18FFFFFF),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: const Color(0x35FFFFFF)),
+                  border: Border.all(
+                    color: const Color(0x35FFFFFF),
+                  ),
                 ),
                 child: Text(
                   eyebrow,

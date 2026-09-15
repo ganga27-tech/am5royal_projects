@@ -20,8 +20,13 @@ class ContactDetailsPage extends StatelessWidget {
   static const Color mutedText = Color(0xFF536985);
   static const Color borderColor = Color(0xFFDCE5EF);
 
+  // ===========================================================================
+  // CONTACT DETAILS
+  // ===========================================================================
+
   static const String phoneDisplay = '+91 9959069035';
   static const String phoneDial = '+919959069035';
+
   static const String supportEmail = 'support@am5royal.com';
 
   // ===========================================================================
@@ -96,7 +101,7 @@ class ContactDetailsPage extends StatelessWidget {
   }
 
   // ===========================================================================
-  // SNACKBAR
+  // MESSAGE
   // ===========================================================================
 
   void _showMessage(
@@ -114,134 +119,83 @@ class ContactDetailsPage extends StatelessWidget {
 
   // ===========================================================================
   // BUILD
+  // IMPORTANT:
+  // No Scaffold
+  // No AppBar
+  // No ListView
+  //
+  // HomePage already owns the main page scrolling.
   // ===========================================================================
 
   @override
   Widget build(BuildContext context) {
-    final double screenWidth = MediaQuery.sizeOf(context).width;
-
-    final bool desktop = screenWidth >= 1000;
-    final bool tablet = screenWidth >= 650 && screenWidth < 1000;
-    final bool wideCards = screenWidth >= 820;
-    final bool wideActions = screenWidth >= 600;
-
-    final double horizontalPadding;
-
-    if (desktop) {
-      horizontalPadding = 55;
-    } else if (tablet) {
-      horizontalPadding = 32;
-    } else {
-      horizontalPadding = 18;
-    }
-
-    return Scaffold(
-      backgroundColor: backgroundStart,
-
-      // =======================================================================
-      // APP BAR
-      // =======================================================================
-
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: navy,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        automaticallyImplyLeading: true,
-        titleSpacing: desktop ? 28 : 18,
-        title: const Text(
-          'Contact Us',
-          style: TextStyle(
-            color: navy,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-          ),
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[
+            backgroundStart,
+            backgroundEnd,
+          ],
         ),
       ),
+      child: LayoutBuilder(
+        builder: (
+          BuildContext context,
+          BoxConstraints constraints,
+        ) {
+          final double width = constraints.maxWidth;
 
-      // =======================================================================
-      // BODY
-      // =======================================================================
+          final bool desktop = width >= 1100;
+          final bool tablet = width >= 700 && width < 1100;
+          final bool wideCards = width >= 900;
+          final bool wideActions = width >= 650;
 
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: <Color>[
-              backgroundStart,
-              backgroundEnd,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: ListView(
+          final double horizontalPadding;
+
+          if (desktop) {
+            horizontalPadding = 55;
+          } else if (tablet) {
+            horizontalPadding = 32;
+          } else {
+            horizontalPadding = 18;
+          }
+
+          return Padding(
             padding: EdgeInsets.symmetric(
               horizontal: horizontalPadding,
-              vertical: desktop ? 55 : 35,
+              vertical: desktop ? 70 : 45,
             ),
-            children: [
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1150),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // =======================================================
-                      // HEADER
-                      // =======================================================
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 1150,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // =========================================================
+                    // HEADER
+                    // =========================================================
 
-                      _buildHeader(desktop: desktop),
+                    _buildHeader(
+                      desktop: desktop,
+                    ),
 
-                      const SizedBox(height: 38),
+                    const SizedBox(height: 40),
 
-                      // =======================================================
-                      // CONTACT INFORMATION
-                      // =======================================================
+                    // =========================================================
+                    // CONTACT CARDS
+                    // =========================================================
 
-                      if (wideCards)
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: _ContactInfoCard(
-                                  icon: Icons.phone_outlined,
-                                  title: 'Phone',
-                                  value: phoneDisplay,
-                                  actionText: 'Call Now',
-                                  onTap: () {
-                                    _callSupport(context);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-                              Expanded(
-                                child: _ContactInfoCard(
-                                  icon: Icons.email_outlined,
-                                  title: 'Email Support',
-                                  value: supportEmail,
-                                  actionText: 'Email Us',
-                                  onTap: () {
-                                    _emailSupport(context);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 18),
-                              const Expanded(
-                                child: _ContactInfoCard(
-                                  icon: Icons.access_time_rounded,
-                                  title: 'Working Hours',
-                                  value: 'Monday - Saturday\n9:30 AM - 6:30 PM',
-                                ),
-                              ),
-                            ],
-                          ),
-                        )
-                      else
-                        Column(
-                          children: [
-                            _ContactInfoCard(
+                    if (wideCards)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _ContactInfoCard(
                               icon: Icons.phone_outlined,
                               title: 'Phone',
                               value: phoneDisplay,
@@ -250,8 +204,10 @@ class ContactDetailsPage extends StatelessWidget {
                                 _callSupport(context);
                               },
                             ),
-                            const SizedBox(height: 16),
-                            _ContactInfoCard(
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: _ContactInfoCard(
                               icon: Icons.email_outlined,
                               title: 'Email Support',
                               value: supportEmail,
@@ -260,123 +216,155 @@ class ContactDetailsPage extends StatelessWidget {
                                 _emailSupport(context);
                               },
                             ),
-                            const SizedBox(height: 16),
-                            const _ContactInfoCard(
+                          ),
+                          const SizedBox(width: 18),
+                          const Expanded(
+                            child: _ContactInfoCard(
                               icon: Icons.access_time_rounded,
                               title: 'Working Hours',
                               value: 'Monday - Saturday\n9:30 AM - 6:30 PM',
                             ),
-                          ],
-                        ),
-
-                      const SizedBox(height: 28),
-
-                      // =======================================================
-                      // SUPPORT MESSAGE
-                      // =======================================================
-
-                      _buildSupportCard(),
-
-                      const SizedBox(height: 26),
-
-                      // =======================================================
-                      // QUICK ACTIONS
-                      // =======================================================
-
-                      if (wideActions)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.phone_rounded,
-                                label: 'Call Support',
-                                filled: true,
-                                onPressed: () {
-                                  _callSupport(context);
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: _QuickActionButton(
-                                icon: Icons.email_rounded,
-                                label: 'Email Support',
-                                filled: false,
-                                onPressed: () {
-                                  _emailSupport(context);
-                                },
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Column(
-                          children: [
-                            SizedBox(
-                              width: double.infinity,
-                              child: _QuickActionButton(
-                                icon: Icons.phone_rounded,
-                                label: 'Call Support',
-                                filled: true,
-                                onPressed: () {
-                                  _callSupport(context);
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: _QuickActionButton(
-                                icon: Icons.email_rounded,
-                                label: 'Email Support',
-                                filled: false,
-                                onPressed: () {
-                                  _emailSupport(context);
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-
-                      const SizedBox(height: 32),
-
-                      // =======================================================
-                      // BOTTOM TEXT
-                      // =======================================================
-
-                      const Center(
-                        child: Text(
-                          'AM5ROYAL • Professional Services Made Simple',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: mutedText,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
                           ),
-                        ),
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          _ContactInfoCard(
+                            icon: Icons.phone_outlined,
+                            title: 'Phone',
+                            value: phoneDisplay,
+                            actionText: 'Call Now',
+                            onTap: () {
+                              _callSupport(context);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _ContactInfoCard(
+                            icon: Icons.email_outlined,
+                            title: 'Email Support',
+                            value: supportEmail,
+                            actionText: 'Email Us',
+                            onTap: () {
+                              _emailSupport(context);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          const _ContactInfoCard(
+                            icon: Icons.access_time_rounded,
+                            title: 'Working Hours',
+                            value: 'Monday - Saturday\n9:30 AM - 6:30 PM',
+                          ),
+                        ],
                       ),
 
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 30),
 
-                      const Center(
-                        child: Text(
-                          'We are happy to assist you.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: mutedText,
-                            fontSize: 12,
+                    // =========================================================
+                    // SUPPORT CARD
+                    // =========================================================
+
+                    _buildSupportCard(
+                      compact: !wideActions,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // =========================================================
+                    // QUICK ACTIONS
+                    // =========================================================
+
+                    if (wideActions)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _QuickActionButton(
+                              icon: Icons.phone_rounded,
+                              label: 'Call Support',
+                              filled: true,
+                              onPressed: () {
+                                _callSupport(context);
+                              },
+                            ),
                           ),
-                        ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _QuickActionButton(
+                              icon: Icons.email_rounded,
+                              label: 'Email Support',
+                              filled: false,
+                              onPressed: () {
+                                _emailSupport(context);
+                              },
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            child: _QuickActionButton(
+                              icon: Icons.phone_rounded,
+                              label: 'Call Support',
+                              filled: true,
+                              onPressed: () {
+                                _callSupport(context);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            child: _QuickActionButton(
+                              icon: Icons.email_rounded,
+                              label: 'Email Support',
+                              filled: false,
+                              onPressed: () {
+                                _emailSupport(context);
+                              },
+                            ),
+                          ),
+                        ],
                       ),
 
-                      const SizedBox(height: 10),
-                    ],
-                  ),
+                    const SizedBox(height: 34),
+
+                    // =========================================================
+                    // FOOTER TEXT
+                    // =========================================================
+
+                    const Center(
+                      child: Text(
+                        'AM5ROYAL • Professional Services Made Simple',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: mutedText,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    const Center(
+                      child: Text(
+                        'We are happy to assist you.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: mutedText,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -437,7 +425,9 @@ class ContactDetailsPage extends StatelessWidget {
         ),
         const SizedBox(height: 18),
         ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: 700),
+          constraints: BoxConstraints(
+            maxWidth: 700,
+          ),
           child: Text(
             'Have a question, service enquiry or business requirement? '
             'Our AM5ROYAL support team is ready to assist you.',
@@ -456,10 +446,14 @@ class ContactDetailsPage extends StatelessWidget {
   // SUPPORT CARD
   // ===========================================================================
 
-  Widget _buildSupportCard() {
+  Widget _buildSupportCard({
+    required bool compact,
+  }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: EdgeInsets.all(
+        compact ? 20 : 24,
+      ),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -554,12 +548,12 @@ class _ContactInfoCardState extends State<_ContactInfoCard> {
 
   @override
   Widget build(BuildContext context) {
+    final bool clickable = widget.onTap != null;
+
     return MouseRegion(
-      cursor: widget.onTap != null
-          ? SystemMouseCursors.click
-          : SystemMouseCursors.basic,
+      cursor: clickable ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: (_) {
-        if (widget.onTap == null) {
+        if (!clickable) {
           return;
         }
 
@@ -568,7 +562,7 @@ class _ContactInfoCardState extends State<_ContactInfoCard> {
         });
       },
       onExit: (_) {
-        if (widget.onTap == null) {
+        if (!clickable) {
           return;
         }
 
@@ -607,75 +601,76 @@ class _ContactInfoCardState extends State<_ContactInfoCard> {
           child: InkWell(
             onTap: widget.onTap,
             borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: const Color(0x100B4EA2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        color: ContactDetailsPage.royalBlue,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 13),
-                    Expanded(
-                      child: Text(
-                        widget.title,
-                        style: const TextStyle(
-                          color: ContactDetailsPage.navy,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  widget.value,
-                  style: TextStyle(
-                    color: widget.onTap != null
-                        ? ContactDetailsPage.royalBlue
-                        : ContactDetailsPage.mutedText,
-                    fontSize: 13,
-                    fontWeight: widget.onTap != null
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                    height: 1.5,
-                  ),
-                ),
-                if (widget.actionText != null) ...[
-                  const SizedBox(height: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        widget.actionText!,
-                        style: const TextStyle(
+                      Container(
+                        width: 46,
+                        height: 46,
+                        decoration: BoxDecoration(
+                          color: const Color(0x100B4EA2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          widget.icon,
                           color: ContactDetailsPage.royalBlue,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
+                          size: 24,
                         ),
                       ),
-                      const SizedBox(width: 5),
-                      const Icon(
-                        Icons.arrow_forward_rounded,
-                        color: ContactDetailsPage.royalBlue,
-                        size: 15,
+                      const SizedBox(width: 13),
+                      Expanded(
+                        child: Text(
+                          widget.title,
+                          style: const TextStyle(
+                            color: ContactDetailsPage.navy,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 14),
+                  Text(
+                    widget.value,
+                    style: TextStyle(
+                      color: clickable
+                          ? ContactDetailsPage.royalBlue
+                          : ContactDetailsPage.mutedText,
+                      fontSize: 13,
+                      fontWeight: clickable ? FontWeight.w600 : FontWeight.w400,
+                      height: 1.5,
+                    ),
+                  ),
+                  if (widget.actionText != null) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          widget.actionText!,
+                          style: const TextStyle(
+                            color: ContactDetailsPage.royalBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: ContactDetailsPage.royalBlue,
+                          size: 15,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -724,63 +719,65 @@ class _QuickActionButtonState extends State<_QuickActionButton> {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
+        curve: Curves.easeOut,
         transform: Matrix4.translationValues(
           0,
           _hovered ? -2 : 0,
           0,
         ),
-        child: widget.filled
-            ? ElevatedButton.icon(
-                onPressed: widget.onPressed,
-                icon: Icon(
-                  widget.icon,
-                  size: 19,
-                ),
-                label: Text(
-                  widget.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
+        child: SizedBox(
+          height: 52,
+          child: widget.filled
+              ? ElevatedButton.icon(
+                  onPressed: widget.onPressed,
+                  icon: Icon(
+                    widget.icon,
+                    size: 19,
+                  ),
+                  label: Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ContactDetailsPage.royalBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                  ),
+                )
+              : OutlinedButton.icon(
+                  onPressed: widget.onPressed,
+                  icon: Icon(
+                    widget.icon,
+                    size: 19,
+                  ),
+                  label: Text(
+                    widget.label,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ContactDetailsPage.royalBlue,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 22,
+                    ),
+                    side: const BorderSide(
+                      color: ContactDetailsPage.royalBlue,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(11),
+                    ),
                   ),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ContactDetailsPage.royalBlue,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                    horizontal: 22,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                ),
-              )
-            : OutlinedButton.icon(
-                onPressed: widget.onPressed,
-                icon: Icon(
-                  widget.icon,
-                  size: 19,
-                ),
-                label: Text(
-                  widget.label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: ContactDetailsPage.royalBlue,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 15,
-                    horizontal: 22,
-                  ),
-                  side: const BorderSide(
-                    color: ContactDetailsPage.royalBlue,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                ),
-              ),
+        ),
       ),
     );
   }

@@ -8,43 +8,37 @@ class PrivacyPolicySection extends StatelessWidget {
   static const List<_PolicyBlock> blocks = [
     _PolicyBlock(
       title: 'Information We Collect',
-      body:
-      'We collect information you provide directly — such as your name, '
+      body: 'We collect information you provide directly — such as your name, '
           'phone number, email, address and payment details — as well as '
           'usage data like booking history and app activity.',
     ),
     _PolicyBlock(
       title: 'How We Use Your Information',
-      body:
-      'Your information is used to process bookings, connect you with '
+      body: 'Your information is used to process bookings, connect you with '
           'verified vendors, improve our services, and communicate '
           'important updates related to your account.',
     ),
     _PolicyBlock(
       title: 'Sharing of Information',
-      body:
-      'We share only the necessary details with vendors and '
+      body: 'We share only the necessary details with vendors and '
           'freelancers to fulfil your service request. We do not sell your '
           'personal information to third parties.',
     ),
     _PolicyBlock(
       title: 'Data Security',
-      body:
-      'AM5ROYAL uses industry-standard security measures to protect '
+      body: 'AM5ROYAL uses industry-standard security measures to protect '
           'your data against unauthorized access, alteration or '
           'disclosure.',
     ),
     _PolicyBlock(
       title: 'Your Rights',
-      body:
-      'You may access, update or request deletion of your personal '
+      body: 'You may access, update or request deletion of your personal '
           'information at any time through the app or by contacting our '
           'support team.',
     ),
     _PolicyBlock(
       title: 'Changes to This Policy',
-      body:
-      'We may update this policy periodically. Continued use of the '
+      body: 'We may update this policy periodically. Continued use of the '
           'app after changes indicates your acceptance of the revised '
           'policy.',
     ),
@@ -82,17 +76,22 @@ class _LegalPage extends StatelessWidget {
 
     return Container(
       width: double.infinity,
+
+      // =========================================================================
+      // WEBSITE BACKGROUND COLOR
+      // =========================================================================
+
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFF7F9FD),
-            Color(0xFFFFFFFF),
-            Color(0xFFF4F8FF),
+            Color(0xFFF9EBD1),
+            Color(0xFFFCEFDD),
           ],
         ),
       ),
+
       child: Column(
         children: [
           Container(
@@ -105,12 +104,17 @@ class _LegalPage extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.navy, AppColors.royalBlue],
+                colors: [
+                  AppColors.navy,
+                  AppColors.royalBlue,
+                ],
               ),
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 700),
+                constraints: const BoxConstraints(
+                  maxWidth: 700,
+                ),
                 child: Column(
                   children: [
                     Container(
@@ -121,7 +125,9 @@ class _LegalPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: const Color(0x18FFFFFF),
                         borderRadius: BorderRadius.circular(30),
-                        border: Border.all(color: const Color(0x35FFFFFF)),
+                        border: Border.all(
+                          color: const Color(0x35FFFFFF),
+                        ),
                       ),
                       child: Text(
                         eyebrow,
@@ -156,12 +162,16 @@ class _LegalPage extends StatelessWidget {
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
+                constraints: const BoxConstraints(
+                  maxWidth: 800,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (int i = 0; i < blocks.length; i++) ...[
-                      _PolicySection(block: blocks[i]),
+                      _PolicySection(
+                        block: blocks[i],
+                      ),
                       if (i != blocks.length - 1) const SizedBox(height: 18),
                     ],
                   ],
@@ -175,8 +185,14 @@ class _LegalPage extends StatelessWidget {
   }
 }
 
+// =============================================================================
+// POLICY SECTION
+// =============================================================================
+
 class _PolicySection extends StatelessWidget {
-  const _PolicySection({required this.block});
+  const _PolicySection({
+    required this.block,
+  });
 
   final _PolicyBlock block;
 
@@ -187,7 +203,9 @@ class _PolicySection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x140B4EA2)),
+        border: Border.all(
+          color: const Color(0x140B4EA2),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0D0B1F3A),
@@ -244,8 +262,15 @@ class _PolicySection extends StatelessWidget {
   }
 }
 
+// =============================================================================
+// POLICY DATA
+// =============================================================================
+
 class _PolicyBlock {
-  const _PolicyBlock({required this.title, required this.body});
+  const _PolicyBlock({
+    required this.title,
+    required this.body,
+  });
 
   final String title;
   final String body;

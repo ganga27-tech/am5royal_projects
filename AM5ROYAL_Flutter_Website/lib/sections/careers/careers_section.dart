@@ -117,7 +117,8 @@ class _CareersHeader extends StatelessWidget {
           child: Column(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
                 decoration: BoxDecoration(
                   color: const Color(0x18FFFFFF),
                   borderRadius: BorderRadius.circular(30),
@@ -217,7 +218,8 @@ class _OpenPositions extends StatelessWidget {
                 const Center(
                   child: Padding(
                     padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(color: AppColors.royalBlue),
+                    child:
+                        CircularProgressIndicator(color: AppColors.royalBlue),
                   ),
                 )
               else if (error != null)
@@ -229,7 +231,8 @@ class _OpenPositions extends StatelessWidget {
                         style: TextStyle(color: Colors.red.shade700),
                       ),
                       const SizedBox(height: 12),
-                      OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+                      OutlinedButton(
+                          onPressed: onRetry, child: const Text('Retry')),
                     ],
                   ),
                 )
@@ -266,7 +269,8 @@ class _OpenPositions extends StatelessWidget {
                         opening: openings[index],
                         onApply: () => onApply(openings[index]),
                       ),
-                      if (index < openings.length - 1) const SizedBox(height: 14),
+                      if (index < openings.length - 1)
+                        const SizedBox(height: 14),
                     ],
                   ],
                 ),
@@ -379,7 +383,8 @@ class _JobCardState extends State<_JobCard> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: _hovered ? const Color(0x120B4EA2) : Colors.transparent,
+                    color:
+                        _hovered ? const Color(0x120B4EA2) : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -398,7 +403,8 @@ class _JobCardState extends State<_JobCard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.navy,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   minimumSize: const Size(0, 36),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(
