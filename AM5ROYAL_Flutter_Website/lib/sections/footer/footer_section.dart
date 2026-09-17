@@ -58,8 +58,7 @@ class FooterSection extends StatelessWidget {
         );
       }
     } catch (_) {
-      // Keep the website stable if the external destination
-      // is unavailable.
+      // Keep website stable if external destination is unavailable.
     }
   }
 
@@ -69,7 +68,7 @@ class FooterSection extends StatelessWidget {
 
   static Future<void> openSupportEmail() async {
     // ------------------------------------------------------------------------
-    // FLUTTER WEB
+    // FLUTTER WEB - OPEN GMAIL COMPOSE
     // ------------------------------------------------------------------------
 
     if (kIsWeb) {
@@ -162,6 +161,10 @@ class FooterSection extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // ==================================================================
+          // FOOTER MAIN CONTENT
+          // ==================================================================
+
           Padding(
             padding: const EdgeInsets.fromLTRB(
               36,
@@ -447,7 +450,10 @@ class _SocialMediaRow extends StatelessWidget {
     ),
   ];
 
+  // Same gap between all containers.
   static const double _spacing = 8;
+
+  // Same outer container size range.
   static const double _maxIconSize = 58;
   static const double _minIconSize = 34;
 
@@ -530,47 +536,50 @@ class _SocialIconState extends State<_SocialIcon> {
   bool _hovered = false;
   bool _pressed = false;
 
-  // --------------------------------------------------------------------------
-  // Visual scale
+  // ==========================================================================
+  // VISUAL SIZE NORMALIZATION
   //
-  // Each PNG asset has a different amount of internal transparent
-  // padding (WhatsApp and LinkedIn are near-edge-to-edge glyphs,
-  // while Facebook, Instagram, X and YouTube have a lot of empty
-  // canvas around a small centered mark). Because of that, the same
-  // Image width does NOT produce the same visible icon size.
+  // WhatsApp is used as the visual reference.
   //
-  // These values were derived by measuring the actual rendered glyph
-  // size (as a fraction of the box) for each icon and scaling every
-  // icon up to match WhatsApp/LinkedIn's visual footprint, so all six
-  // icons now look the same size. The outer tappable container stays
-  // exactly the same size for every icon (`widget.size`) — only the
-  // glyph inside it is scaled.
-  // --------------------------------------------------------------------------
+  // Your PNG files have different transparent padding.
+  // Therefore, using the same Image width alone does NOT make the visible
+  // logos look the same size.
+  //
+  // These multipliers compensate for that transparent padding.
+  //
+  // IMPORTANT:
+  // Outer containers remain EXACTLY the same size.
+  // Only the visible PNG inside is scaled.
+  // ==========================================================================
 
   double _getVisualScale(String label) {
     switch (label) {
       case 'Facebook':
-        return 2.9;
-
-      case 'Instagram':
-        return 3.0;
-
-      case 'X':
-        return 2.3;
-
-      case 'YouTube':
-        return 3.15;
+        return 3.20;
 
       case 'WhatsApp':
-        return 1.0;
+        return 1.00;
+
+      case 'Instagram':
+        return 3.70;
+
+      case 'X':
+        return 2.35;
 
       case 'LinkedIn':
-        return 1.0;
+        return 1.40;
+
+      case 'YouTube':
+        return 3.20;
 
       default:
-        return 1.0;
+        return 1.00;
     }
   }
+
+  // ==========================================================================
+  // OPEN SOCIAL MEDIA
+  // ==========================================================================
 
   Future<void> _openSocial() async {
     await FooterSection.openExternalUrl(
@@ -578,11 +587,16 @@ class _SocialIconState extends State<_SocialIcon> {
     );
   }
 
+  // ==========================================================================
+  // BUILD
+  // ==========================================================================
+
   @override
   Widget build(BuildContext context) {
     final bool active = _hovered || _pressed;
 
-    const double glyphRatio = 38 / 58;
+    // Same base image area for every icon.
+    const double glyphRatio = 40 / 58;
 
     final double glyphSize = widget.size * glyphRatio;
 
@@ -598,34 +612,86 @@ class _SocialIconState extends State<_SocialIcon> {
         ),
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
+
+          // ------------------------------------------------------------------
+          // HOVER ON
+          // ------------------------------------------------------------------
+
           onEnter: (_) {
+            if (!mounted) {
+              return;
+            }
+
             setState(() {
               _hovered = true;
             });
           },
+
+          // ------------------------------------------------------------------
+          // HOVER OFF
+          // ------------------------------------------------------------------
+
           onExit: (_) {
+            if (!mounted) {
+              return;
+            }
+
             setState(() {
               _hovered = false;
             });
           },
+
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
+
+            // ----------------------------------------------------------------
+            // PRESS DOWN
+            // ----------------------------------------------------------------
+
             onTapDown: (_) {
+              if (!mounted) {
+                return;
+              }
+
               setState(() {
                 _pressed = true;
               });
             },
+
+            // ----------------------------------------------------------------
+            // PRESS CANCEL
+            // ----------------------------------------------------------------
+
             onTapCancel: () {
+              if (!mounted) {
+                return;
+              }
+
               setState(() {
                 _pressed = false;
               });
             },
+
+            // ----------------------------------------------------------------
+            // PRESS UP
+            // ----------------------------------------------------------------
+
             onTapUp: (_) {
+              if (!mounted) {
+                return;
+              }
+
               setState(() {
                 _pressed = false;
               });
             },
+
+            // ----------------------------------------------------------------
+            // CLICK
+            // ----------------------------------------------------------------
+
             onTap: _openSocial,
+
             child: AnimatedContainer(
               duration: const Duration(
                 milliseconds: 180,
@@ -633,7 +699,7 @@ class _SocialIconState extends State<_SocialIcon> {
               curve: Curves.easeOut,
 
               // ==============================================================
-              // OUTER CONTAINER — UNCHANGED
+              // SAME OUTER CONTAINER SIZE
               // ==============================================================
 
               width: widget.size,
@@ -675,28 +741,37 @@ class _SocialIconState extends State<_SocialIcon> {
               ),
 
               // ==============================================================
-              // ONLY THE VISIBLE ICON IS SCALED
+              // ICON AREA
               // ==============================================================
 
-              child: Center(
-                child: Transform.scale(
-                  scale: visualScale,
-                  child: Image.asset(
-                    widget.data.assetPath,
-                    width: glyphSize,
-                    height: glyphSize,
-                    fit: BoxFit.contain,
-                    errorBuilder: (
-                      BuildContext context,
-                      Object error,
-                      StackTrace? stackTrace,
-                    ) {
-                      return Icon(
-                        widget.data.fallbackIcon,
-                        color: Colors.white,
-                        size: glyphSize * 0.9,
-                      );
-                    },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  widget.size * 0.22,
+                ),
+                child: Center(
+                  child: Transform.scale(
+                    scale: visualScale,
+                    child: SizedBox(
+                      width: glyphSize,
+                      height: glyphSize,
+                      child: Image.asset(
+                        widget.data.assetPath,
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
+                        errorBuilder: (
+                          BuildContext context,
+                          Object error,
+                          StackTrace? stackTrace,
+                        ) {
+                          return Icon(
+                            widget.data.fallbackIcon,
+                            color: Colors.white,
+                            size: glyphSize * 0.9,
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -969,12 +1044,20 @@ class _FooterLinkState extends State<_FooterLink> {
             return;
           }
 
+          if (!mounted) {
+            return;
+          }
+
           setState(() {
             _hovered = true;
           });
         },
         onExit: (_) {
           if (!clickable) {
+            return;
+          }
+
+          if (!mounted) {
             return;
           }
 
@@ -1038,12 +1121,20 @@ class _ContactItemState extends State<_ContactItem> {
             return;
           }
 
+          if (!mounted) {
+            return;
+          }
+
           setState(() {
             _hovered = true;
           });
         },
         onExit: (_) {
           if (!clickable) {
+            return;
+          }
+
+          if (!mounted) {
             return;
           }
 

@@ -18,6 +18,7 @@ class RegisterPage extends StatefulWidget {
 
 class _RegisterPageState extends State<RegisterPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _mobileController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -28,19 +29,38 @@ class _RegisterPageState extends State<RegisterPage> {
   bool _otpSent = false;
   bool _acceptedTerms = false;
   bool _isLoading = false;
+
   String? _errorMessage;
 
   static const Color backgroundStart = Color(0xFFF9EBD1);
   static const Color backgroundEnd = Color(0xFFFCEFDD);
+
   static const Color navy = Color(0xFF082B5C);
   static const Color royalBlue = Color(0xFF0B4EA2);
   static const Color gold = Color(0xFFF5B301);
 
+  // ===========================================================================
+  // SEND OTP
+  // ===========================================================================
+
   Future<void> _sendOtp() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) return;
+
+    final FormState? form = _formKey.currentState;
+
+    if (form == null || !form.validate()) {
+      return;
+    }
+
     if (!_acceptedTerms) {
-      _showMessage('Please accept the Terms & Conditions.', isError: true);
+      _showMessage(
+        'Please accept the Terms & Conditions.',
+        isError: true,
+      );
+      return;
+    }
+
+    if (_isLoading) {
       return;
     }
 
@@ -50,30 +70,66 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
+      final String mobile = _mobileController.text.trim();
+      final String email = _emailController.text.trim();
+
       await _auth.sendOtp(
-        mobile: _mobileController.text.trim().isNotEmpty
-            ? _mobileController.text.trim()
-            : null,
-        email: _emailController.text.trim().isNotEmpty
-            ? _emailController.text.trim()
-            : null,
+        mobile: mobile.isNotEmpty ? mobile : null,
+        email: email.isNotEmpty ? email : null,
       );
-      if (!mounted) return;
-      setState(() => _otpSent = true);
+
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _otpSent = true;
+        _errorMessage = null;
+      });
+
       _showMessage('OTP sent successfully.');
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _auth.friendlyError(e));
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = _auth.friendlyError(e);
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+
+  // ===========================================================================
+  // VERIFY OTP + REGISTER
+  // ===========================================================================
 
   Future<void> _verifyAndRegister() async {
     FocusScope.of(context).unfocus();
+
+    if (_isLoading) {
+      return;
+    }
+
     final String otp = _otpController.text.trim();
-    if (otp.length != 5) {
-      setState(() => _errorMessage = 'Enter the 5-digit OTP.');
+
+    if (otp.length != 5 || !RegExp(r'^[0-9]{5}$').hasMatch(otp)) {
+      setState(() {
+        _errorMessage = 'Enter the 5-digit OTP.';
+      });
+      return;
+    }
+
+    if (!_acceptedTerms) {
+      _showMessage(
+        'Please accept the Terms & Conditions.',
+        isError: true,
+      );
       return;
     }
 
@@ -83,35 +139,65 @@ class _RegisterPageState extends State<RegisterPage> {
     });
 
     try {
+      final String mobile = _mobileController.text.trim();
+      final String email = _emailController.text.trim();
+      final String fullName = _nameController.text.trim();
+
       final bool isNewUser = await _auth.verifyOtp(
-        mobile: _mobileController.text.trim().isNotEmpty
-            ? _mobileController.text.trim()
-            : null,
-        email: _emailController.text.trim().isNotEmpty
-            ? _emailController.text.trim()
-            : null,
+        mobile: mobile.isNotEmpty ? mobile : null,
+        email: email.isNotEmpty ? email : null,
         otp: otp,
       );
 
-      if (_nameController.text.trim().isNotEmpty) {
-        await _auth.updateProfile(fullName: _nameController.text.trim());
+      if (fullName.isNotEmpty) {
+        await _auth.updateProfile(
+          fullName: fullName,
+        );
       } else if (isNewUser) {
-        await _auth.updateProfile(fullName: 'Customer');
+        await _auth.updateProfile(
+          fullName: 'Customer',
+        );
       }
 
-      if (!mounted) return;
+      if (!mounted) {
+        return;
+      }
+
+      // Important:
+      // Do NOT call Navigator.pop() here.
+      // Parent/app handles successful registration navigation.
       widget.onRegisterSuccess?.call();
-      Navigator.of(context).pop(true);
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _auth.friendlyError(e));
+      if (!mounted) {
+        return;
+      }
+
+      setState(() {
+        _errorMessage = _auth.friendlyError(e);
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  void _showMessage(String message, {bool isError = false}) {
+  // ===========================================================================
+  // MESSAGE
+  // ===========================================================================
+
+  void _showMessage(
+    String message, {
+    bool isError = false,
+  }) {
+    if (!mounted) {
+      return;
+    }
+
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -120,6 +206,10 @@ class _RegisterPageState extends State<RegisterPage> {
       ),
     );
   }
+
+  // ===========================================================================
+  // DISPOSE
+  // ===========================================================================
 
   @override
   void dispose() {
@@ -130,16 +220,28 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  // ===========================================================================
+  // BUILD
+  // ===========================================================================
+
   @override
   Widget build(BuildContext context) {
-    final bool desktop = MediaQuery.sizeOf(context).width >= 850;
+    final double width = MediaQuery.sizeOf(context).width;
+    final bool desktop = width >= 850;
 
     return Scaffold(
       backgroundColor: backgroundStart,
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [backgroundStart, backgroundEnd],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              backgroundStart,
+              backgroundEnd,
+            ],
           ),
         ),
         child: SafeArea(
@@ -150,7 +252,9 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: const BoxConstraints(
+                  maxWidth: 480,
+                ),
                 child: _buildRegisterCard(),
               ),
             ),
@@ -160,16 +264,24 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ===========================================================================
+  // REGISTER CARD
+  // ===========================================================================
+
   Widget _buildRegisterCard() {
     final bool mobileEntered = _mobileController.text.trim().isNotEmpty;
+
     final bool emailEntered = _emailController.text.trim().isNotEmpty;
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0x18082B5C)),
+        border: Border.all(
+          color: const Color(0x18082B5C),
+        ),
         boxShadow: const [
           BoxShadow(
             color: Color(0x22082B5C),
@@ -183,116 +295,220 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Create Account',
-              style: TextStyle(
-                color: navy,
-                fontSize: 30,
-                fontWeight: FontWeight.w900,
+            // -----------------------------------------------------------------
+            // HEADER
+            // -----------------------------------------------------------------
+
+            const Center(
+              child: Icon(
+                Icons.person_add_alt_1_rounded,
+                size: 52,
+                color: royalBlue,
               ),
             ),
-            const SizedBox(height: 5),
-            const Text(
-              'Register with OTP — same account as the AM5 ROYAL app',
-              style: TextStyle(color: Color(0xFF65758B), fontSize: 13),
+
+            const SizedBox(height: 18),
+
+            const Center(
+              child: Text(
+                'Create Account',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: navy,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.5,
+                ),
+              ),
             ),
-            const SizedBox(height: 25),
+
+            const SizedBox(height: 6),
+
+            const Center(
+              child: Text(
+                'Register with OTP to get started with AM5 ROYAL',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Color(0xFF65758B),
+                  fontSize: 13,
+                  height: 1.5,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 26),
+
+            // -----------------------------------------------------------------
+            // FULL NAME
+            // -----------------------------------------------------------------
+
             TextFormField(
               controller: _nameController,
+              enabled: !_isLoading,
               textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
               decoration: _inputDecoration(
                 hint: 'Full name',
                 icon: Icons.person_outline_rounded,
               ),
               validator: (value) {
-                if ((value ?? '').trim().length < 2) {
+                final String name = value?.trim() ?? '';
+
+                if (name.isEmpty) {
                   return 'Enter your name';
                 }
+
+                if (name.length < 2) {
+                  return 'Enter a valid name';
+                }
+
                 return null;
               },
             ),
+
             const SizedBox(height: 16),
+
+            // -----------------------------------------------------------------
+            // MOBILE
+            // -----------------------------------------------------------------
+
             TextFormField(
               controller: _mobileController,
-              enabled: !emailEntered && !_otpSent,
+              enabled: !emailEntered && !_otpSent && !_isLoading,
               keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.next,
               maxLength: 10,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                if (mounted) {
+                  setState(() {});
+                }
+              },
               decoration: _inputDecoration(
                 hint: 'Mobile number',
                 icon: Icons.phone_outlined,
-              ).copyWith(counterText: '', prefixText: '+91 '),
+              ).copyWith(
+                counterText: '',
+                prefixText: '+91 ',
+              ),
               validator: (value) {
-                final mobile = value?.trim() ?? '';
-                final email = _emailController.text.trim();
+                final String mobile = value?.trim() ?? '';
+
+                final String email = _emailController.text.trim();
+
                 if (mobile.isEmpty && email.isEmpty) {
                   return 'Enter mobile number or email';
                 }
+
                 if (mobile.isNotEmpty &&
                     !RegExp(r'^[6-9][0-9]{9}$').hasMatch(mobile)) {
                   return 'Enter a valid 10-digit mobile number';
                 }
+
                 return null;
               },
             ),
+
             const SizedBox(height: 16),
+
+            // -----------------------------------------------------------------
+            // EMAIL
+            // -----------------------------------------------------------------
+
             TextFormField(
               controller: _emailController,
-              enabled: !mobileEntered && !_otpSent,
+              enabled: !mobileEntered && !_otpSent && !_isLoading,
               keyboardType: TextInputType.emailAddress,
-              onChanged: (_) => setState(() {}),
+              textInputAction: TextInputAction.next,
+              onChanged: (_) {
+                if (mounted) {
+                  setState(() {});
+                }
+              },
               decoration: _inputDecoration(
-                hint: 'Email address (optional)',
+                hint: 'Email address',
                 icon: Icons.email_outlined,
               ),
               validator: (value) {
-                final email = value?.trim() ?? '';
-                if (email.isEmpty && _mobileController.text.trim().isEmpty) {
+                final String email = value?.trim() ?? '';
+
+                final String mobile = _mobileController.text.trim();
+
+                if (email.isEmpty && mobile.isEmpty) {
                   return 'Enter mobile number or email';
                 }
+
                 if (email.isNotEmpty &&
-                    !RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                    !RegExp(
+                      r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+                    ).hasMatch(email)) {
                   return 'Enter a valid email address';
                 }
+
                 return null;
               },
             ),
+
+            // -----------------------------------------------------------------
+            // OTP
+            // -----------------------------------------------------------------
+
             if (_otpSent) ...[
               const SizedBox(height: 16),
               TextFormField(
                 controller: _otpController,
+                enabled: !_isLoading,
                 keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
                 maxLength: 5,
+                autofocus: true,
+                onFieldSubmitted: (_) {
+                  if (!_isLoading) {
+                    _verifyAndRegister();
+                  }
+                },
                 decoration: _inputDecoration(
                   hint: 'Enter 5-digit OTP',
                   icon: Icons.lock_clock_outlined,
-                ).copyWith(counterText: ''),
-              ),
-            ],
-            if (_errorMessage != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                _errorMessage!,
-                style: const TextStyle(
-                  color: Colors.redAccent,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                ).copyWith(
+                  counterText: '',
                 ),
               ),
             ],
-            const SizedBox(height: 18),
+
+            // -----------------------------------------------------------------
+            // ERROR
+            // -----------------------------------------------------------------
+
+            if (_errorMessage != null) ...[
+              const SizedBox(height: 12),
+              _buildErrorMessage(),
+            ],
+
+            const SizedBox(height: 14),
+
+            // -----------------------------------------------------------------
+            // TERMS
+            // -----------------------------------------------------------------
+
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Checkbox(
                   value: _acceptedTerms,
                   activeColor: royalBlue,
-                  onChanged: (value) =>
-                      setState(() => _acceptedTerms = value ?? false),
+                  onChanged: _isLoading
+                      ? null
+                      : (value) {
+                          setState(() {
+                            _acceptedTerms = value ?? false;
+                          });
+                        },
                 ),
                 const Expanded(
                   child: Padding(
-                    padding: EdgeInsets.only(top: 11),
+                    padding: EdgeInsets.only(
+                      top: 11,
+                    ),
                     child: Text(
                       'I agree to the Terms & Conditions and Privacy Policy.',
                       style: TextStyle(
@@ -305,10 +521,16 @@ class _RegisterPageState extends State<RegisterPage> {
                 ),
               ],
             ),
+
             const SizedBox(height: 10),
+
+            // -----------------------------------------------------------------
+            // MAIN BUTTON
+            // -----------------------------------------------------------------
+
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading
                     ? null
@@ -316,38 +538,77 @@ class _RegisterPageState extends State<RegisterPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: royalBlue,
                   foregroundColor: Colors.white,
+                  disabledBackgroundColor: const Color(0xFF9DB5D2),
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                 ),
                 child: _isLoading
                     ? const SizedBox(
-                        width: 21,
-                        height: 21,
+                        width: 22,
+                        height: 22,
                         child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                          strokeWidth: 2.2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       )
                     : Text(
                         _otpSent ? 'Verify & Create Account' : 'Send OTP',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
               ),
             ),
+
+            // -----------------------------------------------------------------
+            // RESEND OTP
+            // -----------------------------------------------------------------
+
+            if (_otpSent) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton(
+                  onPressed: _isLoading ? null : _sendOtp,
+                  child: const Text(
+                    'Resend OTP',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 18),
+
+            // -----------------------------------------------------------------
+            // LOGIN
+            // -----------------------------------------------------------------
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text(
                   'Already have an account?',
-                  style: TextStyle(color: Color(0xFF65758B), fontSize: 13),
+                  style: TextStyle(
+                    color: Color(0xFF65758B),
+                    fontSize: 13,
+                  ),
                 ),
                 TextButton(
-                  onPressed: widget.onLoginPressed,
+                  onPressed: _isLoading ? null : widget.onLoginPressed,
                   child: const Text(
                     'Login',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      color: royalBlue,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                 ),
               ],
@@ -358,26 +619,97 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 
+  // ===========================================================================
+  // ERROR MESSAGE
+  // ===========================================================================
+
+  Widget _buildErrorMessage() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: 10,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF1F1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: const Color(0x22D32F2F),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.error_outline_rounded,
+            size: 18,
+            color: Colors.redAccent,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: const TextStyle(
+                color: Colors.redAccent,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // INPUT DECORATION
+  // ===========================================================================
+
   InputDecoration _inputDecoration({
     required String hint,
     required IconData icon,
   }) {
     return InputDecoration(
       hintText: hint,
-      prefixIcon: Icon(icon, color: royalBlue, size: 20),
+      prefixIcon: Icon(
+        icon,
+        color: royalBlue,
+        size: 20,
+      ),
       filled: true,
       fillColor: const Color(0xFFF8FAFD),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+        borderSide: const BorderSide(
+          color: Color(0xFFE0E7EF),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: Color(0xFFE0E7EF)),
+        borderSide: const BorderSide(
+          color: Color(0xFFE0E7EF),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(11),
-        borderSide: const BorderSide(color: royalBlue, width: 1.5),
+        borderSide: const BorderSide(
+          color: royalBlue,
+          width: 1.5,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(11),
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(11),
+        borderSide: const BorderSide(
+          color: Colors.redAccent,
+          width: 1.5,
+        ),
       ),
     );
   }

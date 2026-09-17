@@ -52,18 +52,30 @@ class _HomeCtaSectionState extends State<HomeCtaSection>
     super.dispose();
   }
 
+  // ===========================================================================
+  // OPEN GOOGLE PLAY STORE
+  // ===========================================================================
+
   Future<void> _openPlayStore() async {
     final Uri uri = Uri.parse(
       'https://play.google.com/store/apps/details?id=com.am5royal.am5royal',
     );
 
     try {
-      await launchUrl(
+      final bool launched = await launchUrl(
         uri,
+        mode: LaunchMode.externalApplication,
         webOnlyWindowName: '_blank',
       );
+
+      if (!launched) {
+        await launchUrl(
+          uri,
+          webOnlyWindowName: '_blank',
+        );
+      }
     } catch (_) {
-      // Do nothing. Website will continue working.
+      // Keep website stable if Play Store cannot be opened.
     }
   }
 
@@ -425,8 +437,8 @@ class _GooglePlayButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 2,
           padding: const EdgeInsets.symmetric(
-            horizontal: 17,
-            vertical: 7,
+            horizontal: 15,
+            vertical: 6,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(11),
@@ -438,13 +450,24 @@ class _GooglePlayButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              'assets/images/google_play_icon.png',
-              width: 29,
-              height: 29,
-              fit: BoxFit.contain,
+            // =================================================================
+            // GOOGLE PLAY STORE ICON
+            // =================================================================
+
+            const SizedBox(
+              width: 31,
+              height: 31,
+              child: CustomPaint(
+                painter: _GooglePlayIconPainter(),
+              ),
             ),
+
             const SizedBox(width: 9),
+
+            // =================================================================
+            // GOOGLE PLAY TEXT
+            // =================================================================
+
             const Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,7 +483,7 @@ class _GooglePlayButton extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Google Play',
+                  'Play Store',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 14,
@@ -474,6 +497,128 @@ class _GooglePlayButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// =============================================================================
+// GOOGLE PLAY STORE ICON
+//
+// Draws the Google Play triangular logo directly in Flutter.
+// This avoids any dependency on google_play_icon.png.
+// =============================================================================
+
+class _GooglePlayIconPainter extends CustomPainter {
+  const _GooglePlayIconPainter();
+
+  @override
+  void paint(
+    Canvas canvas,
+    Size size,
+  ) {
+    final double w = size.width;
+    final double h = size.height;
+
+    // ========================================================================
+    // BLUE MAIN PLAY SHAPE
+    // ========================================================================
+
+    final Path bluePath = Path()
+      ..moveTo(w * 0.10, h * 0.07)
+      ..quadraticBezierTo(
+        w * 0.05,
+        h * 0.10,
+        w * 0.05,
+        h * 0.18,
+      )
+      ..lineTo(w * 0.05, h * 0.82)
+      ..quadraticBezierTo(
+        w * 0.05,
+        h * 0.90,
+        w * 0.10,
+        h * 0.93,
+      )
+      ..lineTo(w * 0.57, h * 0.50)
+      ..close();
+
+    final Paint bluePaint = Paint()
+      ..color = const Color(0xFF00A4EF)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      bluePath,
+      bluePaint,
+    );
+
+    // ========================================================================
+    // GREEN SECTION
+    // ========================================================================
+
+    final Path greenPath = Path()
+      ..moveTo(w * 0.10, h * 0.07)
+      ..lineTo(w * 0.72, h * 0.40)
+      ..lineTo(w * 0.57, h * 0.50)
+      ..close();
+
+    final Paint greenPaint = Paint()
+      ..color = const Color(0xFF00D084)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      greenPath,
+      greenPaint,
+    );
+
+    // ========================================================================
+    // YELLOW SECTION
+    // ========================================================================
+
+    final Path yellowPath = Path()
+      ..moveTo(w * 0.57, h * 0.50)
+      ..lineTo(w * 0.72, h * 0.60)
+      ..lineTo(w * 0.10, h * 0.93)
+      ..close();
+
+    final Paint yellowPaint = Paint()
+      ..color = const Color(0xFFFFD500)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      yellowPath,
+      yellowPaint,
+    );
+
+    // ========================================================================
+    // RED SECTION
+    // ========================================================================
+
+    final Path redPath = Path()
+      ..moveTo(w * 0.72, h * 0.40)
+      ..lineTo(w * 0.88, h * 0.48)
+      ..quadraticBezierTo(
+        w * 0.96,
+        h * 0.50,
+        w * 0.88,
+        h * 0.55,
+      )
+      ..lineTo(w * 0.72, h * 0.60)
+      ..lineTo(w * 0.57, h * 0.50)
+      ..close();
+
+    final Paint redPaint = Paint()
+      ..color = const Color(0xFFFF3B30)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(
+      redPath,
+      redPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(
+    covariant CustomPainter oldDelegate,
+  ) {
+    return false;
   }
 }
 

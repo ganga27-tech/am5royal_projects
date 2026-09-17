@@ -5,26 +5,28 @@ import '../core/seo/seo_metadata.dart';
 import '../core/seo/seo_routes.dart';
 import '../core/seo/seo_service.dart';
 import '../core/utils/vendor_navigation.dart';
+
 import '../features/auth/services/auth_service.dart';
 import '../features/booking/models/booking_models.dart';
 import '../features/booking/pages/booking_flow_page.dart';
+
 import '../sections/careers/careers_section.dart';
 import '../sections/faqs/faqs_section.dart';
 import '../sections/footer/footer_section.dart';
 import '../sections/freelancer/freelancer_section.dart';
+
 import '../sections/home/hero_section.dart';
 import '../sections/home/home_cta_section.dart' as home_cta;
 import '../sections/home/our_services_section.dart';
 import '../sections/home/upcoming_services_section.dart';
 import '../sections/home/why_choose_section.dart';
+
 import '../sections/how_it_works/how_it_works_section.dart';
 import '../sections/navbar/navbar_section.dart';
 import '../sections/privacy_policy/privacy_policy_section.dart';
 import '../sections/terms_conditions/terms_conditions_section.dart';
 
 import 'contact_details_page.dart';
-import 'login_page.dart';
-import 'register_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({
@@ -41,8 +43,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final ScrollController _scrollController = ScrollController();
 
-  final GlobalKey _servicesSectionKey = GlobalKey();
-
   NavbarSectionId _currentSection = NavbarSectionId.home;
 
   static const Color backgroundStart = Color(0xFFF9EBD1);
@@ -53,51 +53,34 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    _bootstrapFromUrl();
+    // --------------------------------------------------
+    // READ CURRENT BROWSER HASH
+    // --------------------------------------------------
+
+    _currentSection = SeoService.sectionFromCurrentPath();
+
+    // --------------------------------------------------
+    // INITIAL SEO
+    // --------------------------------------------------
+
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(
+        _currentSection,
+      ),
+    );
+
+    // --------------------------------------------------
+    // BROWSER BACK / FORWARD
+    // --------------------------------------------------
 
     SeoService.listenToNavigation(
       _handleBrowserNavigation,
     );
   }
 
-  // ===========================================================================
-  // URL / SEO
-  // ===========================================================================
-
-  void _bootstrapFromUrl() {
-    final NavbarSectionId section = SeoService.sectionFromCurrentPath();
-
-    if (section == NavbarSectionId.services) {
-      _currentSection = NavbarSectionId.home;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToServices();
-      });
-    } else if (section == NavbarSectionId.contact) {
-      // FIX: direct URL load (e.g. refreshing on /contact) must open the
-      // ContactDetailsPage instead of falling through to the empty
-      // SizedBox.shrink() branch in _buildCurrentContent().
-      _currentSection = NavbarSectionId.home;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (BuildContext context) => const ContactDetailsPage(),
-          ),
-        );
-      });
-    } else {
-      _currentSection = section;
-    }
-
-    SeoService.applyMetadata(
-      SeoRoutes.metadataForSection(section),
-    );
-  }
+  // ==========================================================
+  // BROWSER BACK / FORWARD / HASH CHANGE
+  // ==========================================================
 
   void _handleBrowserNavigation(
     NavbarSectionId section,
@@ -106,145 +89,109 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    if (section == NavbarSectionId.services) {
-      setState(() {
-        _currentSection = NavbarSectionId.home;
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToServices();
-      });
-    } else if (section == NavbarSectionId.contact) {
-      // FIX: browser back/forward navigation to the contact route must also
-      // open the ContactDetailsPage instead of rendering an empty section.
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) => const ContactDetailsPage(),
-        ),
-      );
-
-      SeoService.applyMetadata(
-        SeoRoutes.metadataForSection(section),
-      );
-
+    if (_currentSection == section) {
       return;
-    } else {
-      setState(() {
-        _currentSection = section;
-      });
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scrollController.hasClients) {
-          _scrollController.jumpTo(0);
-        }
-      });
     }
 
+    setState(() {
+      _currentSection = section;
+    });
+
     SeoService.applyMetadata(
-      SeoRoutes.metadataForSection(section),
+      SeoRoutes.metadataForSection(
+        section,
+      ),
     );
+
+    _scrollToTop();
   }
 
-  // ===========================================================================
-  // NAVIGATION
-  // ===========================================================================
+  // ==========================================================
+  // NAVBAR NAVIGATION
+  // ==========================================================
 
   void _handleNavigation(
     NavbarSectionId section,
   ) {
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
     // VENDOR
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
 
     if (section == NavbarSectionId.vendor) {
       VendorNavigation.openVendorLogin();
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // CONTACT
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // SAME SECTION
+    // --------------------------------------------------
 
-    if (section == NavbarSectionId.contact) {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
-          builder: (BuildContext context) => const ContactDetailsPage(),
-        ),
-      );
-
+    if (_currentSection == section) {
+      _scrollToTop();
       return;
     }
 
-    // -------------------------------------------------------------------------
-    // SERVICES
-    // -------------------------------------------------------------------------
-
-    if (section == NavbarSectionId.services) {
-      setState(() {
-        _currentSection = NavbarSectionId.home;
-      });
-
-      SeoService.applySection(
-        NavbarSectionId.services,
-      );
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToServices();
-      });
-
-      return;
-    }
-
-    // -------------------------------------------------------------------------
-    // OTHER SECTIONS
-    // -------------------------------------------------------------------------
+    // --------------------------------------------------
+    // CHANGE SECTION IMMEDIATELY
+    // --------------------------------------------------
 
     setState(() {
       _currentSection = section;
     });
 
-    SeoService.applySection(section);
+    // --------------------------------------------------
+    // SEO
+    // --------------------------------------------------
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
-        return;
-      }
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(
+        section,
+      ),
+    );
 
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeOutCubic,
-      );
-    });
+    // --------------------------------------------------
+    // BROWSER HASH
+    // --------------------------------------------------
+
+    SeoService.updateBrowserPath(
+      SeoRoutes.pathForSection(
+        section,
+      ),
+    );
+
+    _scrollToTop();
   }
 
-  // ===========================================================================
-  // SERVICES SCROLL
-  // ===========================================================================
+  // ==========================================================
+  // SCROLL TO TOP
+  // ==========================================================
 
-  void _scrollToServices() {
-    final BuildContext? sectionContext = _servicesSectionKey.currentContext;
+  void _scrollToTop() {
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) {
+        if (!mounted) {
+          return;
+        }
 
-    if (sectionContext == null) {
-      return;
-    }
+        if (!_scrollController.hasClients) {
+          return;
+        }
 
-    Scrollable.ensureVisible(
-      sectionContext,
-      duration: const Duration(milliseconds: 650),
-      curve: Curves.easeOutCubic,
-      alignment: 0.05,
+        _scrollController.jumpTo(0);
+      },
     );
   }
 
-  // ===========================================================================
+  // ==========================================================
   // BOOK SERVICE
-  // ===========================================================================
+  // ==========================================================
 
   Future<void> _handleBookService() async {
     if (!mounted) {
       return;
     }
+
+    final NavbarSectionId previousSection = _currentSection;
 
     SeoService.applyMetadata(
       SeoMetadata.booking,
@@ -252,9 +199,11 @@ class _HomePageState extends State<HomePage> {
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => const BookingFlowPage(
-          initialCategoryId: BookingConfig.homeServicesCategoryId,
-        ),
+        builder: (BuildContext context) {
+          return const BookingFlowPage(
+            initialCategoryId: BookingConfig.homeServicesCategoryId,
+          );
+        },
       ),
     );
 
@@ -262,24 +211,50 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    SeoService.applySection(
-      _currentSection,
+    setState(() {
+      _currentSection = previousSection;
+    });
+
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(
+        previousSection,
+      ),
     );
+
+    SeoService.updateBrowserPath(
+      SeoRoutes.pathForSection(
+        previousSection,
+      ),
+    );
+
+    _scrollToTop();
   }
 
-  Future<void> _handleSubcategorySelected(ServiceSubcategory subcategory) async {
+  // ==========================================================
+  // SUBCATEGORY SELECTED
+  // ==========================================================
+
+  Future<void> _handleSubcategorySelected(
+    ServiceSubcategory subcategory,
+  ) async {
     if (!mounted) {
       return;
     }
 
-    SeoService.applyMetadata(SeoMetadata.booking);
+    final NavbarSectionId previousSection = _currentSection;
+
+    SeoService.applyMetadata(
+      SeoMetadata.booking,
+    );
 
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (BuildContext context) => BookingFlowPage(
-          initialCategoryId: BookingConfig.homeServicesCategoryId,
-          initialSubcategoryId: subcategory.id,
-        ),
+        builder: (BuildContext context) {
+          return BookingFlowPage(
+            initialCategoryId: BookingConfig.homeServicesCategoryId,
+            initialSubcategoryId: subcategory.id,
+          );
+        },
       ),
     );
 
@@ -287,54 +262,48 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    SeoService.applySection(_currentSection);
+    setState(() {
+      _currentSection = previousSection;
+    });
+
+    SeoService.applyMetadata(
+      SeoRoutes.metadataForSection(
+        previousSection,
+      ),
+    );
+
+    SeoService.updateBrowserPath(
+      SeoRoutes.pathForSection(
+        previousSection,
+      ),
+    );
+
+    _scrollToTop();
   }
 
-  // ===========================================================================
+  // ==========================================================
   // LOGIN
-  // ===========================================================================
+  // ==========================================================
 
   void _handleLogin() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => LoginPage(
-          onRegisterPressed: _handleRegister,
-          onLoginSuccess: () {
-            if (!mounted) {
-              return;
-            }
-
-            setState(() {});
-          },
-        ),
-      ),
+    Navigator.of(context).pushReplacementNamed(
+      '/login',
     );
   }
 
-  // ===========================================================================
+  // ==========================================================
   // REGISTER
-  // ===========================================================================
+  // ==========================================================
 
   void _handleRegister() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (BuildContext context) => RegisterPage(
-          onLoginPressed: _handleLogin,
-          onRegisterSuccess: () {
-            if (!mounted) {
-              return;
-            }
-
-            setState(() {});
-          },
-        ),
-      ),
+    Navigator.of(context).pushReplacementNamed(
+      '/register',
     );
   }
 
-  // ===========================================================================
+  // ==========================================================
   // LOGOUT
-  // ===========================================================================
+  // ==========================================================
 
   Future<void> _handleLogout() async {
     await widget.authService.logout();
@@ -346,86 +315,137 @@ class _HomePageState extends State<HomePage> {
     setState(() {});
   }
 
-  // ===========================================================================
-  // SERVICE CARD SELECTED
-  // ===========================================================================
+  // ==========================================================
+  // SERVICE CARD -> HOME
+  // ==========================================================
 
   void _handleServiceCardSelected() {
     if (_currentSection != NavbarSectionId.home) {
       setState(() {
         _currentSection = NavbarSectionId.home;
       });
+
+      SeoService.applyMetadata(
+        SeoRoutes.metadataForSection(
+          NavbarSectionId.home,
+        ),
+      );
+
+      SeoService.updateBrowserPath(
+        SeoRoutes.pathForSection(
+          NavbarSectionId.home,
+        ),
+      );
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) {
-        return;
-      }
-
-      _scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 650),
-        curve: Curves.easeOutCubic,
-      );
-    });
+    _scrollToTop();
   }
 
-  // ===========================================================================
-  // CURRENT CONTENT
-  // ===========================================================================
+  // ==========================================================
+  // CURRENT SECTION CONTENT
+  // ==========================================================
 
   Widget _buildCurrentContent() {
     switch (_currentSection) {
+      // ------------------------------------------------------
+      // HOME
+      // ------------------------------------------------------
+
       case NavbarSectionId.home:
         return _HomeContent(
           onServiceSelected: _handleServiceCardSelected,
           onSubcategorySelected: _handleSubcategorySelected,
           onBookService: _handleBookService,
-          servicesSectionKey: _servicesSectionKey,
         );
 
+      // ------------------------------------------------------
+      // SERVICES
+      //
+      // IMPORTANT:
+      // Services click opens:
+      //
+      // 1. Our Services
+      // 2. Upcoming Services
+      //
+      // Same sections used on Home.
+      // ------------------------------------------------------
+
       case NavbarSectionId.services:
-        return _ServicesContent(
+        return _ServicesPageContent(
+          onSubcategorySelected: _handleSubcategorySelected,
           onBookService: _handleBookService,
         );
 
+      // ------------------------------------------------------
+      // VENDOR
+      // ------------------------------------------------------
+
       case NavbarSectionId.vendor:
         return const _VendorContent();
+
+      // ------------------------------------------------------
+      // CUSTOMER
+      // ------------------------------------------------------
 
       case NavbarSectionId.customer:
         return _CustomerContent(
           onBookService: _handleBookService,
         );
 
+      // ------------------------------------------------------
+      // FREELANCER
+      // ------------------------------------------------------
+
       case NavbarSectionId.freelancer:
         return const FreelancerSection();
+
+      // ------------------------------------------------------
+      // CAREERS
+      // ------------------------------------------------------
 
       case NavbarSectionId.careers:
         return const CareersSection();
 
-      // Contact opens separately as a pushed route (see _handleNavigation,
-      // _handleBrowserNavigation and _bootstrapFromUrl), so there is
-      // intentionally nothing to render inline here.
+      // ------------------------------------------------------
+      // CONTACT
+      // ------------------------------------------------------
+
       case NavbarSectionId.contact:
-        return const SizedBox.shrink();
+        return const ContactDetailsPage();
+
+      // ------------------------------------------------------
+      // HOW IT WORKS
+      // ------------------------------------------------------
 
       case NavbarSectionId.howItWorks:
         return const HowItWorksSection();
 
+      // ------------------------------------------------------
+      // FAQS
+      // ------------------------------------------------------
+
       case NavbarSectionId.faqs:
         return const FaqsSection();
 
+      // ------------------------------------------------------
+      // PRIVACY POLICY
+      // ------------------------------------------------------
+
       case NavbarSectionId.privacyPolicy:
         return const PrivacyPolicySection();
+
+      // ------------------------------------------------------
+      // TERMS & CONDITIONS
+      // ------------------------------------------------------
 
       case NavbarSectionId.termsConditions:
         return const TermsConditionsSection();
     }
   }
 
-  // ===========================================================================
+  // ==========================================================
   // BUILD
-  // ===========================================================================
+  // ==========================================================
 
   @override
   Widget build(BuildContext context) {
@@ -443,75 +463,69 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
         ),
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // =================================================================
-              // NAVBAR
-              // =================================================================
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ==================================================
+            // NAVBAR
+            // ==================================================
 
-              NavbarSection(
-                currentSection: _currentSection,
-                onSectionSelected: _handleNavigation,
-                onLoginPressed: _handleLogin,
-                onRegisterPressed: _handleRegister,
-                isAuthenticated: widget.authService.isAuthenticated,
-                customerName: widget.authService.profile?.fullName,
-                onLogout: _handleLogout,
-                onBookService: _handleBookService,
-              ),
+            NavbarSection(
+              currentSection: _currentSection,
+              onSectionSelected: _handleNavigation,
+              onLoginPressed: _handleLogin,
+              onRegisterPressed: _handleRegister,
+              isAuthenticated: widget.authService.isAuthenticated,
+              customerName: widget.authService.profile?.fullName,
+              onLogout: _handleLogout,
+              onBookService: _handleBookService,
+            ),
 
-              // =================================================================
-              // CONTENT
-              // =================================================================
+            // ==================================================
+            // PAGE CONTENT
+            // ==================================================
 
-              AnimatedSwitcher(
-                duration: const Duration(
-                  milliseconds: 300,
-                ),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
-                child: KeyedSubtree(
-                  key: ValueKey<NavbarSectionId>(
-                    _currentSection,
-                  ),
-                  child: _buildCurrentContent(),
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildCurrentContent(),
+                    FooterSection(
+                      onSectionSelected: _handleNavigation,
+                    ),
+                  ],
                 ),
               ),
-
-              // =================================================================
-              // FOOTER
-              // =================================================================
-
-              FooterSection(
-                onSectionSelected: _handleNavigation,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // ==========================================================
+  // DISPOSE
+  // ==========================================================
+
   @override
   void dispose() {
     _scrollController.dispose();
+
     super.dispose();
   }
 }
 
-// =============================================================================
+// ============================================================================
 // HOME CONTENT
-// =============================================================================
+// ============================================================================
 
 class _HomeContent extends StatefulWidget {
   const _HomeContent({
     required this.onServiceSelected,
     required this.onSubcategorySelected,
     required this.onBookService,
-    required this.servicesSectionKey,
   });
 
   final VoidCallback onServiceSelected;
@@ -519,8 +533,6 @@ class _HomeContent extends StatefulWidget {
   final ValueChanged<ServiceSubcategory> onSubcategorySelected;
 
   final VoidCallback onBookService;
-
-  final GlobalKey servicesSectionKey;
 
   @override
   State<_HomeContent> createState() => _HomeContentState();
@@ -555,9 +567,9 @@ class _HomeContentState extends State<_HomeContent> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // =====================================================================
+        // ======================================================
         // HERO
-        // =====================================================================
+        // ======================================================
 
         HeroSection(
           highlightCta: _highlightCta,
@@ -565,35 +577,32 @@ class _HomeContentState extends State<_HomeContent> {
           onPartnerPressed: VendorNavigation.openVendorLogin,
         ),
 
-        // =====================================================================
+        // ======================================================
         // OUR SERVICES
-        // =====================================================================
+        // ======================================================
 
-        KeyedSubtree(
-          key: widget.servicesSectionKey,
-          child: OurServicesSection(
-            onSubcategorySelected: widget.onSubcategorySelected,
-            onBookService: widget.onBookService,
-          ),
+        OurServicesSection(
+          onSubcategorySelected: widget.onSubcategorySelected,
+          onBookService: widget.onBookService,
         ),
 
-        // =====================================================================
+        // ======================================================
         // UPCOMING SERVICES
-        // =====================================================================
+        // ======================================================
 
         UpcomingServicesSection(
           onServiceSelected: _handleServiceSelected,
         ),
 
-        // =====================================================================
-        // WHY CHOOSE
-        // =====================================================================
+        // ======================================================
+        // WHY CHOOSE US
+        // ======================================================
 
         const WhyChooseSection(),
 
-        // =====================================================================
-        // APP CTA
-        // =====================================================================
+        // ======================================================
+        // HOME CTA
+        // ======================================================
 
         home_cta.HomeCtaSection(
           highlightCta: _highlightCta,
@@ -603,37 +612,57 @@ class _HomeContentState extends State<_HomeContent> {
   }
 }
 
-// =============================================================================
-// SERVICES PAGE
-// =============================================================================
+// ============================================================================
+// SERVICES PAGE CONTENT
+// ============================================================================
+//
+// SERVICES NAVBAR CLICK:
+//
+// Our Services
+//      ↓
+// Upcoming Services
+//
+// Exact same existing sections from Home.
+// No backend/API changes.
+// ============================================================================
 
-class _ServicesContent extends StatelessWidget {
-  const _ServicesContent({
+class _ServicesPageContent extends StatelessWidget {
+  const _ServicesPageContent({
+    required this.onSubcategorySelected,
     required this.onBookService,
   });
+
+  final ValueChanged<ServiceSubcategory> onSubcategorySelected;
 
   final VoidCallback onBookService;
 
   @override
   Widget build(BuildContext context) {
-    return _SimpleContent(
-      eyebrow: 'OUR SERVICES',
-      title: 'Professional Services',
-      highlightedTitle: 'At Your Doorstep.',
-      description:
-          'Find reliable professionals for your home and business needs. '
-          'AM5ROYAL brings multiple services together on one convenient platform.',
-      primaryButton: 'Book a Service',
-      secondaryButton: 'Become a Partner',
-      onPrimaryPressed: onBookService,
-      onSecondaryPressed: VendorNavigation.openVendorLogin,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // ======================================================
+        // OUR SERVICES
+        // ======================================================
+
+        OurServicesSection(
+          onSubcategorySelected: onSubcategorySelected,
+          onBookService: onBookService,
+        ),
+
+        // ======================================================
+        // UPCOMING SERVICES
+        // ======================================================
+
+        const UpcomingServicesSection(),
+      ],
     );
   }
 }
 
-// =============================================================================
-// VENDOR PAGE
-// =============================================================================
+// ============================================================================
+// VENDOR CONTENT
+// ============================================================================
 
 class _VendorContent extends StatelessWidget {
   const _VendorContent();
@@ -644,8 +673,8 @@ class _VendorContent extends StatelessWidget {
       eyebrow: 'AM5ROYAL PARTNERS',
       title: 'Become a',
       highlightedTitle: 'Trusted Partner.',
-      description:
-          'Grow your service business by connecting with customers looking '
+      description: 'Grow your service business by '
+          'connecting with customers looking '
           'for trusted professionals.',
       primaryButton: 'Partner With Us',
       secondaryButton: 'Learn More',
@@ -654,9 +683,9 @@ class _VendorContent extends StatelessWidget {
   }
 }
 
-// =============================================================================
-// CUSTOMER PAGE
-// =============================================================================
+// ============================================================================
+// CUSTOMER CONTENT
+// ============================================================================
 
 class _CustomerContent extends StatelessWidget {
   const _CustomerContent({
@@ -667,143 +696,23 @@ class _CustomerContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool desktop = MediaQuery.sizeOf(context).width >= 900;
-
-    return Container(
-      width: double.infinity,
-      constraints: const BoxConstraints(
-        minHeight: 620,
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: desktop ? 70 : 24,
-        vertical: 70,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF9EBD1),
-            Color(0xFFFCEFDD),
-          ],
-        ),
-      ),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 1150,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 15,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(
-                    0x120B4EA2,
-                  ),
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(
-                    color: const Color(
-                      0x300B4EA2,
-                    ),
-                  ),
-                ),
-                child: const Text(
-                  'CUSTOMER EXPERIENCE',
-                  style: TextStyle(
-                    color: Color(0xFF0B4EA2),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ),
-              Text(
-                'Your Services.',
-                style: TextStyle(
-                  color: const Color(
-                    0xFF0B1F3A,
-                  ),
-                  fontSize: desktop ? 52 : 38,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ),
-              ),
-              Text(
-                'Made Simple.',
-                style: TextStyle(
-                  color: const Color(
-                    0xFF0B4EA2,
-                  ),
-                  fontSize: desktop ? 52 : 38,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: 650,
-                ),
-                child: Text(
-                  'Book trusted professionals for your home service needs '
-                  'with AM5ROYAL. Simple booking, reliable professionals '
-                  'and convenient service management.',
-                  style: TextStyle(
-                    color: Color(0xFF536985),
-                    fontSize: 16,
-                    height: 1.7,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                height: 30,
-              ),
-              ElevatedButton(
-                onPressed: onBookService,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(
-                    0xFF0B4EA2,
-                  ),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 15,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      11,
-                    ),
-                  ),
-                ),
-                child: const Text(
-                  'Book a Service',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    return _SimpleContent(
+      eyebrow: 'FOR CUSTOMERS',
+      title: 'Trusted Services',
+      highlightedTitle: 'When You Need Them.',
+      description: 'Book reliable professionals for your '
+          'home and business needs with a simple '
+          'and convenient experience.',
+      primaryButton: 'Book a Service',
+      secondaryButton: 'Explore Services',
+      onPrimaryPressed: onBookService,
     );
   }
 }
 
-// =============================================================================
+// ============================================================================
 // SIMPLE CONTENT
-// =============================================================================
+// ============================================================================
 
 class _SimpleContent extends StatelessWidget {
   const _SimpleContent({
@@ -812,7 +721,7 @@ class _SimpleContent extends StatelessWidget {
     required this.highlightedTitle,
     required this.description,
     required this.primaryButton,
-    required this.secondaryButton,
+    this.secondaryButton,
     this.onPrimaryPressed,
     this.onSecondaryPressed,
   });
@@ -821,181 +730,124 @@ class _SimpleContent extends StatelessWidget {
   final String title;
   final String highlightedTitle;
   final String description;
+
   final String primaryButton;
-  final String secondaryButton;
+
+  final String? secondaryButton;
+
   final VoidCallback? onPrimaryPressed;
+
   final VoidCallback? onSecondaryPressed;
 
   @override
   Widget build(BuildContext context) {
-    final bool desktop = MediaQuery.sizeOf(context).width >= 900;
+    final double width = MediaQuery.sizeOf(context).width;
+
+    final bool isMobile = width < 700;
 
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(
-        minHeight: 620,
+        minHeight: 560,
       ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF9EBD1),
-            Color(0xFFFCEFDD),
-          ],
-        ),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 24 : 80,
+        vertical: isMobile ? 70 : 100,
       ),
       child: Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: desktop ? 70 : 24,
-            vertical: desktop ? 80 : 55,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 1100,
           ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: 1150,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 3,
-                      decoration: BoxDecoration(
-                        color: const Color(
-                          0xFFF5B301,
-                        ),
-                        borderRadius: BorderRadius.circular(
-                          20,
-                        ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ==================================================
+              // EYEBROW
+              // ==================================================
+
+              Text(
+                eyebrow,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      letterSpacing: 2.2,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+
+              const SizedBox(
+                height: 18,
+              ),
+
+              // ==================================================
+              // TITLE
+              // ==================================================
+
+              Text(
+                title,
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+              ),
+
+              Text(
+                highlightedTitle,
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
+                    ),
+              ),
+
+              const SizedBox(
+                height: 28,
+              ),
+
+              // ==================================================
+              // DESCRIPTION
+              // ==================================================
+
+              ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 720,
+                ),
+                child: Text(
+                  description,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        height: 1.7,
                       ),
-                    ),
-                    const SizedBox(
-                      width: 11,
-                    ),
-                    Text(
-                      eyebrow,
-                      style: const TextStyle(
-                        color: Color(
-                          0xFF0B4EA2,
-                        ),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1.8,
-                      ),
-                    ),
-                  ],
                 ),
-                const SizedBox(
-                  height: 20,
-                ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: const Color(
-                      0xFF0B1F3A,
-                    ),
-                    fontSize: desktop ? 52 : 38,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                Text(
-                  highlightedTitle,
-                  style: TextStyle(
-                    color: const Color(
-                      0xFF0B4EA2,
-                    ),
-                    fontSize: desktop ? 52 : 38,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(
-                  height: 22,
-                ),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxWidth: 650,
-                  ),
-                  child: Text(
-                    description,
-                    style: const TextStyle(
-                      color: Color(
-                        0xFF536985,
-                      ),
-                      fontSize: 16,
-                      height: 1.7,
-                    ),
-                  ),
-                ),
-                const SizedBox(
-                  height: 28,
-                ),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
+              ),
+
+              const SizedBox(
+                height: 38,
+              ),
+
+              // ==================================================
+              // BUTTONS
+              // ==================================================
+
+              Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                children: [
+                  if (onPrimaryPressed != null)
                     ElevatedButton(
                       onPressed: onPrimaryPressed,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(
-                          0xFF0B4EA2,
-                        ),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 15,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            11,
-                          ),
-                        ),
-                      ),
                       child: Text(
                         primaryButton,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                        ),
                       ),
                     ),
+                  if (secondaryButton != null)
                     OutlinedButton(
                       onPressed: onSecondaryPressed,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(
-                          0xFF0B4EA2,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 22,
-                          vertical: 15,
-                        ),
-                        side: const BorderSide(
-                          color: Color(
-                            0xFF0B4EA2,
-                          ),
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(
-                            11,
-                          ),
-                        ),
-                      ),
                       child: Text(
-                        secondaryButton,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        secondaryButton!,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

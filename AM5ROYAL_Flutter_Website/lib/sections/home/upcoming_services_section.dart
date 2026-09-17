@@ -13,6 +13,10 @@ class UpcomingServicesSection extends StatelessWidget {
   // ===========================================================================
   // UPCOMING SERVICES - EXACTLY 8
   // ===========================================================================
+  //
+  // BACKEND / DATA UNCHANGED
+  //
+  // ===========================================================================
 
   static const List<_UpcomingItem> services = [
     _UpcomingItem(
@@ -53,6 +57,11 @@ class UpcomingServicesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+
+      // =========================================================================
+      // SECTION BACKGROUND
+      // =========================================================================
+
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -63,17 +72,19 @@ class UpcomingServicesSection extends StatelessWidget {
           ],
         ),
       ),
+
       padding: const EdgeInsets.fromLTRB(
         20,
         34,
         20,
         42,
       ),
+
       child: Column(
         children: [
-          // ===================================================================
+          // =====================================================================
           // SECTION TITLE
-          // ===================================================================
+          // =====================================================================
 
           const Text(
             'Upcoming Services',
@@ -83,10 +94,15 @@ class UpcomingServicesSection extends StatelessWidget {
               fontSize: 28,
               fontWeight: FontWeight.w900,
               height: 1.15,
+              letterSpacing: -0.5,
             ),
           ),
 
           const SizedBox(height: 7),
+
+          // =====================================================================
+          // GOLD LINE
+          // =====================================================================
 
           Container(
             width: 38,
@@ -94,10 +110,21 @@ class UpcomingServicesSection extends StatelessWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFF5B301),
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0x45F5B301),
+                  blurRadius: 7,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
           ),
 
           const SizedBox(height: 9),
+
+          // =====================================================================
+          // SUBTITLE
+          // =====================================================================
 
           const Text(
             'New services coming soon to AM5ROYAL',
@@ -106,14 +133,15 @@ class UpcomingServicesSection extends StatelessWidget {
               color: Color(0xFF687B91),
               fontSize: 12.5,
               height: 1.4,
+              fontWeight: FontWeight.w500,
             ),
           ),
 
           const SizedBox(height: 28),
 
-          // ===================================================================
+          // =====================================================================
           // RESPONSIVE SERVICES
-          // ===================================================================
+          // =====================================================================
 
           LayoutBuilder(
             builder: (
@@ -122,10 +150,10 @@ class UpcomingServicesSection extends StatelessWidget {
             ) {
               final double width = constraints.maxWidth;
 
-              // ===============================================================
+              // =================================================================
               // DESKTOP
               // 8 CARDS IN ONE ROW
-              // ===============================================================
+              // =================================================================
 
               if (width >= 1100) {
                 return ConstrainedBox(
@@ -139,7 +167,7 @@ class UpcomingServicesSection extends StatelessWidget {
                         if (index > 0) const SizedBox(width: 14),
                         Expanded(
                           child: SizedBox(
-                            height: 150,
+                            height: 225,
                             child: _UpcomingCard(
                               item: services[index],
                             ),
@@ -151,14 +179,14 @@ class UpcomingServicesSection extends StatelessWidget {
                 );
               }
 
-              // ===============================================================
+              // =================================================================
               // TABLET
               // HORIZONTAL SCROLL
-              // ===============================================================
+              // =================================================================
 
               if (width >= 650) {
                 return SizedBox(
-                  height: 150,
+                  height: 210,
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
@@ -184,13 +212,13 @@ class UpcomingServicesSection extends StatelessWidget {
                 );
               }
 
-              // ===============================================================
+              // =================================================================
               // MOBILE
               // HORIZONTAL SCROLL
-              // ===============================================================
+              // =================================================================
 
               return SizedBox(
-                height: 145,
+                height: 195,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
@@ -242,16 +270,88 @@ class _UpcomingCardState extends State<_UpcomingCard> {
   bool _launchingSoon = false;
 
   // ===========================================================================
+  // PASTEL BACKGROUNDS
+  // ===========================================================================
+
+  static const List<Color> _backgrounds = [
+    Color(0xFFFFF1EE),
+    Color(0xFFF5EEFF),
+    Color(0xFFEAF4FF),
+    Color(0xFFEAFBF4),
+    Color(0xFFFFF8E5),
+    Color(0xFFEDF5FF),
+    Color(0xFFF4EEFF),
+    Color(0xFFEAFBF5),
+  ];
+
+  // ===========================================================================
+  // ACCENT COLORS
+  // ===========================================================================
+
+  static const List<Color> _accents = [
+    Color(0xFFFF7564),
+    Color(0xFF9658D9),
+    Color(0xFF2688E8),
+    Color(0xFF16AE7C),
+    Color(0xFFD99B00),
+    Color(0xFF357DD1),
+    Color(0xFF7850D1),
+    Color(0xFF13A473),
+  ];
+
+  Color get _backgroundColor {
+    final int index = _getServiceIndex();
+
+    return _backgrounds[index % _backgrounds.length];
+  }
+
+  Color get _accentColor {
+    final int index = _getServiceIndex();
+
+    return _accents[index % _accents.length];
+  }
+
+  int _getServiceIndex() {
+    final String name = widget.item.name;
+
+    if (name == 'Packers & Movers') {
+      return 0;
+    }
+
+    if (name == 'Event Management') {
+      return 1;
+    }
+
+    if (name == 'Wholesale Distribution') {
+      return 2;
+    }
+
+    if (name == 'Travel & Tourism') {
+      return 3;
+    }
+
+    if (name == 'Food & Beverage') {
+      return 4;
+    }
+
+    if (name == 'Healthcare & Hospital') {
+      return 5;
+    }
+
+    if (name == 'Training & Education') {
+      return 6;
+    }
+
+    return 7;
+  }
+
+  // ===========================================================================
   // CARD CLICK
   //
-  // IMPORTANT:
   // Upcoming services are NOT bookable yet.
   //
-  // Clicking the card:
-  //   1. Does NOT navigate
-  //   2. Does NOT open booking
-  //   3. Does NOT call onServiceSelected
-  //   4. Only shows "Launching Soon"
+  // Backend/navigation untouched.
+  // Only Launching Soon is shown.
   // ===========================================================================
 
   void _handleCardTap() {
@@ -301,112 +401,278 @@ class _UpcomingCardState extends State<_UpcomingCard> {
 
       child: AnimatedContainer(
         duration: const Duration(
-          milliseconds: 180,
+          milliseconds: 240,
         ),
-        curve: Curves.easeOut,
+
+        curve: Curves.easeOutCubic,
+
+        // =====================================================================
+        // HOVER LIFT
+        // =====================================================================
+
         transform: Matrix4.translationValues(
           0,
-          active ? -3 : 0,
+          active ? -6 : 0,
           0,
         ),
+
+        // =====================================================================
+        // CARD DECORATION
+        // =====================================================================
+
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: active ? const Color(0xFF0B4EA2) : const Color(0xFFDCE5EF),
-            width: active ? 1.3 : 1,
+            color: active
+                ? _accentColor.withOpacity(0.48)
+                : const Color(0xFFF1F3F6),
+            width: active ? 1.4 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0x12102A43),
-              blurRadius: active ? 15 : 8,
-              offset: const Offset(0, 4),
+              color: active
+                  ? _accentColor.withOpacity(0.20)
+                  : const Color(0x180B1F3A),
+              blurRadius: active ? 26 : 15,
+              spreadRadius: active ? 1 : 0,
+              offset: Offset(
+                0,
+                active ? 12 : 7,
+              ),
             ),
           ],
         ),
+
         child: Material(
           color: Colors.transparent,
           child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+
+            splashColor: _accentColor.withOpacity(0.08),
+
+            highlightColor: _accentColor.withOpacity(0.04),
+
+            // =================================================================
+            // CARD TAP
+            // =================================================================
+
             onTap: _handleCardTap,
-            borderRadius: BorderRadius.circular(14),
+
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                8,
-                10,
-                8,
-                8,
-              ),
-
-              // =================================================================
-              // IMPORTANT:
-              //
-              // NO Stack
-              // NO Positioned
-              //
-              // Everything is arranged vertically.
-              // Therefore "Launching Soon" can never cover the service name.
-              // =================================================================
-
+              padding: const EdgeInsets.all(10),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // =============================================================
-                  // SERVICE IMAGE
-                  // =============================================================
-
-                  SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: Image.asset(
-                      widget.item.image,
-                      fit: BoxFit.contain,
-                      alignment: Alignment.center,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (
-                        BuildContext context,
-                        Object error,
-                        StackTrace? stackTrace,
-                      ) {
-                        return const Icon(
-                          Icons.auto_awesome_rounded,
-                          color: Color(0xFF0B4EA2),
-                          size: 36,
-                        );
-                      },
-                    ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  // =============================================================
-                  // SERVICE NAME
-                  //
-                  // Expanded gives the service name its own area.
-                  // The badge below is completely separate.
+                  // IMAGE CONTAINER
                   // =============================================================
 
                   Expanded(
-                    child: Center(
-                      child: Text(
-                        widget.item.name,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Color(0xFF102A43),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
+                    child: AnimatedContainer(
+                      duration: const Duration(
+                        milliseconds: 240,
+                      ),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            _backgroundColor,
+                            _backgroundColor.withOpacity(
+                              0.62,
+                            ),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(
+                          17,
                         ),
                       ),
+                      child: Stack(
+                        children: [
+                          // ===================================================
+                          // DECORATIVE CIRCLE
+                          // ===================================================
+
+                          Positioned(
+                            top: -18,
+                            right: -18,
+                            child: AnimatedContainer(
+                              duration: const Duration(
+                                milliseconds: 240,
+                              ),
+                              width: active ? 72 : 62,
+                              height: active ? 72 : 62,
+                              decoration: BoxDecoration(
+                                color: _accentColor.withOpacity(
+                                  active ? 0.13 : 0.08,
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+
+                          // ===================================================
+                          // ACCENT DOT
+                          // ===================================================
+
+                          Positioned(
+                            top: 12,
+                            right: 12,
+                            child: Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _accentColor,
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: _accentColor.withOpacity(
+                                      0.35,
+                                    ),
+                                    blurRadius: 7,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // ===================================================
+                          // SERVICE IMAGE
+                          // ===================================================
+
+                          Center(
+                            child: AnimatedScale(
+                              scale: active ? 1.07 : 1.0,
+                              duration: const Duration(
+                                milliseconds: 240,
+                              ),
+                              curve: Curves.easeOutCubic,
+                              child: Padding(
+                                padding: const EdgeInsets.all(
+                                  10,
+                                ),
+                                child: Image.asset(
+                                  widget.item.image,
+                                  fit: BoxFit.contain,
+                                  alignment: Alignment.center,
+                                  filterQuality: FilterQuality.high,
+                                  errorBuilder: (
+                                    BuildContext context,
+                                    Object error,
+                                    StackTrace? stackTrace,
+                                  ) {
+                                    return Icon(
+                                      Icons.auto_awesome_rounded,
+                                      color: _accentColor,
+                                      size: 52,
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // =============================================================
+                  // SERVICE NAME + ARROW
+                  // =============================================================
+
+                  SizedBox(
+                    height: 42,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // =======================================================
+                        // SERVICE NAME
+                        // =======================================================
+
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(
+                              left: 2,
+                              right: 4,
+                            ),
+                            child: Text(
+                              widget.item.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                              style: const TextStyle(
+                                color: Color(
+                                  0xFF102A43,
+                                ),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w700,
+                                height: 1.18,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(
+                          width: 6,
+                        ),
+
+                        // =======================================================
+                        // ARROW BUTTON
+                        // =======================================================
+
+                        AnimatedContainer(
+                          duration: const Duration(
+                            milliseconds: 220,
+                          ),
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? _accentColor
+                                : _accentColor.withOpacity(
+                                    0.12,
+                                  ),
+                            shape: BoxShape.circle,
+                            boxShadow: active
+                                ? [
+                                    BoxShadow(
+                                      color: _accentColor.withOpacity(
+                                        0.25,
+                                      ),
+                                      blurRadius: 9,
+                                      offset: const Offset(
+                                        0,
+                                        4,
+                                      ),
+                                    ),
+                                  ]
+                                : null,
+                          ),
+                          child: AnimatedRotation(
+                            turns: active ? 0.04 : 0,
+                            duration: const Duration(
+                              milliseconds: 220,
+                            ),
+                            child: Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 16,
+                              color: active ? Colors.white : _accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
 
                   // =============================================================
                   // LAUNCHING SOON
                   //
-                  // This is BELOW the service name.
-                  // It is NOT positioned over the name.
+                  // It appears BELOW the card content area.
+                  // It never overlays the service name.
                   // =============================================================
 
                   AnimatedSwitcher(
@@ -444,13 +710,20 @@ class _UpcomingCardState extends State<_UpcomingCard> {
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0B4EA2),
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: const [
+                                  color: _accentColor,
+                                  borderRadius: BorderRadius.circular(
+                                    20,
+                                  ),
+                                  boxShadow: [
                                     BoxShadow(
-                                      color: Color(0x250B4EA2),
+                                      color: _accentColor.withOpacity(
+                                        0.22,
+                                      ),
                                       blurRadius: 7,
-                                      offset: Offset(0, 3),
+                                      offset: const Offset(
+                                        0,
+                                        3,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -464,7 +737,9 @@ class _UpcomingCardState extends State<_UpcomingCard> {
                                         color: Colors.white,
                                         size: 12,
                                       ),
-                                      const SizedBox(width: 5),
+                                      const SizedBox(
+                                        width: 5,
+                                      ),
                                       const Text(
                                         'Launching Soon',
                                         maxLines: 1,

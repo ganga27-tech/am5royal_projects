@@ -8,62 +8,80 @@ class FaqsSection extends StatelessWidget {
   static const List<_FaqData> faqs = [
     _FaqData(
       question: 'How do I book a service on AM5ROYAL?',
-      answer:
-      'Open the AM5ROYAL app, choose a service category, select a slot '
+      answer: 'Open the AM5ROYAL app, choose a service category, select a slot '
           'and confirm your booking. A verified vendor will be assigned '
           'to you automatically.',
     ),
     _FaqData(
       question: 'Are the vendors and freelancers verified?',
-      answer:
-      'Yes. Every vendor and freelancer on AM5ROYAL goes through an '
+      answer: 'Yes. Every vendor and freelancer on AM5ROYAL goes through an '
           'identity, address and document verification process before '
           'being approved on the platform.',
     ),
     _FaqData(
       question: 'What payment methods are supported?',
-      answer:
-      'AM5ROYAL supports UPI, credit/debit cards and net banking '
+      answer: 'AM5ROYAL supports UPI, credit/debit cards and net banking '
           'through a secure in-app payment gateway.',
     ),
     _FaqData(
       question: 'Can I cancel or reschedule a booking?',
-      answer:
-      'Yes, bookings can be cancelled or rescheduled from the app '
+      answer: 'Yes, bookings can be cancelled or rescheduled from the app '
           'before the vendor is dispatched, subject to our cancellation '
           'policy.',
     ),
     _FaqData(
       question: 'How do I become a vendor or freelancer?',
-      answer:
-      'Tap on "Become a Vendor" or "Freelancer" from the app or '
+      answer: 'Tap on "Become a Vendor" or "Freelancer" from the app or '
           'website, complete your profile and submit the required '
           'verification documents.',
     ),
     _FaqData(
       question: 'Which cities does AM5ROYAL currently operate in?',
-      answer:
-      'AM5ROYAL is expanding across India city by city. Check the app '
+      answer: 'AM5ROYAL is expanding across India city by city. Check the app '
           'for live service availability in your area.',
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    final isDesktop = screenWidth >= 900;
+    final double screenWidth = MediaQuery.sizeOf(context).width;
+    final bool isDesktop = screenWidth >= 900;
 
     return Container(
       width: double.infinity,
-      color: const Color(0xFFF7F9FC),
+
+      // ======================================================================
+      // WEBSITE BACKGROUND
+      // ======================================================================
+
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFF9EBD1),
+            Color(0xFFFCEFDD),
+          ],
+        ),
+      ),
+
       child: Column(
         children: [
+          // ==================================================================
+          // PAGE HEADER
+          // ==================================================================
+
           _PageHeader(
             isDesktop: isDesktop,
             eyebrow: 'FAQS',
             title: 'Frequently Asked Questions',
             subtitle: 'Everything you need to know about using AM5ROYAL.',
           ),
+
+          // ==================================================================
+          // FAQ LIST
+          // ==================================================================
+
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: isDesktop ? 70 : 20,
@@ -71,9 +89,16 @@ class FaqsSection extends StatelessWidget {
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
+                constraints: const BoxConstraints(
+                  maxWidth: 800,
+                ),
                 child: Column(
-                  children: [for (final faq in faqs) _FaqTile(faq: faq)],
+                  children: [
+                    for (final faq in faqs)
+                      _FaqTile(
+                        faq: faq,
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -84,30 +109,52 @@ class FaqsSection extends StatelessWidget {
   }
 }
 
+// =============================================================================
+// FAQ TILE
+// =============================================================================
+
 class _FaqTile extends StatelessWidget {
-  const _FaqTile({required this.faq});
+  const _FaqTile({
+    required this.faq,
+  });
 
   final _FaqData faq;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(
+        bottom: 12,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0x140B4EA2)),
+        border: Border.all(
+          color: const Color(0x140B4EA2),
+        ),
       ),
       child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        data: Theme.of(context).copyWith(
+          dividerColor: Colors.transparent,
+        ),
         child: ExpansionTile(
           tilePadding: const EdgeInsets.symmetric(
             horizontal: 18,
             vertical: 4,
           ),
-          childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+          childrenPadding: const EdgeInsets.fromLTRB(
+            18,
+            0,
+            18,
+            18,
+          ),
           iconColor: AppColors.royalBlue,
           collapsedIconColor: AppColors.royalBlue,
+
+          // ==================================================================
+          // QUESTION
+          // ==================================================================
+
           title: Text(
             faq.question,
             style: const TextStyle(
@@ -116,6 +163,11 @@ class _FaqTile extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
+
+          // ==================================================================
+          // ANSWER
+          // ==================================================================
+
           children: [
             Align(
               alignment: Alignment.centerLeft,
@@ -135,12 +187,23 @@ class _FaqTile extends StatelessWidget {
   }
 }
 
+// =============================================================================
+// FAQ DATA
+// =============================================================================
+
 class _FaqData {
-  const _FaqData({required this.question, required this.answer});
+  const _FaqData({
+    required this.question,
+    required this.answer,
+  });
 
   final String question;
   final String answer;
 }
+
+// =============================================================================
+// PAGE HEADER
+// =============================================================================
 
 class _PageHeader extends StatelessWidget {
   const _PageHeader({
@@ -163,18 +226,33 @@ class _PageHeader extends StatelessWidget {
         horizontal: isDesktop ? 70 : 24,
         vertical: isDesktop ? 70 : 50,
       ),
+
+      // ======================================================================
+      // HEADER GRADIENT
+      // ======================================================================
+
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.navy, AppColors.royalBlue],
+          colors: [
+            AppColors.navy,
+            AppColors.royalBlue,
+          ],
         ),
       ),
+
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 700),
+          constraints: const BoxConstraints(
+            maxWidth: 700,
+          ),
           child: Column(
             children: [
+              // =================================================================
+              // EYEBROW
+              // =================================================================
+
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 15,
@@ -183,7 +261,9 @@ class _PageHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0x18FFFFFF),
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: const Color(0x35FFFFFF)),
+                  border: Border.all(
+                    color: const Color(0x35FFFFFF),
+                  ),
                 ),
                 child: Text(
                   eyebrow,
@@ -195,7 +275,15 @@ class _PageHeader extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+
+              const SizedBox(
+                height: 20,
+              ),
+
+              // =================================================================
+              // TITLE
+              // =================================================================
+
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -206,7 +294,15 @@ class _PageHeader extends StatelessWidget {
                   letterSpacing: -0.8,
                 ),
               ),
-              const SizedBox(height: 14),
+
+              const SizedBox(
+                height: 14,
+              ),
+
+              // =================================================================
+              // SUBTITLE
+              // =================================================================
+
               Text(
                 subtitle,
                 textAlign: TextAlign.center,
