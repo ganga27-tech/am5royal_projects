@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:am5_core/am5_core.dart';
 
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
@@ -38,6 +37,70 @@ bool isPublicAppRoute(String location) {
   }
   return false;
 }
+
+String? resolveAppRedirect({
+  required AuthStatus authStatus,
+  required String location,
+  String? redirectQueryParam,
+}) {
+  final loc = location;
+  final onAuthFlow =
+      loc == '/splash' ||
+      loc == '/welcome' ||
+      loc == '/login' ||
+      loc == '/otp';
+  final isGuestBookingFlow =
+      loc == '/book' ||
+      loc == '/booking-confirmed' ||
+      loc.startsWith('/professionals') ||
+      loc.startsWith('/vendors') ||
+      loc.startsWith('/services') ||
+      loc.startsWith('/categories');
+  final needsAuth = routeRequiresAuth(loc);
+
+  // 1. Initial cold-start check before AuthBloc has started:
+  if (authStatus == AuthStatus.unknown) {
+    return loc == '/splash' ? null : '/splash';
+  }
+
+  // 2. On /splash:
+  if (loc == '/splash') {
+    // Keep showing splash if initial session check is actively running
+    if (authStatus == AuthStatus.loading) {
+      return null;
+    }
+    if (authStatus == AuthStatus.authenticated) {
+      return '/home';
+    }
+    return '/welcome';
+  }
+
+  // 3. In-page loading states (e.g. sending OTP on /login, verifying on /otp):
+  // Never redirect away from the user's active page while an action is loading!
+  if (authStatus == AuthStatus.loading) {
+    return null;
+  }
+
+  // 4. Authenticated:
+  if (authStatus == AuthStatus.authenticated) {
+    if (loc == '/welcome' || loc == '/login') {
+      if (redirectQueryParam != null && redirectQueryParam.isNotEmpty) {
+        return redirectQueryParam;
+      }
+      return '/home';
+    }
+    return null;
+  }
+
+  // 5. Unauthenticated:
+  if (needsAuth) {
+    return '/login?redirect=${Uri.encodeComponent(loc)}';
+  }
+  if (isPublicAppRoute(loc) || isGuestBookingFlow) return null;
+  if (!onAuthFlow && loc != '/welcome') return '/welcome';
+  return null;
+}
+
 
 abstract final class LoginGuard {
   static bool isAuthenticated(BuildContext context) =>

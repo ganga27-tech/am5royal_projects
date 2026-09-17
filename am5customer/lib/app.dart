@@ -63,39 +63,11 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
       refreshListenable: _AuthRefresh(context.read<AuthBloc>()),
       redirect: (context, state) {
         final auth = context.read<AuthBloc>().state;
-        final loc = state.matchedLocation;
-        final onAuthFlow =
-            loc == '/splash' ||
-            loc == '/welcome' ||
-            loc == '/login' ||
-            loc == '/otp';
-        final isGuestBookingFlow =
-            loc == '/book' ||
-            loc == '/booking-confirmed' ||
-            loc.startsWith('/professionals') ||
-            loc.startsWith('/vendors') ||
-            loc.startsWith('/services') ||
-            loc.startsWith('/categories');
-        final needsAuth = routeRequiresAuth(loc);
-
-        if (auth.status == AuthStatus.unknown ||
-            auth.status == AuthStatus.loading) {
-          return loc == '/splash' ? null : '/splash';
-        }
-        if (auth.status == AuthStatus.authenticated) {
-          if (loc == '/splash' || loc == '/welcome' || loc == '/login')
-            return '/home';
-          return null;
-        }
-        if (loc == '/splash') {
-          return '/welcome';
-        }
-        if (needsAuth) {
-          return '/login?redirect=${Uri.encodeComponent(loc)}';
-        }
-        if (isPublicAppRoute(loc) || isGuestBookingFlow) return null;
-        if (!onAuthFlow && loc != '/welcome') return '/welcome';
-        return null;
+        return resolveAppRedirect(
+          authStatus: auth.status,
+          location: state.matchedLocation,
+          redirectQueryParam: state.uri.queryParameters['redirect'],
+        );
       },
       routes: [
         GoRoute(

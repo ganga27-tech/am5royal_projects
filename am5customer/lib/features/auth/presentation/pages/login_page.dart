@@ -20,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final _identifier = TextEditingController();
   bool _useEmail = false;
+  String? _navigatedDestination;
 
   @override
   void dispose() {
@@ -29,6 +30,7 @@ class _LoginPageState extends State<LoginPage> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    _navigatedDestination = null;
     String target = _identifier.text.trim();
     if (!_useEmail) {
       final clean = target.replaceAll(RegExp(r'[^\d]'), '');
@@ -50,7 +52,10 @@ class _LoginPageState extends State<LoginPage> {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message!)));
           context.read<AuthBloc>().add(const AuthMessageCleared());
         }
-        if (state.otpDestination != null && state.otpDestination!.isNotEmpty) {
+        if (state.otpDestination != null &&
+            state.otpDestination!.isNotEmpty &&
+            state.otpDestination != _navigatedDestination) {
+          _navigatedDestination = state.otpDestination;
           final dest = state.otpDestination!;
           final redirect = widget.redirectTo;
           final q = 'to=${Uri.encodeComponent(dest)}'
