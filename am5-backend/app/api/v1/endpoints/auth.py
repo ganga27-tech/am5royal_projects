@@ -198,11 +198,14 @@ async def verify_vendor_otp(request: VerifyOTPRequest, background_tasks: Backgro
     # Generate standard permanent token
     access_token = create_access_token(subject=str(user.id))
     
-    # Send Login Success SMS
-    if user.mobile:
-        msg = "Welcome to AM5Royal! You have logged in successfully. Please continue by selecting your services and complete your vendor registration to start growing your business.By clicking this link https://vendor.am5royal.com/login"
-        tpid = "1707178343801933733"
-        background_tasks.add_task(otp_service.send_custom_sms, phone=user.mobile, message=msg, tpid=tpid)
+    # Send Login Success Push Notification
+    from app.services.notification_service import send_user_push_notification
+    background_tasks.add_task(
+        send_user_push_notification,
+        user_id=user.id,
+        title="Login Successful",
+        body="Welcome to AM5Royal! You have logged in successfully.",
+    )
 
     return TokenResponse(
         access_token=access_token,

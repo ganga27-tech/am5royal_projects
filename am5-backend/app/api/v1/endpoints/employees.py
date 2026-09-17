@@ -307,7 +307,6 @@ from app.schemas.employee import (
     TelecallerLeaderboardEntry
 )
 from app.models.vendor import VendorService
-from app.services.otp_service import otp_service
 from app.models.catalog import Service
 
 
@@ -536,13 +535,14 @@ async def telecaller_onboard_complete(
     db.add(current_employee)
     await db.commit()
 
-    message = "Welcome to AM5 ROYAL! Complete your documentation and KYC to activate your vendor account. Click here: https://vendor.am5royal.com/login This link will redirect you to the vendor portal. Thank you for choosing AM5 ROYAL."
-    background_tasks.add_task(
-        otp_service.send_custom_sms,
-        mobile,
-        message,
-        tpid="1707178273082121738",
-    )
+    if vendor.user_id:
+        from app.services.notification_service import send_user_push_notification
+        background_tasks.add_task(
+            send_user_push_notification,
+            user_id=vendor.user_id,
+            title="Complete Your KYC Verification",
+            body="Welcome to AM5 ROYAL! Complete your documentation and KYC to activate your vendor account.",
+        )
 
     return {
         "message": "Vendor telecaller onboarding completed successfully",
@@ -596,13 +596,14 @@ async def telecaller_onboard_vendor(
     db.add(current_employee)
     await db.commit()
 
-    message = "Welcome to AM5 ROYAL! Complete your documentation and KYC to activate your vendor account. Click here: https://vendor.am5royal.com/login This link will redirect you to the vendor portal. Thank you for choosing AM5 ROYAL."
-    background_tasks.add_task(
-        otp_service.send_custom_sms,
-        mobile,
-        message,
-        tpid="1707178273082121738",
-    )
+    if vendor.user_id:
+        from app.services.notification_service import send_user_push_notification
+        background_tasks.add_task(
+            send_user_push_notification,
+            user_id=vendor.user_id,
+            title="Complete Your KYC Verification",
+            body="Welcome to AM5 ROYAL! Complete your documentation and KYC to activate your vendor account.",
+        )
 
     return {
         "message": "Vendor fully onboarded successfully",
@@ -1212,17 +1213,6 @@ async def approve_vendor_by_telecaller(
             title="Verification Completed",
             body="Your verification is completed. Thank you for choosing AM5Royal.",
         )
-        if vendor.lead_source != "company_mobile" and user.mobile:
-            from app.services.otp_service import otp_service
-            background_tasks.add_task(
-                otp_service.send_custom_sms,
-                phone=user.mobile,
-                message=(
-                    "Your verification is completed. Thank you for choosing AM5Royal. "
-                    "Your vendor account is now active."
-                ),
-                tpid="1707178343955979594",
-            )
 
     return {"message": "Vendor approved successfully", "status": "active"}
 

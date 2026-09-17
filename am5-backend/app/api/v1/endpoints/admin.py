@@ -247,20 +247,6 @@ async def update_vendor_status(
                 title=title,
                 body=body,
             )
-
-            if vendor.lead_source != "company_mobile" and user.mobile:
-                from app.services.otp_service import otp_service
-                msg = (
-                    "Your verification is completed. Thank you for choosing AM5Royal. "
-                    "Your vendor account is now active."
-                )
-                tpid = "1707178343955979594"
-                background_tasks.add_task(
-                    otp_service.send_custom_sms,
-                    phone=user.mobile,
-                    message=msg,
-                    tpid=tpid,
-                )
                     
     return {"message": "Vendor status updated successfully", "status": vendor.status}
 

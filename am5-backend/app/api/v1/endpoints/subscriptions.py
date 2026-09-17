@@ -14,7 +14,6 @@ import structlog
 
 logger = structlog.get_logger()
 from sqlalchemy.orm import joinedload
-from app.services.otp_service import otp_service
 from app.workers.cron_jobs import scheduler
 from app.models.user_location import User
 import razorpay
@@ -214,21 +213,6 @@ async def trigger_subscription_success_sms(vendor: Vendor, db: AsyncSession, bac
     user_query = await db.execute(select(User).where(User.id == vendor.user_id))
     user = user_query.scalar_one_or_none()
     if user:
-        if user.mobile:
-            tpid_success = "1707178343937255237"
-            msg_success = "Congratulations! Your payment has been completed successfully. Welcome to the AM5Royal family. Your vendor account has been activated successfully. check through this link https://vendor.am5royal.com/login"
-            background_tasks.add_task(otp_service.send_custom_sms, phone=user.mobile, message=msg_success, tpid=tpid_success)
-            
-            tpid_welcome = "1707178343955979594"
-            msg_welcome = "Welcome to AM5Royal! Your registration process is now complete. Your account is active, and you are ready to receive customer enquiries and grow your business with AM5Royal. To check your profile by clicking on this link https://vendor.am5royal.com/login Thank you for choosing AM5Royal. We wish you great success!"
-            run_time = datetime.now() + timedelta(minutes=10)
-            scheduler.add_job(
-                otp_service.send_custom_sms,
-                'date',
-                run_date=run_time,
-                kwargs={'phone': user.mobile, 'message': msg_welcome, 'tpid': tpid_welcome},
-            )
-        
         # Send Push Notification (1 time after completed payment)
         from app.services.notification_service import send_user_push_notification
         background_tasks.add_task(

@@ -23,6 +23,7 @@ void main() {
 
   setUp(() {
     api = _MockAuthApi();
+    when(() => api.hasSavedSession()).thenAnswer((_) async => true);
   });
 
   blocTest<AuthBloc, AuthState>(
@@ -42,6 +43,19 @@ void main() {
     'emits unauthenticated when me fails',
     build: () {
       when(() => api.me()).thenThrow(const Failure('no session'));
+      return AuthBloc(authApi: api, device: device);
+    },
+    act: (bloc) => bloc.add(const AuthStarted()),
+    expect: () => [
+      isA<AuthState>().having((s) => s.status, 'status', AuthStatus.loading),
+      isA<AuthState>().having((s) => s.status, 'status', AuthStatus.unauthenticated),
+    ],
+  );
+
+  blocTest<AuthBloc, AuthState>(
+    'emits unauthenticated immediately when no saved session exists',
+    build: () {
+      when(() => api.hasSavedSession()).thenAnswer((_) async => false);
       return AuthBloc(authApi: api, device: device);
     },
     act: (bloc) => bloc.add(const AuthStarted()),

@@ -8,7 +8,8 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 bool routeRequiresAuth(String location) {
   if (location == '/bookings' || location.startsWith('/bookings/')) return true;
   if (location == '/notifications' || location == '/wallet') return true;
-  if (location.startsWith('/profile/edit') || location.startsWith('/profile/addresses')) {
+  if (location.startsWith('/profile/edit') ||
+      location.startsWith('/profile/addresses')) {
     return true;
   }
   if (location.startsWith('/addresses')) return true;
@@ -16,10 +17,7 @@ bool routeRequiresAuth(String location) {
 }
 
 bool isPublicAppRoute(String location) {
-  if (location == '/splash' ||
-      location == '/welcome' ||
-      location == '/login' ||
-      location == '/otp') {
+  if (location == '/welcome' || location == '/login' || location == '/otp') {
     return true;
   }
   if (location == '/home' ||
@@ -87,7 +85,11 @@ abstract final class LoginGuard {
       action();
       return;
     }
-    final ok = await ensureLoggedIn(context, message: message, redirectTo: redirectTo);
+    final ok = await ensureLoggedIn(
+      context,
+      message: message,
+      redirectTo: redirectTo,
+    );
     if (ok && context.mounted && isAuthenticated(context)) {
       action();
     }

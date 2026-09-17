@@ -6,7 +6,6 @@ from sqlalchemy import select
 from app.db.session import get_db
 from app.models.vendor import Vendor, VendorSubCategory, VendorAvailability, VendorService, VendorServiceMedia
 from app.models.catalog import ServiceCategory, ServiceSubcategory, Service
-from app.services.otp_service import otp_service
 from app.schemas.vendor import (
     VendorLocationResponse, 
     VendorAvailabilityCreate, 
@@ -268,11 +267,6 @@ async def update_business_details(
             user_query = await db.execute(select(User).where(User.id == vendor.user_id))
             user = user_query.scalar_one_or_none()
             if user:
-                if user.mobile:
-                    tpid_pay = "1707178343913056161"
-                    msg_pay = "Welcome to AM5 Royal! Your documents have been submitted successfully. Only one step is left. Please complete your premium payment to activate your AM5Royal vendor account and start receiving customer leads thgrough click on this link https://vendor.am5royal.com/login"
-                    background_tasks.add_task(otp_service.send_custom_sms, phone=user.mobile, message=msg_pay, tpid=tpid_pay)
-
                 from app.services.notification_service import send_user_push_notification
                 background_tasks.add_task(
                     send_user_push_notification,

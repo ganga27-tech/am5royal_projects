@@ -28,7 +28,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   Future<void> _onStarted(AuthStarted event, Emitter<AuthState> emit) async {
     emit(state.copyWith(status: AuthStatus.loading, clearMessage: true));
     try {
-      final user = await _authApi.me();
+      final hasSession = await _authApi.hasSavedSession();
+      if (!hasSession) {
+        emit(const AuthState.unauthenticated());
+        return;
+      }
+      final user = await _authApi.me().timeout(const Duration(seconds: 8));
       emit(AuthState.authenticated(user));
     } catch (_) {
       emit(const AuthState.unauthenticated());

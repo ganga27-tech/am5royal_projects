@@ -9,7 +9,6 @@ from app.models.catalog import ServiceCategory, ServiceSubcategory, Package, Ser
 from app.models.vendor import Vendor, VendorSubCategory, VendorService, VendorServiceMedia
 from app.models.user_location import User
 from app.dependencies.auth import get_current_vendor, get_current_token_payload
-from app.services.otp_service import otp_service
 from app.schemas.vendor_catalog import (
     VendorMainCategoryResponse,
     VendorSubCategoryResponse,
@@ -407,19 +406,6 @@ async def complete_service_selection(
             title="Complete Your KYC Verification",
             body="Dear Vendor, complete your KYC by uploading the required documents to activate your account.",
         )
-        if user.mobile:
-            tpid_doc = "1707178343889346289"
-            msg_doc = (
-                "Congratulations! Your services have been added successfully. "
-                "Please upload your documents to complete your KYC and activate your account. "
-                "https://vendor.am5royal.com/login"
-            )
-            background_tasks.add_task(
-                otp_service.send_custom_sms,
-                user.mobile,
-                msg_doc,
-                tpid_doc,
-            )
 
     return {
         "message": "Service selection completed successfully",

@@ -7,7 +7,6 @@ from app.models.subscriptions import VendorSubscription
 from app.models.user_location import User
 from app.models.vendor_extras import VendorMonthlyHistory
 from app.models.orders import Order
-from app.services.otp_service import otp_service
 from app.services.notification_service import send_push_notification
 from app.core.config import settings
 from datetime import date, time, datetime, timedelta
@@ -73,15 +72,9 @@ async def get_incomplete_vendors():
 
 async def send_morning_service_reminders():
     logger.info("Running Morning Service/KYC Selection Reminder cron job (10 AM)...")
-    tpid = "1707178350670029758"
-    template = "Good Morning! Welcome to AM5Royal. {var} Click to login: https://vendor.am5royal.com/login"
-    
     vendors = await get_incomplete_vendors()
     async with AsyncSessionLocal() as session:
         for v in vendors:
-            message = template.format(var=v["missing_reason"])
-            await otp_service.send_custom_sms(phone=v["mobile"], message=message, tpid=tpid)
-            
             # Send push notification
             title = "AM5 Royal Account Activation"
             body = f"Good Morning! {v['missing_reason']}"
@@ -91,15 +84,9 @@ async def send_morning_service_reminders():
 
 async def send_afternoon_service_reminders():
     logger.info("Running Afternoon Service/KYC Selection Reminder cron job (2 PM)...")
-    tpid = "1707178350677473800"
-    template = "Good Afternoon! Welcome to AM5 Royal. {var} Click to login: https://vendor.am5royal.com/login"
-    
     vendors = await get_incomplete_vendors()
     async with AsyncSessionLocal() as session:
         for v in vendors:
-            message = template.format(var=v["missing_reason"])
-            await otp_service.send_custom_sms(phone=v["mobile"], message=message, tpid=tpid)
-            
             # Send push notification
             title = "AM5 Royal Account Activation"
             body = f"Good Afternoon! {v['missing_reason']}"
@@ -109,15 +96,9 @@ async def send_afternoon_service_reminders():
 
 async def send_evening_service_reminders():
     logger.info("Running Evening Service/KYC Selection Reminder cron job (5 PM)...")
-    tpid = "1707178350690128473"
-    template = "Good Evening! {var} Click to login: https://vendor.am5royal.com/login"
-    
     vendors = await get_incomplete_vendors()
     async with AsyncSessionLocal() as session:
         for v in vendors:
-            message = template.format(var=v["missing_reason"])
-            await otp_service.send_custom_sms(phone=v["mobile"], message=message, tpid=tpid)
-            
             # Send push notification
             title = "AM5 Royal Account Activation"
             body = f"Good Evening! {v['missing_reason']}"

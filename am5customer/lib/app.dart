@@ -64,11 +64,13 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
       redirect: (context, state) {
         final auth = context.read<AuthBloc>().state;
         final loc = state.matchedLocation;
-        final onAuthFlow = loc == '/splash' ||
+        final onAuthFlow =
+            loc == '/splash' ||
             loc == '/welcome' ||
             loc == '/login' ||
             loc == '/otp';
-        final isGuestBookingFlow = loc == '/book' ||
+        final isGuestBookingFlow =
+            loc == '/book' ||
             loc == '/booking-confirmed' ||
             loc.startsWith('/professionals') ||
             loc.startsWith('/vendors') ||
@@ -76,29 +78,38 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
             loc.startsWith('/categories');
         final needsAuth = routeRequiresAuth(loc);
 
-        if (auth.status == AuthStatus.unknown) {
+        if (auth.status == AuthStatus.unknown ||
+            auth.status == AuthStatus.loading) {
           return loc == '/splash' ? null : '/splash';
         }
         if (auth.status == AuthStatus.authenticated) {
-          if (loc == '/splash' || loc == '/welcome' || loc == '/login') return '/home';
+          if (loc == '/splash' || loc == '/welcome' || loc == '/login')
+            return '/home';
           return null;
+        }
+        if (loc == '/splash') {
+          return '/welcome';
         }
         if (needsAuth) {
           return '/login?redirect=${Uri.encodeComponent(loc)}';
         }
         if (isPublicAppRoute(loc) || isGuestBookingFlow) return null;
         if (!onAuthFlow && loc != '/welcome') return '/welcome';
-        if (loc == '/splash') return '/welcome';
         return null;
       },
       routes: [
-        GoRoute(path: '/splash', builder: (context, state) => const SplashPage()),
-        GoRoute(path: '/welcome', builder: (context, state) => const WelcomePage()),
+        GoRoute(
+          path: '/splash',
+          builder: (context, state) => const SplashPage(),
+        ),
+        GoRoute(
+          path: '/welcome',
+          builder: (context, state) => const WelcomePage(),
+        ),
         GoRoute(
           path: '/login',
-          builder: (context, state) => LoginPage(
-            redirectTo: state.uri.queryParameters['redirect'],
-          ),
+          builder: (context, state) =>
+              LoginPage(redirectTo: state.uri.queryParameters['redirect']),
         ),
         GoRoute(
           path: '/otp',
@@ -123,9 +134,8 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
               routes: [
                 GoRoute(
                   path: '/search',
-                  builder: (context, state) => SearchPage(
-                    initialQuery: state.uri.queryParameters['q'],
-                  ),
+                  builder: (context, state) =>
+                      SearchPage(initialQuery: state.uri.queryParameters['q']),
                 ),
               ],
             ),
@@ -151,7 +161,10 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
                   path: '/profile',
                   builder: (context, state) => const ProfilePage(),
                   routes: [
-                    GoRoute(path: 'edit', builder: (context, state) => const EditProfilePage()),
+                    GoRoute(
+                      path: 'edit',
+                      builder: (context, state) => const EditProfilePage(),
+                    ),
                     GoRoute(
                       path: 'addresses',
                       builder: (context, state) => const AddressListPage(),
@@ -162,8 +175,9 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
                         ),
                         GoRoute(
                           path: ':id/edit',
-                          builder: (context, state) =>
-                              AddressFormPage(addressId: state.pathParameters['id']),
+                          builder: (context, state) => AddressFormPage(
+                            addressId: state.pathParameters['id'],
+                          ),
                         ),
                       ],
                     ),
@@ -192,15 +206,13 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
         ),
         GoRoute(
           path: '/professionals/:id',
-          builder: (context, state) => VendorDetailPage(
-            vendorId: state.pathParameters['id']!,
-          ),
+          builder: (context, state) =>
+              VendorDetailPage(vendorId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: '/vendors/:id',
-          builder: (context, state) => VendorDetailPage(
-            vendorId: state.pathParameters['id']!,
-          ),
+          builder: (context, state) =>
+              VendorDetailPage(vendorId: state.pathParameters['id']!),
         ),
         GoRoute(
           path: '/bookings/:id/pay',
@@ -214,14 +226,33 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
         ),
         GoRoute(
           path: '/bookings/:id/chat',
-          builder: (context, state) => ChatPage(bookingId: state.pathParameters['id']!),
+          builder: (context, state) =>
+              ChatPage(bookingId: state.pathParameters['id']!),
         ),
-        GoRoute(path: '/notifications', builder: (context, state) => const NotificationsPage()),
-        GoRoute(path: '/wallet', builder: (context, state) => const WalletPage()),
-        GoRoute(path: '/membership', builder: (context, state) => const MembershipPage()),
-        GoRoute(path: '/support', builder: (context, state) => const SupportPage()),
-        GoRoute(path: '/referral', builder: (context, state) => const ReferralPage()),
-        GoRoute(path: '/invoices', builder: (context, state) => const InvoicesPage()),
+        GoRoute(
+          path: '/notifications',
+          builder: (context, state) => const NotificationsPage(),
+        ),
+        GoRoute(
+          path: '/wallet',
+          builder: (context, state) => const WalletPage(),
+        ),
+        GoRoute(
+          path: '/membership',
+          builder: (context, state) => const MembershipPage(),
+        ),
+        GoRoute(
+          path: '/support',
+          builder: (context, state) => const SupportPage(),
+        ),
+        GoRoute(
+          path: '/referral',
+          builder: (context, state) => const ReferralPage(),
+        ),
+        GoRoute(
+          path: '/invoices',
+          builder: (context, state) => const InvoicesPage(),
+        ),
         GoRoute(
           path: '/addresses/new',
           builder: (context, state) => const AddressFormPage(),
@@ -246,18 +277,26 @@ class _Am5CustomerAppState extends State<Am5CustomerApp> {
         GoRoute(path: '/shop', builder: (context, state) => const ShopPage()),
         GoRoute(
           path: '/booking-confirmed',
-          builder: (context, state) => BookingConfirmationPage(
-            booking: state.extra as Booking,
-          ),
+          builder: (context, state) =>
+              BookingConfirmationPage(booking: state.extra as Booking),
         ),
         GoRoute(
           path: '/shop/products/:id',
           builder: (context, state) =>
               ProductDetailPage(productId: state.pathParameters['id']!),
         ),
-        GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
-        GoRoute(path: '/shop/cart', builder: (context, state) => const CartPage()),
-        GoRoute(path: '/shop/orders', builder: (context, state) => const ProductOrdersPage()),
+        GoRoute(
+          path: '/settings',
+          builder: (context, state) => const SettingsPage(),
+        ),
+        GoRoute(
+          path: '/shop/cart',
+          builder: (context, state) => const CartPage(),
+        ),
+        GoRoute(
+          path: '/shop/orders',
+          builder: (context, state) => const ProductOrdersPage(),
+        ),
       ],
     );
   }

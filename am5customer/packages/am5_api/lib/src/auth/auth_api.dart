@@ -76,6 +76,11 @@ class AuthApi {
     }
   }
 
+  Future<bool> hasSavedSession() async {
+    final token = await _client.tokenStorage.readAccessToken();
+    return token != null && token.isNotEmpty;
+  }
+
   Future<void> logout() async {
     await _client.tokenStorage.clear();
   }

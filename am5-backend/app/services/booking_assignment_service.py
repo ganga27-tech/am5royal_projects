@@ -18,7 +18,6 @@ from app.models.subscriptions import VendorSubscription, SubscriptionPlan
 from app.models.orders import Order as OrderModel
 from app.models.user_location import Customer
 from app.services.notification_service import send_user_push_notification
-from app.services.otp_service import otp_service
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +27,32 @@ ACCEPT_TIMEOUT_MINUTES = 15
 
 def _parse_assignment_meta(vendor_notes: Optional[str]) -> Dict[str, Any]:
     if not vendor_notes:
-        return {"declined_vendor_ids": [], "assigned_at": None, "catalog_service_id": None}
+        return {}
     try:
         data = json.loads(vendor_notes)
         if isinstance(data, dict):
-            return {
-                "declined_vendor_ids": list(data.get("declined_vendor_ids") or []),
-                "assigned_at": data.get("assigned_at"),
-                "catalog_service_id": data.get("catalog_service_id"),
-            }
+            return data.get(VENDOR_ASSIGNMENT_META_KEY, {})
     except (json.JSONDecodeError, TypeError):
         pass
-    return {"declined_vendor_ids": [], "assigned_at": None, "catalog_service_id": None}
+    return {}
 
 
-def _serialize_assignment_meta(meta: Dict[str, Any]) -> str:
-    return json.dumps(
+def _serialize_assignment_meta(meta_data: Dict[str, Any]) -> str:
+    return json.dumps({VENDOR_ASSIGNMENT_META_KEY: meta_data})
+
+
+def build_updated_assignment_meta(
+    existing_vendor_notes: Optional[str],
+    new_declined_vendor_id: Optional[int] = None,
+) -> str:
+    meta = _parse_assignment_meta(existing_vendor_notes)
+    declined = list(meta.get("declined_vendor_ids") or [])
+    if new_declined_vendor_id is not None and new_declined_vendor_id not in declined:
+        declined.append(new_declined_vendor_id)
+    return _serialize_assignment_meta(
         {
-            "declined_vendor_ids": meta.get("declined_vendor_ids") or [],
-            "assigned_at": meta.get("assigned_at"),
+            "declined_vendor_ids": declined,
+            "assigned_at": datetime.utcnow().isoformat(),
             "catalog_service_id": meta.get("catalog_service_id"),
         }
     )
@@ -69,23 +75,7 @@ async def notify_vendor_new_booking(
     order: Order,
     background_tasks=None,
 ) -> None:
-    customer_name = order.customer_name or "Customer"
     booking_id = order.booking_reference or ""
-
-    if vendor.mobile:
-        if background_tasks is not None:
-            background_tasks.add_task(
-                otp_service.send_vendor_new_booking_sms,
-                vendor.mobile,
-                customer_name,
-                booking_id,
-            )
-        else:
-            await otp_service.send_vendor_new_booking_sms(
-                vendor.mobile,
-                customer_name,
-                booking_id,
-            )
 
     if not vendor.user_id:
         logger.warning("Vendor %s has no user_id; skip booking push", vendor.id)
@@ -119,48 +109,14 @@ async def notify_customer_vendor_accepted(
     vendor: Vendor,
     background_tasks=None,
 ) -> None:
-    """SMS + push when vendor accepts a booking."""
-    customer_phone = order.customer_phone
-    if not customer_phone and order.customer_id:
-        customer_res = await db.execute(
-            select(Customer).where(Customer.id == order.customer_id)
-        )
-        customer = customer_res.scalar_one_or_none()
-        if customer:
-            customer_phone = customer.phone
-
+    """Push notification when vendor accepts a booking."""
     vendor_name = (
         order.vendor_name
         or vendor.business_name
         or "Vendor"
     )
-    vendor_contact = order.vendor_phone or vendor.mobile or ""
     booking_id = order.booking_reference or str(order.id)
     service_name = order.service_name or "Service"
-
-    if customer_phone:
-        if background_tasks is not None:
-            background_tasks.add_task(
-                otp_service.send_customer_vendor_assigned_sms,
-                customer_phone,
-                vendor_name,
-                booking_id,
-                vendor_contact,
-                service_name,
-            )
-        else:
-            await otp_service.send_customer_vendor_assigned_sms(
-                customer_phone,
-                vendor_name,
-                booking_id,
-                vendor_contact,
-                service_name,
-            )
-    else:
-        logger.warning(
-            "No customer phone for order %s; skip vendor-assigned SMS",
-            booking_id,
-        )
 
     if not order.customer_id:
         return
